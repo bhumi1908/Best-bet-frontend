@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import { routes } from "@/utilities/routes";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Lock, LogOut, Menu, X } from "lucide-react";
 import { Button } from "./ui/Button";
 import { useAppSelector } from "@/redux/store/hooks";
@@ -80,6 +80,26 @@ export default function Header() {
     setIsDropdownOpen(!isDropdownOpen)
     router.push(routes.admin.dashboard)
   }
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (
+          dropdownRef.current &&
+          !dropdownRef.current.contains(event.target as Node)
+        ) {
+          setIsDropdownOpen(false);
+        }
+      };
+  
+      if (isDropdownOpen) {
+        document.addEventListener("mousedown", handleClickOutside);
+      }
+  
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, [isDropdownOpen]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-white/10">
