@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { routes } from "@/utilities/routes";
 import {
@@ -16,6 +16,7 @@ import {
   MapPin,
   Clock,
   CheckCircle2,
+  ChevronDown,
 } from "lucide-react";
 
 // Performance data interfaces
@@ -34,20 +35,55 @@ interface SummaryCard {
   trend?: "up" | "down" | "stable";
 }
 
+// US States list
+const US_STATES = [
+  "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
+  "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho",
+  "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana",
+  "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota",
+  "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada",
+  "New Hampshire", "New Jersey", "New Mexico", "New York",
+  "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon",
+  "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
+  "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington",
+  "West Virginia", "Wisconsin", "Wyoming"
+];
+
 export default function StateDetailsPage() {
-  const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const [selectedPeriod, setSelectedPeriod] = useState<"week" | "month" | "year">("week");
+  const [isStateDropdownOpen, setIsStateDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Decode state name from URL
+  // Get state name from URL query parameter
   const stateName = useMemo(() => {
-    if (!params?.state) return "Unknown State";
-    const decoded = decodeURIComponent(params.state as string);
-    return decoded
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  }, [params?.state]);
+    const name = searchParams.get("name");
+    return name || "Florida"; // Default to Florida if no state is specified
+  }, [searchParams]);
+
+  // Handle state change
+  const handleStateChange = (newState: string) => {
+    router.push(`${routes.state}?name=${encodeURIComponent(newState)}`);
+    setIsStateDropdownOpen(false);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsStateDropdownOpen(false);
+      }
+    };
+
+    if (isStateDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isStateDropdownOpen]);
 
   // Mock performance data - Replace with API call
   const summaryData: SummaryCard[] = [
@@ -164,17 +200,65 @@ export default function StateDetailsPage() {
         {/* ==================== HEADER SECTION ==================== */}
         <section className="relative px-4 py-8">
           <div className="max-w-7xl mx-auto">
-            {/* Back Button */}
-            <motion.button
-              onClick={() => router.back()}
-              className="flex items-center gap-2 text-gray-400 hover:text-yellow-400 transition-colors mb-6 group"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              <span>Back</span>
-            </motion.button>
+            {/* Back Button and State Selector Row */}
+            <div className="flex items-center justify-between mb-6">
+              <motion.button
+                onClick={() => router.back()}
+                className="flex items-center gap-2 text-gray-400 hover:text-yellow-400 transition-colors group"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                <span>Back</span>
+              </motion.button>
+
+              {/* Premium State Selector */}
+              <motion.div
+                ref={dropdownRef}
+                className="relative"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <button
+                  onClick={() => setIsStateDropdownOpen(!isStateDropdownOpen)}
+                  className="flex items-center gap-3 px-3 sm:px-6 py-1.5 sm:py-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl hover:border-yellow-400/50 transition-all duration-300 group"
+                >
+                  <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
+                  <span className="text-white font-semibold text-sm sm:text-base">{stateName}</span>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isStateDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown Menu */}
+                <AnimatePresence>
+                  {isStateDropdownOpen && (
+                    <motion.div
+                      className="absolute right-0 mt-2 w-64 max-h-96 overflow-y-auto bg-black/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 state-dropdown"
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <div className="p-2">
+                        {US_STATES.map((state) => (
+                          <button
+                            key={state}
+                            onClick={() => handleStateChange(state)}
+                            className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${state === stateName
+                                ? 'bg-yellow-400 text-black font-semibold'
+                                : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                              }`}
+                          >
+                            {state}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            </div>
 
             <motion.div
               className="text-center mb-8"
@@ -199,7 +283,7 @@ export default function StateDetailsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
-               Performance Overview <br /> of  <span className="text-yellow-400">{stateName}</span> 
+                Performance Overview <br /> of  <span className="text-yellow-400">{stateName}</span>
               </motion.h1>
 
               {/* Subheading */}
@@ -235,7 +319,7 @@ export default function StateDetailsPage() {
                 >
                   {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"></div>
-                  
+
                   <div className="relative z-10">
                     {/* Period Label */}
                     <div className="flex items-center justify-between mb-4">
@@ -289,11 +373,10 @@ export default function StateDetailsPage() {
                 <button
                   key={period.value}
                   onClick={() => setSelectedPeriod(period.value as "week" | "month" | "year")}
-                  className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                    selectedPeriod === period.value
+                  className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${selectedPeriod === period.value
                       ? "bg-yellow-400 text-black shadow-lg shadow-yellow-400/30"
                       : "text-gray-400 hover:text-white hover:bg-white/5"
-                  }`}
+                    }`}
                 >
                   {period.label}
                 </button>
@@ -315,8 +398,8 @@ export default function StateDetailsPage() {
                     {selectedPeriod === "week"
                       ? "Weekly"
                       : selectedPeriod === "month"
-                      ? "Monthly"
-                      : "Yearly"}{" "}
+                        ? "Monthly"
+                        : "Yearly"}{" "}
                     Performance (Sample)
                   </h2>
                 </div>
@@ -331,8 +414,8 @@ export default function StateDetailsPage() {
                         {selectedPeriod === "week"
                           ? "Week"
                           : selectedPeriod === "month"
-                          ? "Month"
-                          : "Year"}
+                            ? "Month"
+                            : "Year"}
                       </th>
                       <th className="text-center px-6 py-4 text-sm font-semibold text-gray-300 uppercase tracking-wider">
                         Hits

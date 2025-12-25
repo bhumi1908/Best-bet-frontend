@@ -11,6 +11,7 @@ export default function Footer() {
 
   const footerLinks = {
     main: [
+       { href: routes.state, label: "State" },
       { href: routes.predictions, label: "Predictions" },
       { href: routes.drawHistory, label: "Draw History" },
       { href: routes.plans, label: "Subscription Plans" },
