@@ -18,7 +18,8 @@ export default function Footer() {
     legal: [
       { href: routes.terms, label: "Terms of Service" },
       { href: routes.privacy, label: "Privacy Policy" },
-      { href: routes.contact, label: "Contact Us" },
+       { href: routes.about, label: "About Us" },
+      { href: routes.support, label: "Support" },
     ],  
     social: [
       { href: "https://www.facebook.com/", label: "Facebook", icon: Facebook },

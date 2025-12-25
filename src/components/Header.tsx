@@ -31,14 +31,9 @@ export default function Header() {
     return "U";
   };
 
-  const capitalize = (value?: string) => {
-    if (!value) return "";
-    return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-  };
-
   const getUserName = () => {
     if (user?.firstName && user?.lastName) {
-      return `${capitalize(user.firstName)} ${capitalize(user.lastName)}`;
+      return `${user.firstName} ${user.lastName}`;
     }
     return user?.email || "User";
   };
@@ -77,29 +72,28 @@ export default function Header() {
   };
 
   const handleDashboardClick = () => {
-    setIsDropdownOpen(!isDropdownOpen)
     router.push(routes.admin.dashboard)
   }
 
-    // Close dropdown when clicking outside
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (
-          dropdownRef.current &&
-          !dropdownRef.current.contains(event.target as Node)
-        ) {
-          setIsDropdownOpen(false);
-        }
-      };
-  
-      if (isDropdownOpen) {
-        document.addEventListener("mousedown", handleClickOutside);
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
       }
-  
-      return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-      };
-    }, [isDropdownOpen]);
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-white/10">
@@ -173,7 +167,7 @@ export default function Header() {
                   {isDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 border border-border-primary bg-bg-card rounded-lg shadow-xl backdrop-blur-sm overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                       <div className="px-4 py-3 border-b border-border-primary">
-                        <p className="text-sm font-medium text-text-primary">{getUserName()}</p>
+                        <p className="text-sm font-medium text-text-primary capitalize">{getUserName()}</p>
                         <p className="text-xs text-text-tertiary mt-1 truncate">
                           {user?.email}
                         </p>

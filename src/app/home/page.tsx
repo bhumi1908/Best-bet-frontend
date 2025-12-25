@@ -156,7 +156,7 @@ export default function Page() {
                 >
                   {s === "North Carolina" ? (
                     <Link
-                      href={`/state/${encodeURIComponent(
+                      href={`${routes.state}/${encodeURIComponent(
                         s.toLowerCase().replace(/\s+/g, "-")
                       )}`}
                       className="inline-flex items-center justify-center rounded-full bg-orange-500 border border-white/50 px-2 py-2 md:px-3 md:h-[24px] !text-white font-bold leading-none hover:bg-orange-400 transition-colors text-base"
@@ -165,7 +165,7 @@ export default function Page() {
                     </Link>
                   ) : (
                     <Link
-                      href={`/state/${encodeURIComponent(
+                      href={`${routes.state}/${encodeURIComponent(
                         s.toLowerCase().replace(/\s+/g, "-")
                       )}`}
                       className="hover:text-yellow-200 transition-colors !text-white border border-white/50 rounded-full px-3 py-1 md:border-none md:rounded-none md:px-0 md:py-0"
@@ -294,7 +294,7 @@ export default function Page() {
               <li key={s}>
                 {s === "North Carolina" ? (
                   <Link
-                    href={`/state/${encodeURIComponent(
+                    href={`${routes.state}/${encodeURIComponent(
                       s.toLowerCase().replace(/\s+/g, "-")
                     )}`}
                     className="inline-block bg-orange-500 px-4 py-1 rounded-full font-bold text-white"
@@ -303,7 +303,7 @@ export default function Page() {
                   </Link>
                 ) : (
                   <Link
-                    href={`/state/${encodeURIComponent(
+                    href={`${routes.state}/${encodeURIComponent(
                       s.toLowerCase().replace(/\s+/g, "-")
                     )}`}
                     className="hover:text-yellow-100"

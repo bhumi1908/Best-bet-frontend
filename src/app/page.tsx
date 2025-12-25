@@ -1620,7 +1620,7 @@ export default function LandingPage() {
             >
               <p className="text-gray-400 mb-4">Still have questions?</p>
               <Link
-                href={routes.contact}
+                href={routes.support}
                 className="inline-flex items-center gap-2 text-yellow-400 hover:text-yellow-300 font-semibold"
               >
                 Contact Our Support Team

@@ -76,11 +76,10 @@ export default function PlansPage() {
           {plans.map((plan, index) => (
             <div
               key={index}
-              className={`relative bg-black/55 backdrop-blur-md rounded-2xl p-8 border-2 transition-all ${
-                plan.popular
-                  ? "border-yellow-400 scale-105 shadow-2xl shadow-yellow-400/20"
-                  : "border-white/10 hover:border-yellow-400/50"
-              }`}
+              className={`relative bg-black/55 backdrop-blur-md rounded-2xl p-8 border-2 transition-all ${plan.popular
+                ? "border-yellow-400 scale-105 shadow-2xl shadow-yellow-400/20"
+                : "border-white/10 hover:border-yellow-400/50"
+                }`}
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">

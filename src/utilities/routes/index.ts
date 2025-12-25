@@ -11,9 +11,11 @@ export const routes = {
   drawHistory: '/draw-history',
   plans: '/plans',
   unauthorized: '/unauthorized',
+  state: '/state',
   terms: '/terms',
   privacy: '/privacy',
-  contact: '/contact',
+  about: '/about-us',
+  support: '/support',
 
   // Auth routes
   auth: {
@@ -40,13 +42,19 @@ export const routes = {
       logout: '/auth/logout',
       forgotPassword: '/auth/forgot-password',
       resetPassword: 'auth/reset-password',
-      refreshToken: '/auth/refresh-token'
+      refreshToken: '/auth/refresh-token',
     },
     user: {
       getAll: '/users',
       getById: '/users/:id',
       update: '/users/:id',
     },
+    support: {
+      create: '/support/create'
+    },
+    profile: {
+      editAdmin: '/admin/profile'
+    }
   },
 } as const;
 
