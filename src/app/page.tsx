@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { routes } from "@/utilities/routes";
 import { useSession } from "next-auth/react";
-import { useState } from "react";
+import { JSX, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { motion, useInView } from "framer-motion";
 import {
@@ -37,6 +37,23 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { useAppDispatch, useAppSelector } from "@/redux/store/hooks";
+import { getAllSubscriptionPlansThunk } from "@/redux/thunk/subscriptionPlanThunk";
+import PricingCardSkeleton from "@/components/PricingCardSkeleton";
+
+interface Plan {
+  id: number;
+  name: string;
+  price: string;
+  period: string;
+  description?: string;
+  popular: boolean;
+  cta: string;
+  icon: JSX.Element;
+  features: {
+    text: string;
+  }[];
+}
 
 
 // Chart data for performance section
@@ -55,54 +72,21 @@ const monthlyHitRateData = [
   { month: 'Dec', rate: 99 },
 ];
 
-const plans = [
-  {
-    name: "Basic Plan",
-    price: "$9.99",
-    period: "per month",
-    features: [
-      "Daily Pick 3 Predictions",
-      "Access to 1 State",
-      "Draw History (Last 30 Days)",
-      "Email Support",
-      "Basic Hit Tracker",
-    ],
-    popular: false,
-    cta: "Get Started",
+
+const PLAN_UI_CONFIG: Record<string, { icon: JSX.Element; cta: string }> = {
+  'Basic Plan': {
+    icon: <Target className="w-6 h-6" />,
+    cta: 'Get Started',
   },
-  {
-    name: "Premium Plan",
-    price: "$19.99",
-    period: "per month",
-    features: [
-      "Daily Pick 3 Predictions",
-      "Access to All States",
-      "Full Draw History",
-      "Priority Email Support",
-      "Advanced Hit Tracker",
-      "Weekly Performance Reports",
-      "Early Access to New Features",
-    ],
-    popular: true,
-    cta: "Most Popular",
+  'Premium Plan': {
+    icon: <Star className="w-6 h-6" />,
+    cta: 'Most Popular',
   },
-  {
-    name: "VIP Plan",
-    price: "$39.99",
-    period: "per month",
-    features: [
-      "Everything in Premium",
-      "Real-time Predictions",
-      "24/7 Priority Support",
-      "Custom Prediction Requests",
-      "Monthly Strategy Consultation",
-      "Exclusive VIP Community Access",
-      "Money-Back Guarantee",
-    ],
-    popular: false,
-    cta: "Go VIP",
+  'VIP Plan': {
+    icon: <Award className="w-6 h-6" />,
+    cta: 'Go VIP',
   },
-];
+};
 
 // Testimonials data
 const testimonials = [
@@ -208,19 +192,34 @@ export default function LandingPage() {
   const { data: session } = useSession();
   const isAuthenticated = !!session;
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [hoveredPlan, setHoveredPlan] = useState<number | null>(null);
+  const dispatch = useAppDispatch();
+  const { plans, isLoading, error } = useAppSelector(
+    (state) => state.subscriptionPlan
+  );
 
-  // Animation variants
-  const fadeInUp = {
-    initial: { opacity: 0, y: 60 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6, ease: "easeOut" }
-  };
+  const mappedPlans: Plan[] = useMemo(() => {
+    return plans.map((plan) => {
+      const uiConfig = PLAN_UI_CONFIG[plan.name];
 
-  const fadeIn = {
-    initial: { opacity: 0 },
-    animate: { opacity: 1 },
-    transition: { duration: 0.6 }
-  };
+      // Period derived from duration
+      const period = plan.duration === 12 ? 'per year' : 'per month';
+
+      return {
+        id: plan.id,
+        name: plan.name,
+        description: plan.description ?? '',
+        price: `$${plan.price.toFixed(2)}`,
+        period,
+        popular: plan.isRecommended,
+        cta: uiConfig?.cta ?? 'Get Started',
+        icon: uiConfig?.icon ?? <Target className="w-6 h-6" />,
+        features: plan.features.map((feature) => ({
+          text: feature.name,
+        })),
+      };
+    });
+  }, [plans]);
 
   const staggerContainer = {
     initial: { opacity: 0 },
@@ -238,15 +237,17 @@ export default function LandingPage() {
     animate: { opacity: 1, y: 0 }
   };
 
-  const scaleIn = {
-    initial: { opacity: 0, scale: 0.9 },
-    animate: { opacity: 1, scale: 1 },
-    transition: { duration: 0.5 }
-  };
 
   const handlePlanClick = (plan: any) => {
     console.log('plan', plan)
   }
+
+  useEffect(() => {
+    if (!plans.length) {
+      dispatch(getAllSubscriptionPlansThunk());
+    }
+  }, [dispatch, plans.length]);
+
 
   return (
     <motion.div
@@ -745,7 +746,7 @@ export default function LandingPage() {
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 items-center">
               <motion.div
                 className="lg:col-span-2 lg:sticky lg:top-24"
                 initial={{ opacity: 0, x: 40 }}
@@ -796,6 +797,7 @@ export default function LandingPage() {
                             domain={[0, 100]}
                           />
                           <Tooltip
+                            cursor={false}
                             contentStyle={{
                               backgroundColor: '#1e293b',
                               border: '1px solid #334155',
@@ -963,21 +965,6 @@ export default function LandingPage() {
                     </div>
                   </motion.div>
 
-                  {/* Summary Note */}
-                  <motion.div
-                    className="pt-4 border-t border-white/10"
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: 0.4 }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <TrendingUp className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-                      <p className="text-gray-400 text-xs leading-relaxed">
-                        Our performance metrics demonstrate consistent growth and industry-leading accuracy across all regions.
-                      </p>
-                    </div>
-                  </motion.div>
                 </div>
               </motion.div>
             </div>
@@ -1013,60 +1000,120 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Plans Grid - Matching plans page design */}
-            <motion.div
+            {isLoading ? <PricingCardSkeleton /> : <motion.div
               className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12"
               variants={staggerContainer}
               initial="initial"
               whileInView="animate"
               viewport={{ once: true, margin: "-50px" }}
             >
-              {plans.map((plan, index) => (
-                <motion.div
-                  key={index}
-                  className={`relative flex flex-col bg-black/55 backdrop-blur-md rounded-2xl p-8 border-2 transition-all ${plan.popular
-                    ? "border-yellow-400 shadow-2xl shadow-yellow-400/20"
-                    : "border-white/10 hover:border-yellow-400/50"
-                    }`}
-                  variants={staggerItem}
-                  whileHover={{ scale: plan.popular ? 1.08 : 1.05, }}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                >
-                  {plan.popular && (
-                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                      <span className="bg-yellow-400 text-black px-4 py-1 rounded-full text-sm font-bold">
-                        Most Popular
-                      </span>
-                    </div>
-                  )}
+              {mappedPlans.map((plan, index) => {
+                return (
+                  <motion.div
+                    key={index}
+                    className={`relative flex flex-col h-full ${plan.popular ? "md:-mt-4 md:mb-4" : ""
+                      }`}
+                    variants={staggerItem}
+                    onMouseEnter={() => setHoveredPlan(index)}
+                    onMouseLeave={() => setHoveredPlan(null)}
+                  >
 
-                  <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold text-white mb-2">
-                      {plan.name}
-                    </h3>
-                    <div className="flex items-baseline justify-center gap-2">
-                      <span className="text-4xl font-extrabold text-yellow-400">
-                        {plan.price}
-                      </span>
-                      <span className="text-gray-400">{plan.period}</span>
-                    </div>
-                  </div>
+                    {/* Plan Card */}
+                    <motion.div
+                      className={`relative flex flex-col h-full bg-black/55 backdrop-blur-md rounded-2xl p-8 border-2 transition-all duration-300 ${plan.popular
+                        ? "border-yellow-400 shadow-2xl shadow-yellow-400/20"
+                        : "border-white/10 hover:border-yellow-400/50"
+                        }`}
+                      whileHover={{ scale: plan.popular ? 1.05 : 1.02, y: -5 }}
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: index * 0.1 }}
+                    >
+                      {/* Gradient Overlay on Hover */}
+                      <div
+                        className={`absolute inset-0 bg-gradient-to-br from-yellow-400/10 to-transparent rounded-2xl transition-opacity duration-300 ${hoveredPlan === index ? "opacity-100" : "opacity-0"
+                          }`}
+                      />
+                      {/* Popular Badge */}
+                      {plan.popular && (
+                        <motion.div
+                          className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-20"
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.5 }}
+                        >
+                          <span className="bg-yellow-400 text-black px-4 py-1.5 rounded-full text-sm font-bold shadow-lg shadow-yellow-400/30">
+                            Most Popular
+                          </span>
+                        </motion.div>
+                      )}
 
-                  <ul className="space-y-3 mb-8">
-                    {plan.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-start gap-2">
-                        <span className="text-yellow-400 mt-1">✓</span>
-                        <span className="text-gray-300 text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mt-auto">
-                    <Button type="primary" className="py-3 h-fit rounded-lg" onClick={() => handlePlanClick(plan)}>{plan.cta}</Button>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
+                      {/* Plan Icon */}
+                      <div className="relative z-10 mb-6">
+                        <motion.div
+                          className="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-black mb-4 shadow-lg shadow-yellow-400/20"
+                          transition={{ duration: 0.6 }}
+                        >
+                          {plan.icon}
+                        </motion.div>
+                        <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                        {plan.description && (
+                          <p className="text-gray-400 text-sm">{plan.description}</p>
+                        )}
+                      </div>
+
+                      {/* Price */}
+                      <div className="relative z-10 mb-6">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-5xl font-extrabold text-yellow-400">
+                            {plan.price}
+                          </span>
+                          <span className="text-gray-400 text-sm">
+                            {plan.period}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Features List */}
+                      <ul className="relative z-10 space-y-3 mb-8 flex-grow">
+                        {plan.features.map((feature, featureIndex) => (
+                          <motion.li
+                            key={featureIndex}
+                            className="flex items-start gap-3"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3 + featureIndex * 0.05 }}
+                          >
+                            <CheckCircle2 className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+
+                            <span
+                              className={`text-sm text-gray-300`}
+                            >
+                              {feature.text}
+                            </span>
+                          </motion.li>
+                        ))}
+                      </ul>
+
+                      {/* CTA Button */}
+                      <div className="relative z-10 mt-auto">
+                        <Button
+                          type="primary"
+                          size="large"
+                          onClick={() => handlePlanClick(plan)}
+                          className={`w-full py-4 rounded-lg font-semibold text-lg ${plan.popular
+                            ? "bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400 text-black shadow-lg shadow-yellow-400/30"
+                            : ""
+                            }`}
+                        >
+                          {plan.cta}
+                        </Button>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                );
+              })}
+            </motion.div>}
 
             {/* Plan Features Comparison */}
             <motion.div
@@ -1603,7 +1650,15 @@ export default function LandingPage() {
                   </button>
                   {openFaq === index && (
                     <div className="px-6 pb-5 text-gray-400 leading-relaxed">
-                      {faq.a}
+                      <motion.div
+                        className="px-6 pb-5 text-gray-400 leading-relaxed"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.1, ease: "easeInOut" }}
+                      >
+                        {faq.a}
+                      </motion.div>
                     </div>
                   )}
                 </motion.div>
@@ -1620,7 +1675,7 @@ export default function LandingPage() {
             >
               <p className="text-gray-400 mb-4">Still have questions?</p>
               <Link
-                href={routes.contact}
+                href={routes.support}
                 className="inline-flex items-center gap-2 text-yellow-400 hover:text-yellow-300 font-semibold"
               >
                 Contact Our Support Team

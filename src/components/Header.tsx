@@ -5,7 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import { routes } from "@/utilities/routes";
 import { useEffect, useRef, useState } from "react";
-import { Lock, LogOut, Menu, X } from "lucide-react";
+import { HelpCircle, Lock, LogOut, Menu, X } from "lucide-react";
 import { Button } from "./ui/Button";
 import { useAppSelector } from "@/redux/store/hooks";
 
@@ -31,14 +31,9 @@ export default function Header() {
     return "U";
   };
 
-  const capitalize = (value?: string) => {
-    if (!value) return "";
-    return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-  };
-
   const getUserName = () => {
     if (user?.firstName && user?.lastName) {
-      return `${capitalize(user.firstName)} ${capitalize(user.lastName)}`;
+      return `${user.firstName} ${user.lastName}`;
     }
     return user?.email || "User";
   };
@@ -57,9 +52,14 @@ export default function Header() {
     await signOut({ callbackUrl: "/auth/login" });
   };
 
+  const handleSupportUs = () => {
+    router.push(routes.support);
+  }
+
   const navLinks = [
-    // { href: routes.landing, label: "Home" },
-    { href: routes.predictions, label: "Predictions", requiresAuth: true, },
+    { href: routes.state, label: "State Performance" },
+    // { href: routes.predictions, label: "Predictions", requiresAuth: true, },
+    { href: routes.about, label: "About Us" },
     { href: routes.drawHistory, label: "Draw History" },
     { href: routes.plans, label: "Subscription Plans" },
   ];
@@ -77,29 +77,28 @@ export default function Header() {
   };
 
   const handleDashboardClick = () => {
-    setIsDropdownOpen(!isDropdownOpen)
     router.push(routes.admin.dashboard)
   }
 
-    // Close dropdown when clicking outside
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (
-          dropdownRef.current &&
-          !dropdownRef.current.contains(event.target as Node)
-        ) {
-          setIsDropdownOpen(false);
-        }
-      };
-  
-      if (isDropdownOpen) {
-        document.addEventListener("mousedown", handleClickOutside);
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
       }
-  
-      return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-      };
-    }, [isDropdownOpen]);
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-white/10">
@@ -130,20 +129,13 @@ export default function Header() {
                 key={link.href}
                 href={link.href}
                 onClick={(e) => {
-                  if (link.requiresAuth && !isAuthenticated) {
-                    e.preventDefault();
-                    handleLinkClick(link.href, true);
-                  }
                 }}
                 className={`relative py-2 flex gap-0.5 items-center rounded-lg text-sm font-medium transition-colors ${isActive(link.href)
                   ? "text-yellow-400"
                   : "text-white hover:text-yellow-300"
-                  } ${link.requiresAuth && !isAuthenticated ? "opacity-75" : ""}`}
+                  }`}
               >
                 {link.label}
-                {link.requiresAuth && !isAuthenticated && (
-                  <span className="ml-1 text-xs text-yellow-400"><Lock size={12} /></span>
-                )}
                 <span className={`absolute bottom-1 left-1/2 -translate-x-1/2 h-0.5 rounded-lg bg-yellow-400 transition-all duration-400 ${isActive(link.href) ? "w-full" : "w-0"}`}></span>
 
               </Link>
@@ -173,12 +165,20 @@ export default function Header() {
                   {isDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 border border-border-primary bg-bg-card rounded-lg shadow-xl backdrop-blur-sm overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                       <div className="px-4 py-3 border-b border-border-primary">
-                        <p className="text-sm font-medium text-text-primary">{getUserName()}</p>
+                        <p className="text-sm font-medium text-text-primary capitalize">{getUserName()}</p>
                         <p className="text-xs text-text-tertiary mt-1 truncate">
                           {user?.email}
                         </p>
                       </div>
                       <div className="p-1.5 flex flex-col gap-0.5">
+
+                        <button
+                          onClick={handleSupportUs}
+                          className="w-full text-left px-3 py-2 text-sm text-text-secondary hover:bg-bg-muted rounded-lg transition-colors flex items-center gap-2"
+                        >
+                          <HelpCircle className="w-4 h-4" />
+                          <span>Support Us</span>
+                        </button>
                         <button
                           onClick={handleLogout}
                           className="w-full text-left px-3 py-2 text-sm text-error hover:bg-error-light rounded-lg transition-colors flex items-center gap-2"
@@ -207,20 +207,13 @@ export default function Header() {
               key={link.href}
               href={link.href}
               onClick={(e) => {
-                if (link.requiresAuth && !isAuthenticated) {
-                  e.preventDefault();
-                  handleLinkClick(link.href, true);
-                }
               }}
               className={`block flex gap-1 items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isActive(link.href)
                 ? "bg-yellow-400/20 text-yellow-400"
                 : "text-white hover:text-yellow-300 hover:bg-white/5"
-                } ${link.requiresAuth && !isAuthenticated ? "opacity-75" : ""}`}
+                }`}
             >
               {link.label}
-              {link.requiresAuth && !isAuthenticated && (
-                <span className="ml-1 text-xs text-yellow-400"><Lock size={12} /></span>
-              )}
             </Link>
           ))}
         </nav>

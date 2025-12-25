@@ -19,10 +19,10 @@ export const theme = {
     textMuted: '#6b7280',
     
     // Accent Colors (Gaming Theme - Yellow/Gold)
-    accentPrimary: '#fbbf24', // yellow-400
-    accentSecondary: '#f59e0b', // yellow-500
-    accentTertiary: '#d97706', // yellow-600
-    accentHover: '#fcd34d', // yellow-300
+    accentPrimary: 'red', // yellow-400
+    accentSecondary: 'green', // yellow-500
+    accentTertiary: 'pink', // yellow-600
+    accentHover: 'purple', // yellow-300
     
     // Border Colors
     borderPrimary: 'rgba(255, 255, 255, 0.1)',

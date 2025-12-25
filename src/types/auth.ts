@@ -63,7 +63,8 @@ export interface Token {
 export interface NextAuthUser {
   id: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
 }
 
 export interface User {

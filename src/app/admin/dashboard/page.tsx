@@ -157,8 +157,8 @@ const ProgressRing = ({ value, max = 100, size = 60, strokeWidth = 4, color = "#
 };
 
 export default function DashboardPage() {
-     const { data: session } = useSession();
-     const user =session?.user
+  const { data: session } = useSession();
+  const user = session?.user
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -595,6 +595,7 @@ export default function DashboardPage() {
                     <XAxis dataKey="day" stroke="#64748b" fontSize={12} />
                     <YAxis stroke="#64748b" fontSize={12} />
                     <Tooltip
+                      cursor={false}
                       contentStyle={{
                         backgroundColor: '#1a1a1a',
                         border: '1px solid #6b7280',

@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'react-toastify';
 import apiClient from '@/utilities/axios/instance';
+import { zodFormikValidate } from '@/utilities/zodFormikValidate';
 
 // Form initial values for reset password
 export const resetPasswordInitialValues = {
@@ -35,7 +36,8 @@ export default function ResetPasswordPage() {
 
   const formik = useFormik<ResetPasswordFormValues>({
     initialValues: resetPasswordInitialValues,
-    validationSchema: toFormikValidationSchema(resetPasswordSchema),
+    validate: zodFormikValidate(resetPasswordSchema),
+
     onSubmit: async (values, { setSubmitting }) => {
       
       if (!resetToken) {

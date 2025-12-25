@@ -200,7 +200,7 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
 
       // Initial login
       if (user) {
@@ -215,6 +215,10 @@ export const authOptions: NextAuthOptions = {
         return token;
       }
 
+      if (trigger === "update" && session?.user) {
+        token.firstName = session.user.firstName;
+        token.lastName = session.user.lastName;
+      }
 
       // Access token still valid
       if (
