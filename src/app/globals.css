@@ -9,53 +9,65 @@
   --bg-card: #1a1a1a;
   --bg-overlay: rgba(0, 0, 0, 0.5);
   --bg-muted: #262626;
-  
+
   /* Text Colors - Always Light on Dark */
   --text-primary: #ffffff;
   --text-secondary: #ededed;
   --text-tertiary: #a0a0a0;
   --text-muted: #6b7280;
-  
+
   /* Accent Colors (Gaming Theme - Yellow/Gold) */
-  --accent-primary: #fbbf24; /* yellow-400 */
-  --accent-secondary: #f59e0b; /* yellow-500 */
-  --accent-tertiary: #d97706; /* yellow-600 */
-  --accent-hover: #fcd34d; /* yellow-300 */
-  
+  --accent-primary: #fbbf24;
+  /* yellow-400 */
+  --accent-secondary: #f59e0b;
+  /* yellow-500 */
+  --accent-tertiary: #d97706;
+  /* yellow-600 */
+  --accent-hover: #fcd34d;
+  /* yellow-300 */
+
   /* Border Colors */
   --border-primary: rgba(255, 255, 255, 0.1);
   --border-secondary: rgba(255, 255, 255, 0.05);
-  --border-accent: rgba(251, 191, 36, 0.3); /* yellow-400/30 */
-  --border-accent-hover: rgba(251, 191, 36, 0.5); /* yellow-400/50 */
-  
+  --border-accent: rgba(251, 191, 36, 0.3);
+  /* yellow-400/30 */
+  --border-accent-hover: rgba(251, 191, 36, 0.5);
+  /* yellow-400/50 */
+
   /* Status Colors */
-  --success: #10b981; /* emerald-500 */
+  --success: #10b981;
+  /* emerald-500 */
   --success-light: rgba(16, 185, 129, 0.1);
-  --error: #ef4444; /* red-500 */
+  --error: #ef4444;
+  /* red-500 */
   --error-light: rgba(239, 68, 68, 0.1);
-  --warning: #f59e0b; /* yellow-500 */
-  --info: #3b82f6; /* blue-500 */
-  
+  --warning: #f59e0b;
+  /* yellow-500 */
+  --info: #3b82f6;
+  /* blue-500 */
+
   /* Gradient Colors */
   --gradient-primary: linear-gradient(to right, #fbbf24, #f59e0b, #d97706);
   --gradient-accent: linear-gradient(to bottom right, rgba(251, 191, 36, 0.2), rgba(217, 119, 6, 0.2));
-  
+
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   --shadow-accent: 0 0 20px rgba(251, 191, 36, 0.1);
-  
+
   /* Spacing */
-  --header-height: 4rem; /* 64px */
-  --sidebar-width: 16rem; /* 256px */
-  
+  --header-height: 4rem;
+  /* 64px */
+  --sidebar-width: 16rem;
+  /* 256px */
+
   /* Transitions */
   --transition-fast: 150ms;
   --transition-base: 200ms;
   --transition-slow: 300ms;
-  
+
   /* Legacy variables for compatibility - Always Dark */
   --background: #0a0a0a;
   --foreground: #ffffff;
@@ -65,7 +77,7 @@
   /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  
+
   /* Background Colors */
   --color-bg-primary: var(--bg-primary);
   --color-bg-secondary: var(--bg-secondary);
@@ -74,25 +86,25 @@
   --color-bg-overlay: var(--bg-overlay);
   --color-bg-muted: var(--bg-muted);
   --color-muted: var(--bg-muted);
-  
+
   /* Text Colors */
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-tertiary: var(--text-tertiary);
   --color-text-muted: var(--text-muted);
-  
+
   /* Accent Colors */
   --color-accent-primary: var(--accent-primary);
   --color-accent-secondary: var(--accent-secondary);
   --color-accent-tertiary: var(--accent-tertiary);
   --color-accent-hover: var(--accent-hover);
-  
+
   /* Border Colors */
   --color-border-primary: var(--border-primary);
   --color-border-secondary: var(--border-secondary);
   --color-border-accent: var(--border-accent);
   --color-border-accent-hover: var(--border-accent-hover);
-  
+
   /* Status Colors */
   --color-success: var(--success);
   --color-success-light: var(--success-light);
@@ -100,7 +112,7 @@
   --color-error-light: var(--error-light);
   --color-warning: var(--warning);
   --color-info: var(--info);
-  
+
   /* Legacy compatibility */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -194,6 +206,7 @@ body {
   from {
     height: 0;
   }
+
   to {
     height: var(--radix-accordion-content-height);
   }
@@ -203,6 +216,7 @@ body {
   from {
     height: var(--radix-accordion-content-height);
   }
+
   to {
     height: 0;
   }

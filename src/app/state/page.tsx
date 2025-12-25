@@ -374,8 +374,8 @@ export default function StateDetailsPage() {
                   key={period.value}
                   onClick={() => setSelectedPeriod(period.value as "week" | "month" | "year")}
                   className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${selectedPeriod === period.value
-                    ? "bg-yellow-400 text-black shadow-lg shadow-yellow-400/30"
-                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                      ? "bg-yellow-400 text-black shadow-lg shadow-yellow-400/30"
+                      : "text-gray-400 hover:text-white hover:bg-white/5"
                     }`}
                 >
                   {period.label}
