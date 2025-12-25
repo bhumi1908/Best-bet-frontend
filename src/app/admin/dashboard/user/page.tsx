@@ -525,18 +525,13 @@ export default function UserPage() {
       {/* Toggle Active Status Confirmation Dialog */}
       <Popup
         open={dialogOpen}
-        onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) {
-            formik.resetForm();
-          }
-        }}
+        onOpenChange={setDialogOpen}
         title="Create User"
         description="Fill details to create a new user."
         footer={
           <div className="flex justify-end items-center gap-4 w-full">
             <Button
-            className="!w-fit"
+              className="!w-fit"
               onClick={() => {
                 setDialogOpen(false);
                 formik.resetForm();
@@ -546,7 +541,7 @@ export default function UserPage() {
             </Button>
             <Button
               type="primary"
-            className="!w-fit"
+              className="!w-fit"
               onClick={(e) => {
                 e.stopPropagation();
                 formik.handleSubmit();
@@ -650,130 +645,130 @@ export default function UserPage() {
           </div>
 
           <div className="flex gap-4 w-full">
-          {/* Email */}
-          <div className="space-y-2 w-full">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300">
-              Email
-            </label>
-            <div className="relative">
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                placeholder="Enter your email address"
-                value={formik.values.email}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-              />
-              {formik.touched.email && formik.errors.email && (
-                <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {formik.errors.email}
-                </p>
-              )}
+            {/* Email */}
+            <div className="space-y-2 w-full">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+                Email
+              </label>
+              <div className="relative">
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="Enter your email address"
+                  value={formik.values.email}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                />
+                {formik.touched.email && formik.errors.email && (
+                  <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {formik.errors.email}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Role */}
-          <div className="space-y-2 w-full">
-            <label htmlFor="role" className="block text-sm font-medium text-gray-300">
-              Role
-            </label>
-            <div className="relative">
-              <Select
-                value={formik.values.role}
-                onValueChange={(value) =>
-                  formik.setFieldValue('role', value)
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USER">USER</SelectItem>
-                  <SelectItem value="ADMIN">ADMIN</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Role */}
+            <div className="space-y-2 w-full">
+              <label htmlFor="role" className="block text-sm font-medium text-gray-300">
+                Role
+              </label>
+              <div className="relative">
+                <Select
+                  value={formik.values.role}
+                  onValueChange={(value) =>
+                    formik.setFieldValue('role', value)
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USER">USER</SelectItem>
+                    <SelectItem value="ADMIN">ADMIN</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
-        </div>
 
           <div className="flex gap-4 w-full">
-        {/* Password */}
-        <div className="space-y-2 w-full">
-          <label htmlFor="password" className="block text-sm font-medium text-gray-300">
-            Password
-          </label>
-          <div className="relative">
-            <Input
-              id="password"
-              name="password"
-              type='password'
-              autoComplete="new-password"
-              placeholder="Create a password"
-              value={formik.values.password}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              className="pr-10"
-            />
+            {/* Password */}
+            <div className="space-y-2 w-full">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+                Password
+              </label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type='password'
+                  autoComplete="new-password"
+                  placeholder="Create a password"
+                  value={formik.values.password}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  className="pr-10"
+                />
 
-            {formik.touched.password && formik.errors.password && (
-              <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                {formik.errors.password}
-              </p>
-            )}
+                {formik.touched.password && formik.errors.password && (
+                  <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {formik.errors.password}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-2 w-full">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type='password'
+                  autoComplete="new-password"
+                  placeholder="Re-enter your password"
+                  value={formik.values.confirmPassword}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  className="pr-10"
+                />
+
+                {formik.touched.confirmPassword && formik.errors.confirmPassword && (
+                  <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {formik.errors.confirmPassword}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-
-        {/* Confirm Password */}
-        <div className="space-y-2 w-full">
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300">
-            Confirm Password
-          </label>
-          <div className="relative">
-            <Input
-              id="confirmPassword"
-              name="confirmPassword"
-              type='password'
-              autoComplete="new-password"
-              placeholder="Re-enter your password"
-              value={formik.values.confirmPassword}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              className="pr-10"
-            />
-
-            {formik.touched.confirmPassword && formik.errors.confirmPassword && (
-              <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                {formik.errors.confirmPassword}
-              </p>
-            )}
-          </div>
-        </div>
-        </div>
-      </form>
-    </Popup >
+        </form>
+      </Popup >
     </>
   );
 }
