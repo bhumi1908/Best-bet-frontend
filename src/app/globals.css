@@ -215,3 +215,23 @@ body {
 .animate-accordion-up {
   animation: accordion-up 0.2s ease-out;
 }
+
+.state-dropdown {
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    margin-block: 16px;
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 100px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--border-accent);
+  }
+}

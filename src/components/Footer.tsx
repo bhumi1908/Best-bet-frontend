@@ -11,6 +11,7 @@ export default function Footer() {
 
   const footerLinks = {
     main: [
+      { href: routes.state, label: "State" },
       { href: routes.predictions, label: "Predictions" },
       { href: routes.drawHistory, label: "Draw History" },
       { href: routes.plans, label: "Subscription Plans" },
@@ -18,9 +19,9 @@ export default function Footer() {
     legal: [
       { href: routes.terms, label: "Terms of Service" },
       { href: routes.privacy, label: "Privacy Policy" },
-       { href: routes.about, label: "About Us" },
+      { href: routes.about, label: "About Us" },
       { href: routes.support, label: "Support" },
-    ],  
+    ],
     social: [
       { href: "https://www.facebook.com/", label: "Facebook", icon: Facebook },
       { href: "https://x.com/", label: "Twitter", icon: Twitter },
@@ -33,15 +34,15 @@ export default function Footer() {
       {/* Ultra Premium Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-b from-gray-900/30 via-yellow-900/5 to-black"></div>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-yellow-900/10 via-transparent to-transparent"></div>
-      
+
       {/* Animated Glow Effect */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-yellow-500/5 rounded-full blur-3xl animate-pulse"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-yellow-600/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      
+
       {/* Top Premium Border */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-yellow-400/30 to-transparent"></div>
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-yellow-400/10 to-transparent blur-sm"></div>
-      
+
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
@@ -57,7 +58,7 @@ export default function Footer() {
               draw history and live predictions daily. Join thousands of winners
               who trust Best Bet for their lottery predictions.
             </p>
-            
+
             {/* Premium Contact Info */}
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-gray-400 hover:text-yellow-400 transition-colors group w-fit">

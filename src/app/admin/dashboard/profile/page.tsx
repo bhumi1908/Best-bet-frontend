@@ -3,8 +3,8 @@
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/Dialog";
-import { Pencil, Save, Lock, Shield, CreditCard, Calendar, Mail, User, Settings, Activity, TrendingUp, ShieldCheck, CheckCircle2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Pencil, Save, Lock, Shield, CreditCard, Calendar, Mail, User, Settings, Activity, TrendingUp, ShieldCheck, CheckCircle2, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
@@ -88,6 +88,11 @@ export default function ProfilePage() {
     setTwoFACode("");
   };
 
+  const handleCancel = () => {
+    // setFormValues(profile);
+    setIsEditProfile(false);
+  };
+
   const handleDisable2FA = () => {
     setTwoFAEnabled(false);
     setTwoFACode("");
@@ -145,13 +150,26 @@ export default function ProfilePage() {
                     <p className="text-sm text-text-tertiary">{user?.email}</p>
                   </div>
                 </div>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={isEditProfile ? <Save className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
-                  onClick={handleEditProfile}
-                  className="!w-9 !h-9"
-                />
+                <div className="flex gap-2">
+                  {isEditProfile && (
+                    <Button
+                      type="text"
+                      size="small"
+                      danger
+                      icon={<X className="w-4 h-4" />}
+                      onClick={handleCancel}
+                      className="!w-9 !h-9"
+                    />
+                  )}
+
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={isEditProfile ? <Save className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                    onClick={handleEditProfile}
+                    className="!w-9 !h-9"
+                  />
+                </div>
               </div>
 
               {/* User Details Grid */}
@@ -203,7 +221,12 @@ export default function ProfilePage() {
 
             {/* Recent Activity */}
             <div className="bg-bg-card border border-border-primary rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-text-primary mb-4">Recent Activity</h3>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-text-primary">Recent Activity</h3>
+                <div className="flex items-center gap-2 py-1 px-3 rounded-lg bg-bg-secondary border border-border-accent text-">
+                  <span className="text-xs font-medium text-accent-primary">Coming Soon...</span>
+                </div>
+              </div>
               <div className="space-y-3">
                 {recentActivity.map((activity, index) => (
                   <div
@@ -236,7 +259,12 @@ export default function ProfilePage() {
           <div className="space-y-6">
             {/* Account Actions */}
             <div className="bg-bg-card border border-border-primary rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-text-primary mb-4">Account Actions</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-text-primary">Account Actions</h3>
+                <div className="flex items-center gap-2 py-1 px-3 rounded-lg bg-bg-secondary border border-border-accent text-">
+                  <span className="text-xs font-medium text-accent-primary">Coming Soon...</span>
+                </div>
+              </div>
               <div className="space-y-3">
                 <button
                   onClick={() => setChangePasswordOpen(true)}
@@ -281,7 +309,12 @@ export default function ProfilePage() {
 
             {/* Quick Info */}
             <div className="bg-bg-card border border-border-primary rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-text-primary mb-4">Quick Info</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-text-primary">Quick Info</h3>
+                <div className="flex items-center gap-2 py-1 px-3 rounded-lg bg-bg-secondary border border-border-accent text-">
+                  <span className="text-xs font-medium text-accent-primary">Coming Soon...</span>
+                </div>
+              </div>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -388,7 +421,7 @@ export default function ProfilePage() {
       {/* Subscription Details Dialog */}
       <Dialog open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
         <DialogContent showCloseButton className="sm:max-w-lg">
-          
+
           <DialogHeader>
             <DialogTitle>Subscription Details</DialogTitle>
             <DialogDescription>
@@ -454,7 +487,7 @@ export default function ProfilePage() {
       </Dialog>
 
       {/* 2FA Setup Dialog */}
-      {/* <Dialog open={twoFAOpen} onOpenChange={setTwoFAOpen}>
+      <Dialog open={twoFAOpen} onOpenChange={setTwoFAOpen}>
         <DialogContent showCloseButton className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Two-Factor Authentication</DialogTitle>
@@ -544,7 +577,7 @@ export default function ProfilePage() {
             )}
           </div>
         </DialogContent>
-      </Dialog> */}
+      </Dialog>
     </>
   );
 }

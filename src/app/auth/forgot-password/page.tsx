@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import apiClient from '@/utilities/axios/instance';
 import { toast } from 'react-toastify';
+import { zodFormikValidate } from '@/utilities/zodFormikValidate';
 
 // Form initial values for forgot password
 export const forgotPasswordInitialValues = {
@@ -29,7 +30,8 @@ export default function ForgotPasswordPage() {
 
   const formik = useFormik<ForgotPasswordFormValues>({
     initialValues: forgotPasswordInitialValues,
-    validationSchema: toFormikValidationSchema(forgotPasswordSchema),
+    validate: zodFormikValidate(forgotPasswordSchema),
+
     onSubmit: async (values, { setSubmitting }) => {
 
       try {

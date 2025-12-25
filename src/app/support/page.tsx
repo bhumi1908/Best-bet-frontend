@@ -42,6 +42,7 @@ import { createSupportThunk } from "@/redux/thunk/supportThunk";
 import { useSession } from "next-auth/react";
 import { routes } from "@/utilities/routes";
 import Link from "next/link";
+import { zodFormikValidate } from "@/utilities/zodFormikValidate";
 
 // Support ticket form validation schema
 const supportTicketSchema = z.object({
@@ -76,7 +77,8 @@ export default function SupportPage() {
   // Formik form configuration
   const formik = useFormik<SupportTicketFormValues>({
     initialValues,
-    validationSchema: toFormikValidationSchema(supportTicketSchema),
+    validate: zodFormikValidate(supportTicketSchema),
+
     onSubmit: async (values, { setSubmitting, resetForm }) => {
       try {
         await dispatch(createSupportThunk(values)).unwrap();
@@ -205,6 +207,14 @@ export default function SupportPage() {
     },
   ];
 
+  
+  const handleScrollToSuportTicket = () => {
+    const supportTicketForm = document.getElementById("support-ticket-form");
+    if (supportTicketForm) {
+      supportTicketForm.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <motion.div
       className="min-h-screen bg-black text-white overflow-hidden"
@@ -326,10 +336,10 @@ export default function SupportPage() {
                     VIP members: Call us for immediate assistance
                   </p>
                   <a
-                    href="tel:+1-800-BESTBET"
+                    href="tel:+15123619158"
                     className="text-yellow-400 hover:text-yellow-300 font-semibold text-sm flex items-center gap-2 transition-colors"
                   >
-                    1-800-BESTBET
+                    +1 (512) 361-9158
                     <ArrowRight className="w-4 h-4" />
                   </a>
                 </div>
@@ -366,7 +376,7 @@ export default function SupportPage() {
             </motion.div>
 
             {/* Response Time Indicators */}
-            <motion.div
+            {/* <motion.div
               className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 mb-16"
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
@@ -405,12 +415,24 @@ export default function SupportPage() {
                   </div>
                 </div>
               </div>
+            </motion.div> */}
+
+              <motion.div
+              className="flex items-center justify-center gap-3 mb-6"
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+            >
+
+              <Button onClick={handleScrollToSuportTicket} type="text" className="flex items-center mb-6 !w-fit text-lg rounded-lg font-semibold !px-2 py-2 h-fit animate-bounce">
+                <ChevronDown className="w-10 h-10 text-yellow-400" />
+              </Button>
             </motion.div>
           </div>
         </section>
 
         {/* ==================== SUPPORT TICKET FORM SECTION ==================== */}
-        <section className="relative px-4 py-24 bg-gradient-to-b from-gray-900/15 via-gray-900/10 to-gray-900/5">
+        <section id="support-ticket-form"  className="relative px-4 py-24 bg-gradient-to-b from-gray-900/15 via-gray-900/10 to-gray-900/5">
           <div className="max-w-4xl mx-auto">
             {/* Section Header */}
             <motion.div
@@ -768,7 +790,7 @@ export default function SupportPage() {
               >
                 <Link
                   href={isAuthenticated
-                    ? routes.dashboard
+                    ? routes.home
                     : routes.auth.register}
                   className="px-10 py-5 bg-white/10 backdrop-blur-md border-2 border-white/20 text-white font-bold text-xl rounded-xl hover:bg-white/20 hover:border-yellow-400/50 transition-all duration-300"
                 >

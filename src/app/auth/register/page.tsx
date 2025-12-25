@@ -19,6 +19,7 @@ import { UserRegister } from '@/types/auth';
 import { useRouter } from 'next/navigation';
 import apiClient from '@/utilities/axios/instance';
 import { toast } from 'react-toastify';
+import { zodFormikValidate } from '@/utilities/zodFormikValidate';
 
 
 // Form user Register initialValues
@@ -39,7 +40,8 @@ export default function RegisterPage() {
   // Formik form configuration
   const formik = useFormik<RegisterFormValues>({
     initialValues: registerInitialValues,
-    validationSchema: toFormikValidationSchema(registerSchema),
+    validate: zodFormikValidate(registerSchema),
+
     onSubmit: async (registerDetails: UserRegister, { setSubmitting }) => {
       try {
         const res = await apiClient.post(routes.api.auth.register, registerDetails);
@@ -273,9 +275,25 @@ export default function RegisterPage() {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                 />
-                <label htmlFor="terms" className="text-xs sm:text-sm text-gray-300">
-                  I agree to the{' '}
-                  <span className="text-yellow-400">Terms &amp; Conditions</span>
+                 <label htmlFor="terms" className="text-xs sm:text-sm text-gray-300">
+                  I have read and agree to the{' '}
+                  <Link 
+                    href={routes.terms} 
+                    className="text-yellow-400 hover:text-yellow-300 underline transition-colors"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Terms of Service
+                  </Link>
+                  {' '}and{' '}
+                  <Link 
+                    href={routes.privacy} 
+                    className="text-yellow-400 hover:text-yellow-300 underline transition-colors"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Privacy Policy
+                  </Link>
                 </label>
               </div>
               {formik.touched.terms && formik.errors.terms && (

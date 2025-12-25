@@ -18,6 +18,7 @@ import { LoginCredentials } from '@/types/auth';
 import { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
 import { toast } from 'react-toastify';
+import { zodFormikValidate } from '@/utilities/zodFormikValidate';
 
 // Form user login initialValues
 export const loginInitialValues = {
@@ -33,7 +34,8 @@ export default function LoginPage() {
   // Formik form configuration
   const formik = useFormik<LoginFormValues>({
     initialValues: loginInitialValues,
-    validationSchema: toFormikValidationSchema(loginSchema),
+    validate: zodFormikValidate(loginSchema),
+
     onSubmit: async (loginDetails: LoginCredentials, { setSubmitting }) => {
       try {
         const res = await signIn('credentials', {

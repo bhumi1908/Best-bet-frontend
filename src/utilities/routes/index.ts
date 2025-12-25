@@ -53,7 +53,11 @@ export const routes = {
       create: '/support/create'
     },
     profile: {
-      editAdmin: '/admin/profile'
+      editAdmin: '/admin/profile',
+      changePasswordAdmin: '/admin/profile/change-password'
+    },
+    subscriptionPlan: {
+      getAll: '/subscription-plan'
     }
   },
 } as const;

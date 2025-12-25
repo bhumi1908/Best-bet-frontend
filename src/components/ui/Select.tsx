@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +11,7 @@ interface SelectContextValue {
   open: boolean;
   setOpen: (open: boolean) => void;
   triggerRef: React.RefObject<HTMLButtonElement | null>;
+  contentRef: React.RefObject<HTMLDivElement | null>;
 }
 
 const SelectContext = React.createContext<SelectContextValue | null>(null);
@@ -32,14 +34,17 @@ interface SelectProps {
 function Select({ value, onValueChange, children, disabled = false }: SelectProps) {
   const [open, setOpen] = React.useState(false);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (triggerRef.current && !triggerRef.current.contains(event.target as Node)) {
-        const content = document.querySelector('[data-slot="select-content"]');
-        if (content && !content.contains(event.target as Node)) {
-          setOpen(false);
-        }
+      if (
+        triggerRef.current &&
+        !triggerRef.current.contains(event.target as Node) &&
+        contentRef.current &&
+        !contentRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
       }
     };
 
@@ -50,7 +55,7 @@ function Select({ value, onValueChange, children, disabled = false }: SelectProp
   }, [open]);
 
   return (
-    <SelectContext.Provider value={{ value, onValueChange, open, setOpen, triggerRef }}>
+    <SelectContext.Provider value={{ value, onValueChange, open, setOpen, triggerRef, contentRef }}>
       <div className="relative">{children}</div>
     </SelectContext.Provider>
   );
@@ -107,6 +112,13 @@ function SelectValue({ placeholder, children }: SelectValueProps) {
   return <>{children || value || placeholder || "Select..."}</>;
 }
 
+interface DropdownPosition {
+  top: number;
+  left: number;
+  width: number;
+  placement: "bottom-left" | "bottom-right" | "top-left" | "top-right";
+}
+
 interface SelectContentProps {
   children: React.ReactNode;
   className?: string;
@@ -120,61 +132,157 @@ function SelectContent({
   position = "popper",
   align = "start",
 }: SelectContentProps) {
-  const { open, setOpen, triggerRef } = useSelectContext();
-  const contentRef = React.useRef<HTMLDivElement>(null);
-  const [positionStyle, setPositionStyle] = React.useState<React.CSSProperties>({});
+  const { open, setOpen, triggerRef, contentRef } = useSelectContext();
+  const [mounted, setMounted] = React.useState(false);
+  const [dropdownPosition, setDropdownPosition] = React.useState<DropdownPosition | null>(null);
 
+  // Mount check for portal
   React.useEffect(() => {
-    if (open && triggerRef.current && contentRef.current) {
-      const triggerRect = triggerRef.current.getBoundingClientRect();
-      const contentRect = contentRef.current.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const viewportWidth = window.innerWidth;
+    setMounted(true);
+  }, []);
 
-      let top = triggerRect.bottom + 4;
-      let left = triggerRect.left;
+  // Calculate dropdown position with smart positioning logic
+  const calculatePosition = React.useCallback(() => {
+    if (!triggerRef.current) return;
 
-      // Adjust if content would overflow bottom
-      if (top + contentRect.height > viewportHeight) {
-        top = triggerRect.top - contentRect.height - 4;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const scrollY = window.scrollY;
+    const scrollX = window.scrollX;
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
+    // Always try to get actual height from DOM first
+    let dropdownHeight = 200; // Default fallback
+    if (contentRef.current) {
+      const currentHeight = contentRef.current.offsetHeight;
+      if (currentHeight > 0) {
+        dropdownHeight = currentHeight;
       }
-
-      // Adjust if content would overflow right
-      if (left + contentRect.width > viewportWidth) {
-        left = viewportWidth - contentRect.width - 8;
-      }
-
-      // Adjust if content would overflow left
-      if (left < 8) {
-        left = 8;
-      }
-      setPositionStyle({
-        position: "absolute",
-        top: "100%",
-        left: 0,
-        marginTop: "4px",
-        width: "100%",
-        zIndex: 50,
-      });
-
     }
-  }, [open, triggerRef]);
 
-  if (!open) return null;
+    const dropdownWidth = rect.width; // Match trigger width
+    const gap = 8; // 8px gap between trigger and dropdown
 
-  return (
+    // Calculate available space
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    // Determine vertical placement (top or bottom)
+    // Prefer bottom placement when there's sufficient space
+    const minRequiredSpace = 100; // Minimum space needed (reduced for better UX)
+    const canPlaceBelow = spaceBelow >= minRequiredSpace;
+    const shouldPlaceAbove = !canPlaceBelow && spaceAbove > spaceBelow;
+
+    // Determine horizontal placement
+    let placement: "bottom-left" | "bottom-right" | "top-left" | "top-right";
+    let left: number;
+    let width: number;
+
+    // Calculate left position - align with trigger's left edge
+    left = rect.left + scrollX;
+    width = dropdownWidth;
+
+    // Ensure dropdown doesn't overflow viewport horizontally
+    const rightEdge = left + width;
+    if (rightEdge > viewportWidth) {
+      // Shift left to fit in viewport
+      left = Math.max(8, viewportWidth - width - 8 + scrollX);
+    }
+
+    // Ensure dropdown doesn't overflow viewport on the left
+    if (left < scrollX + 8) {
+      left = scrollX + 8;
+    }
+
+    // Set placement based on vertical position
+    if (shouldPlaceAbove) {
+      placement = "top-left";
+    } else {
+      placement = "bottom-left";
+    }
+
+    // Calculate top position
+    // When opening upward: position dropdown's bottom edge 8px above trigger's top edge
+    // When opening downward: position dropdown's top edge 8px below trigger's bottom edge
+    const top = shouldPlaceAbove
+      ? rect.top + scrollY - dropdownHeight - gap
+      : rect.bottom + scrollY + gap;
+
+    setDropdownPosition({
+      top,
+      left,
+      width,
+      placement,
+    });
+  }, [triggerRef, contentRef]);
+
+  // Update position when opening or window resizes
+  React.useEffect(() => {
+    if (open) {
+      // Calculate position immediately and multiple times to catch height changes
+      calculatePosition();
+
+      // Recalculate after a short delay to catch any DOM updates
+      const timeoutId1 = setTimeout(() => {
+        calculatePosition();
+      }, 0);
+
+      const timeoutId2 = setTimeout(() => {
+        calculatePosition();
+      }, 10);
+
+      const handleResize = () => {
+        calculatePosition();
+      };
+
+      const handleScroll = () => {
+        calculatePosition();
+      };
+
+      window.addEventListener("resize", handleResize);
+      window.addEventListener("scroll", handleScroll, true);
+
+      return () => {
+        clearTimeout(timeoutId1);
+        clearTimeout(timeoutId2);
+        window.removeEventListener("resize", handleResize);
+        window.removeEventListener("scroll", handleScroll, true);
+      };
+    } else {
+      setDropdownPosition(null);
+    }
+  }, [open, calculatePosition]);
+
+  if (!open || !mounted || typeof document === "undefined") return null;
+
+  // If no position yet, render off-screen to measure
+  const style = dropdownPosition
+    ? {
+      top: `${dropdownPosition.top}px`,
+      left: `${dropdownPosition.left}px`,
+      width: `${dropdownPosition.width}px`,
+    }
+    : {
+      // Render off-screen for initial measurement
+      top: "-9999px",
+      left: "-9999px",
+      visibility: "hidden" as const,
+    };
+
+  return createPortal(
     <div
       ref={contentRef}
       data-slot="select-content"
       className={cn(
-        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border border-border-primary bg-bg-card text-text-primary shadow-lg",
-        "animate-in fade-in-0 zoom-in-95",
+        "fixed z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border border-border-primary bg-bg-card text-text-primary shadow-lg",
+        dropdownPosition && "animate-in fade-in-0 zoom-in-95",
         className
       )}
-      style={positionStyle}
+      style={style}
     >
-      <div className="p-1">{children}</div>
-    </div>
+      <div className="p-1 max-h-96 overflow-y-auto">{children}</div>
+    </div>,
+    document.body
   );
 }
 
