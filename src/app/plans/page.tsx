@@ -17,6 +17,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/redux/store/hooks";
 import { getAllSubscriptionPlansThunk } from "@/redux/thunk/subscriptionPlanThunk";
 import PricingCardSkeleton from "@/components/PricingCardSkeleton";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type PlanTier = 1 | 2 | 3;
 
@@ -383,35 +384,54 @@ export default function PlansPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {allFeatures.map((feature, featureIndex) => (
-                      <motion.tr
-                        key={featureIndex}
-                        className="border-b border-white/5 hover:bg-white/5 transition-colors"
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: featureIndex * 0.05 }}
-                      >
-                        <td className="p-6 text-gray-300">{feature}</td>
-                        {mappedPlans.map((plan, planIndex) => {
-                          const isAvailable = planFeatureMap.some(
-                            (p) =>
-                              p.tier <= plan.tier &&
-                              p.featureSet.has(feature)
-                          );
-
-                          return (
-                            <td key={planIndex} className="p-6 text-center">
-                              {isAvailable ? (
-                                <CheckCircle2 className="w-6 h-6 text-yellow-400 mx-auto" />
-                              ) : (
-                                <div className="w-6 h-6 rounded-full border-2 border-gray-600 mx-auto" />
-                              )}
+                    {isLoading ? (<>
+                      {Array.from({ length: 11 }).map((_, rowIndex) => (
+                        <tr
+                          key={rowIndex}
+                          className="border-b border-white/5"
+                        >
+                          <td className="p-6">
+                            <Skeleton className="h-5 w-48 bg-white/10" />
+                          </td>
+                          {Array.from({ length: 3 }).map((_, colIndex) => (
+                            <td key={colIndex} className="p-6 text-center">
+                              <Skeleton className="h-6 w-6 rounded-full mx-auto bg-white/10" />
                             </td>
-                          );
-                        })}
-                      </motion.tr>
-                    ))}
+                          ))}
+                        </tr>
+                      ))}
+                    </>) : (
+
+                      allFeatures.map((feature, featureIndex) => (
+                        <motion.tr
+                          key={featureIndex}
+                          className="border-b border-white/5 hover:bg-white/5 transition-colors"
+                          initial={{ opacity: 0 }}
+                          whileInView={{ opacity: 1 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: featureIndex * 0.05 }}
+                        >
+                          <td className="p-6 text-gray-300">{feature}</td>
+                          {mappedPlans.map((plan, planIndex) => {
+                            const isAvailable = planFeatureMap.some(
+                              (p) =>
+                                p.tier <= plan.tier &&
+                                p.featureSet.has(feature)
+                            );
+
+                            return (
+                              <td key={planIndex} className="p-6 text-center">
+                                {isAvailable ? (
+                                  <CheckCircle2 className="w-6 h-6 text-yellow-400 mx-auto" />
+                                ) : (
+                                  <div className="w-6 h-6 rounded-full border-2 border-gray-600 mx-auto" />
+                                )}
+                              </td>
+                            );
+                          })}
+                        </motion.tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
