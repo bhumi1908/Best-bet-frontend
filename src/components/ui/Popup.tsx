@@ -37,11 +37,12 @@ export function Popup({
     bodyClassName,
     footerClassName,
 }: PopupProps) {
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 className={cn(
-                    "flex flex-col max-h-[80vh] p-0 !w-3xl !max-w-none",
+                    "flex flex-col max-h-[80vh] p-0 !w-[80vw] lg:!w-3xl !max-w-none",
                     contentClassName
                 )}
             >

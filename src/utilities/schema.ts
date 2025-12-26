@@ -79,26 +79,27 @@ export const resetPasswordSchema = z
     path: ['confirmPassword'],
   });
 
-export const changePasswordSchema = z
+// Create subscription plan schema
+export const createSubscriptionPlanSchema = z
   .object({
-    currentPassword: z
-      .string()
-      .nonempty('Current password is required'),
-
-    newPassword: z
-      .string()
-      .nonempty('New password is required')
-      .min(8, 'New password must be at least 8 characters long')
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/,
-        'New password must include uppercase, lowercase, number, and special character'
-      ),
-
-    confirmPassword: z
-      .string()
-      .nonempty('Please confirm your new password'),
+    name: z.string().min(1, "Plan name is required"),
+    description: z.string().min(1, "Description is required"),
+   price: z
+      .number({ invalid_type_error: "Price is required" })
+      .refine((val) => val > 0, "Price must be greater than 0"),
+    duration: z.enum(["monthly", "yearly"]),
+    features: z.array(
+      z.object({
+        name: z.string().min(1, "Feature is required"),
+      })
+    ),
+    isActive: z.boolean(),
+    popular: z.boolean(),
   })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
+  .refine((data) => data.features.length > 0, {
+    path: ["features"],
+    message: "At least one feature is required",
   });
+
+
+

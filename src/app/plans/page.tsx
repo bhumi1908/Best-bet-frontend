@@ -81,7 +81,7 @@ export default function PlansPage() {
         description: plan.description ?? '',
         price: `$${plan.price.toFixed(2)}`,
         period,
-        popular: plan.isRecommended,
+        popular: plan.isRecommended ?? false,
         tier: PLAN_TIER_MAP[plan.name],
         cta: uiConfig?.cta ?? 'Get Started',
         icon: uiConfig?.icon ?? <Target className="w-6 h-6" />,

@@ -201,7 +201,7 @@ export default function UserPage() {
 
       {/* Search Bar */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative max-w-md">
+        <div className="relative max-w-md w-full">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary z-10" />
           <Input
             type="text"
@@ -529,9 +529,9 @@ export default function UserPage() {
         title="Create User"
         description="Fill details to create a new user."
         footer={
-          <div className="flex justify-end items-center gap-4 w-full">
+          <div className="flex flex-col-reverse sm:flex-row justify-end items-center gap-3 w-full">
             <Button
-              className="!w-fit"
+              className="!w-full sm:!w-fit"
               onClick={() => {
                 setDialogOpen(false);
                 formik.resetForm();
@@ -541,7 +541,7 @@ export default function UserPage() {
             </Button>
             <Button
               type="primary"
-              className="!w-fit"
+              className="!w-full sm:!w-fit"
               onClick={(e) => {
                 e.stopPropagation();
                 formik.handleSubmit();
@@ -581,7 +581,7 @@ export default function UserPage() {
       >
         <form className="space-y-6" noValidate onSubmit={(e) => e.preventDefault()}>
           {/* First Name */}
-          <div className="flex gap-4 w-full">
+          <div className="flex flex-col md:flex-row gap-4 w-full">
             <div className="space-y-2  w-full">
               <label htmlFor="firstName" className="block text-sm font-medium text-gray-300">
                 First Name
@@ -644,7 +644,7 @@ export default function UserPage() {
             </div>
           </div>
 
-          <div className="flex gap-4 w-full">
+          <div className="flex flex-col md:flex-row gap-4 w-full">
             {/* Email */}
             <div className="space-y-2 w-full">
               <label htmlFor="email" className="block text-sm font-medium text-gray-300">
@@ -700,7 +700,7 @@ export default function UserPage() {
             </div>
           </div>
 
-          <div className="flex gap-4 w-full">
+          <div className="flex flex-col md:flex-row gap-4 w-full">
             {/* Password */}
             <div className="space-y-2 w-full">
               <label htmlFor="password" className="block text-sm font-medium text-gray-300">

@@ -8,29 +8,41 @@ import { useState, useEffect, useRef } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
+import { useAppDispatch, useAppSelector } from "@/redux/store/hooks";
+import { changeAdminPasswordThunk, editAdminProfileThunk } from "@/redux/thunk/profileThunk";
+import { toast } from "react-toastify";
+import { useFormik } from "formik";
+import { toFormikValidationSchema } from "zod-formik-adapter";
+import { changePasswordSchema } from "@/utilities/schema";
+import { clearError, clearSuccessMessage } from "@/redux/slice/profileSlice";
 
 export default function ProfilePage() {
+  const { data: session, update } = useSession();
+  const user = session?.user
+
+  const firstNameRef = useRef<HTMLInputElement>(null);
+  const lastNameRef = useRef<HTMLInputElement>(null);
   const [isEditProfile, setIsEditProfile] = useState(false);
   const [loading, setLoading] = useState(true);
-     const { data: session } = useSession();
-    const user =session?.user
-  const [firstName, setFirstName] = useState(user?.firstName || "");
-  const [lastName, setLastName] = useState(user?.lastName || "");
-
-  // Dialog states
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   const [twoFAOpen, setTwoFAOpen] = useState(false);
-
-  // Change Password form state
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-
   // 2FA state
   const [twoFACode, setTwoFACode] = useState("");
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+  const [profile, setProfile] = useState({
+    firstName: "",
+    lastName: "",
+  });
+  const [formValues, setFormValues] = useState({
+    firstName: "",
+    lastName: "",
+  });
+
+  const dispatch = useAppDispatch();
+  const { isLoading, error, successConfirmPassMessage } = useAppSelector(
+    (state) => state.profile
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -38,6 +50,25 @@ export default function ProfilePage() {
     }, 500);
     return () => clearTimeout(timer);
   }, []);
+
+  const formik = useFormik({
+    initialValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+    validationSchema: toFormikValidationSchema(changePasswordSchema),
+    onSubmit: async (values) => {
+      try {
+        await dispatch(changeAdminPasswordThunk(values)).unwrap();
+        formik.resetForm();
+        setChangePasswordOpen(false);
+      } catch {
+        toast.error(error, { theme: "dark" });
+      }
+    },
+  });
+
 
   const getUserName = () => {
     if (user?.firstName && user?.lastName) {
@@ -53,31 +84,6 @@ export default function ProfilePage() {
     return user?.email?.[0]?.toUpperCase() || "U";
   };
 
-  const handleEditProfile = () => {
-    setIsEditProfile(!isEditProfile);
-  };
-
-  const handleChangePassword = () => {
-    setPasswordError("");
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError("All fields are required");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPasswordError("New passwords do not match");
-      return;
-    }
-    if (newPassword.length < 8) {
-      setPasswordError("Password must be at least 8 characters");
-      return;
-    }
-    // Handle password change logic here
-    setChangePasswordOpen(false);
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-  };
-
   const handleEnable2FA = () => {
     if (twoFACode.length !== 6) {
       return;
@@ -89,7 +95,7 @@ export default function ProfilePage() {
   };
 
   const handleCancel = () => {
-    // setFormValues(profile);
+    setFormValues(profile);
     setIsEditProfile(false);
   };
 
@@ -98,13 +104,66 @@ export default function ProfilePage() {
     setTwoFACode("");
   };
 
-  // Dummy data for stats and activity
-  const stats = [
-    { label: "Total Logins", value: "1,247", icon: Activity, change: "+12%" },
-    { label: "Active Sessions", value: "3", icon: Shield, change: "Current" },
-    { label: "Last Login", value: "2 hours ago", icon: Calendar, change: "Today" },
-    { label: "Account Age", value: "2.5 years", icon: TrendingUp, change: "Active" },
-  ];
+
+  const handleEditProfile = async () => {
+    setIsEditProfile(!isEditProfile)
+    if (isEditProfile) {
+
+      const isDirty =
+        formValues.firstName.trim() !== profile.firstName.trim() ||
+        formValues.lastName.trim() !== profile.lastName.trim();
+
+      if (!isDirty) {
+        setIsEditProfile(false);
+        toast.info("No changes to save");
+        return;
+      }
+
+      try {
+        const updatedUser = await dispatch(
+          editAdminProfileThunk({
+            id: session!.user.id,
+            firstName: formValues.firstName.trim(),
+            lastName: formValues.lastName.trim(),
+          })
+        ).unwrap();
+
+        setProfile({
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+        });
+
+        update({
+          user: {
+            ...session?.user,
+            firstName: updatedUser.firstName,
+            lastName: updatedUser.lastName,
+          },
+        });
+
+        setIsEditProfile(false);
+        toast.success("Profile updated successfully", {
+          theme: "dark",
+        });
+      } catch (err: any) {
+        console.error("Failed to update profile:", err);
+        toast.error(err?.message || "Failed to update profile", {
+          theme: "dark",
+        });
+      }
+    } else {
+      setIsEditProfile(true);
+    }
+  };
+
+  const handleChange =
+    (field: keyof typeof formValues) =>
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormValues(prev => ({
+          ...prev,
+          [field]: e.target.value,
+        }));
+      };
 
   const recentActivity = [
     { action: "Password changed", time: "2 hours ago", type: "security" },
@@ -112,6 +171,30 @@ export default function ProfilePage() {
     { action: "Login from new device", time: "3 days ago", type: "security" },
     { action: "Email verified", time: "1 week ago", type: "profile" },
   ];
+
+  useEffect(() => {
+    if (session?.user) {
+      const data = {
+        firstName: session.user.firstName,
+        lastName: session.user.lastName,
+      };
+
+      setProfile(data);
+      setFormValues(data);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (successConfirmPassMessage) {
+      toast.success(successConfirmPassMessage, { theme: "dark" });
+      dispatch(clearSuccessMessage());
+    }
+    if (error) {
+      toast.error(error, { theme: "dark" });
+      dispatch(clearError());
+    }
+  }, [successConfirmPassMessage, error, dispatch]);
+
 
   return (
     <>
@@ -178,24 +261,26 @@ export default function ProfilePage() {
                   <label className="text-xs text-text-tertiary mb-1.5 block font-medium">First Name</label>
                   {isEditProfile ? (
                     <Input
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
+                      defaultValue={user?.firstName}
+                      ref={firstNameRef}
                       size="middle"
+                      onChange={handleChange("firstName")}
                     />
                   ) : (
-                    <p className="text-sm text-text-primary">{firstName || "N/A"}</p>
+                    <p className="text-sm text-text-primary">{user.firstName || "N/A"}</p>
                   )}
                 </div>
                 <div>
                   <label className="text-xs text-text-tertiary mb-1.5 block font-medium">Last Name</label>
                   {isEditProfile ? (
                     <Input
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
+                      defaultValue={user?.lastName}
+                      ref={lastNameRef}
                       size="middle"
+                      onChange={handleChange("lastName")}
                     />
                   ) : (
-                    <p className="text-sm text-text-primary">{lastName || "N/A"}</p>
+                    <p className="text-sm text-text-primary">{user.lastName || "N/A"}</p>
                   )}
                 </div>
                 <div>
@@ -358,7 +443,7 @@ export default function ProfilePage() {
               Update your account password. Make sure to use a strong password.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <form onSubmit={formik.handleSubmit} className="space-y-4">
             <div>
               <label className="text-sm font-medium text-text-primary mb-2 block">
                 Current Password
@@ -366,11 +451,26 @@ export default function ProfilePage() {
               <div className="relative">
                 <Input
                   type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  name="currentPassword"
+                  value={formik.values.currentPassword}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   placeholder="Enter current password"
-                  className="pr-10"
                 />
+
+                {formik.touched.currentPassword && formik.errors.currentPassword && (
+                  <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {formik.errors.currentPassword}
+                  </p>
+                )}
+
               </div>
             </div>
             <div>
@@ -380,11 +480,26 @@ export default function ProfilePage() {
               <div className="relative">
                 <Input
                   type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
+                  name="newPassword"
+                  value={formik.values.newPassword}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   placeholder="Enter new password"
-                  className="pr-10"
                 />
+
+                {formik.touched.newPassword && formik.errors.newPassword && (
+                  <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {formik.errors.newPassword}
+                  </p>
+                )}
+
               </div>
             </div>
             <div>
@@ -394,27 +509,44 @@ export default function ProfilePage() {
               <div className="relative">
                 <Input
                   type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  name="confirmPassword"
+                  value={formik.values.confirmPassword}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   placeholder="Confirm new password"
-                  className="pr-10"
                 />
+
+                {formik.touched.confirmPassword && formik.errors.confirmPassword && (
+                  <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {formik.errors.confirmPassword}
+                  </p>
+                )}
+
               </div>
             </div>
-            {passwordError && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                <p className="text-sm text-red-400">{passwordError}</p>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button type="text" onClick={() => setChangePasswordOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="primary" onClick={handleChangePassword}>
-              Change Password
-            </Button>
-          </DialogFooter>
+
+            <DialogFooter className="flex justify-end">
+              <Button type="text" className="!w-fit border border-error" danger onClick={() => { formik.resetForm(), setChangePasswordOpen(false) }}>
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                className="!w-fit"
+
+                disabled={isLoading}
+              >
+                {isLoading ? "Updating..." : "Change Password"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
