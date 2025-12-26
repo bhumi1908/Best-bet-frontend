@@ -59,9 +59,9 @@ export default function Header() {
   const navLinks = [
     { href: routes.state, label: "State Performance" },
     // { href: routes.predictions, label: "Predictions", requiresAuth: true, },
-    { href: routes.about, label: "About Us" },
     { href: routes.drawHistory, label: "Draw History" },
     { href: routes.plans, label: "Subscription Plans" },
+    { href: routes.about, label: "About Us" },
   ];
 
   const isActive = (href: string) => pathname === href;
