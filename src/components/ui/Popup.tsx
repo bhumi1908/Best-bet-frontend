@@ -37,12 +37,11 @@ export function Popup({
     bodyClassName,
     footerClassName,
 }: PopupProps) {
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 className={cn(
-                    "flex flex-col max-h-[80vh] p-0 !w-[80vw] lg:!w-3xl !max-w-none",
+                    "flex flex-col max-h-[80vh] p-0 !w-[80vw] lg:!w-3xl !max-w-none bg-black border-white/10",
                     contentClassName
                 )}
             >
@@ -58,10 +57,10 @@ export function Popup({
                 </button>
 
                 {/* Header */}
-                <div className={cn("flex-shrink-0", headerClassName)}>
+                <div className={cn("flex-shrink-0 border-b border-white/10", headerClassName)}>
                     <DialogHeader>
-                        <DialogTitle>{title}</DialogTitle>
-                        {description && <DialogDescription>{description}</DialogDescription>}
+                        <DialogTitle className="text-white text-2xl font-bold">{title}</DialogTitle>
+                        {description && <DialogDescription className="text-gray-400">{description}</DialogDescription>}
                     </DialogHeader>
                 </div>
 

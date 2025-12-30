@@ -29,9 +29,10 @@ interface SelectProps {
   onValueChange: (value: string) => void;
   children: React.ReactNode;
   disabled?: boolean;
+  className?: string;
 }
 
-function Select({ value, onValueChange, children, disabled = false }: SelectProps) {
+function Select({ value, onValueChange, children, disabled = false, className }: SelectProps) {
   const [open, setOpen] = React.useState(false);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const contentRef = React.useRef<HTMLDivElement>(null);
@@ -56,7 +57,7 @@ function Select({ value, onValueChange, children, disabled = false }: SelectProp
 
   return (
     <SelectContext.Provider value={{ value, onValueChange, open, setOpen, triggerRef, contentRef }}>
-      <div className="relative">{children}</div>
+      <div className={cn("relative", className)}>{children}</div>
     </SelectContext.Provider>
   );
 }
@@ -135,6 +136,8 @@ function SelectContent({
   const { open, setOpen, triggerRef, contentRef } = useSelectContext();
   const [mounted, setMounted] = React.useState(false);
   const [dropdownPosition, setDropdownPosition] = React.useState<DropdownPosition | null>(null);
+  const rafRef = React.useRef<number | null>(null);
+  const isOpenRef = React.useRef(open);
 
   // Mount check for portal
   React.useEffect(() => {
@@ -145,9 +148,9 @@ function SelectContent({
   const calculatePosition = React.useCallback(() => {
     if (!triggerRef.current) return;
 
+    // getBoundingClientRect() returns viewport-relative coordinates
+    // Since we use 'fixed' positioning, we need viewport coordinates (not document coordinates)
     const rect = triggerRef.current.getBoundingClientRect();
-    const scrollY = window.scrollY;
-    const scrollX = window.scrollX;
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
 
@@ -179,19 +182,20 @@ function SelectContent({
     let width: number;
 
     // Calculate left position - align with trigger's left edge
-    left = rect.left + scrollX;
+    // Use viewport coordinates directly (no scroll offset needed for fixed positioning)
+    left = rect.left;
     width = dropdownWidth;
 
     // Ensure dropdown doesn't overflow viewport horizontally
     const rightEdge = left + width;
     if (rightEdge > viewportWidth) {
       // Shift left to fit in viewport
-      left = Math.max(8, viewportWidth - width - 8 + scrollX);
+      left = Math.max(8, viewportWidth - width - 8);
     }
 
     // Ensure dropdown doesn't overflow viewport on the left
-    if (left < scrollX + 8) {
-      left = scrollX + 8;
+    if (left < 8) {
+      left = 8;
     }
 
     // Set placement based on vertical position
@@ -201,12 +205,12 @@ function SelectContent({
       placement = "bottom-left";
     }
 
-    // Calculate top position
+    // Calculate top position using viewport coordinates
     // When opening upward: position dropdown's bottom edge 8px above trigger's top edge
     // When opening downward: position dropdown's top edge 8px below trigger's bottom edge
     const top = shouldPlaceAbove
-      ? rect.top + scrollY - dropdownHeight - gap
-      : rect.bottom + scrollY + gap;
+      ? rect.top - dropdownHeight - gap
+      : rect.bottom + gap;
 
     setDropdownPosition({
       top,
@@ -216,42 +220,72 @@ function SelectContent({
     });
   }, [triggerRef, contentRef]);
 
-  // Update position when opening or window resizes
+  // Update isOpenRef when open changes
   React.useEffect(() => {
-    if (open) {
-      // Calculate position immediately and multiple times to catch height changes
-      calculatePosition();
+    isOpenRef.current = open;
+  }, [open]);
 
-      // Recalculate after a short delay to catch any DOM updates
-      const timeoutId1 = setTimeout(() => {
-        calculatePosition();
-      }, 0);
-
-      const timeoutId2 = setTimeout(() => {
-        calculatePosition();
-      }, 10);
-
-      const handleResize = () => {
-        calculatePosition();
-      };
-
-      const handleScroll = () => {
-        calculatePosition();
-      };
-
-      window.addEventListener("resize", handleResize);
-      window.addEventListener("scroll", handleScroll, true);
-
-      return () => {
-        clearTimeout(timeoutId1);
-        clearTimeout(timeoutId2);
-        window.removeEventListener("resize", handleResize);
-        window.removeEventListener("scroll", handleScroll, true);
-      };
-    } else {
+  // Update position when opening, scrolling, or window resizes
+  React.useEffect(() => {
+    if (!open) {
       setDropdownPosition(null);
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      return;
     }
-  }, [open, calculatePosition]);
+
+    // Calculate position immediately and multiple times to catch height changes
+    calculatePosition();
+
+    // Recalculate after a short delay to catch any DOM updates
+    const timeoutId1 = setTimeout(() => {
+      calculatePosition();
+    }, 0);
+
+    const timeoutId2 = setTimeout(() => {
+      calculatePosition();
+    }, 10);
+
+    // Use requestAnimationFrame for continuous position tracking during scroll
+    const updatePosition = () => {
+      if (isOpenRef.current && triggerRef.current) {
+        calculatePosition();
+        rafRef.current = requestAnimationFrame(updatePosition);
+      } else {
+        rafRef.current = null;
+      }
+    };
+
+    // Start continuous tracking
+    rafRef.current = requestAnimationFrame(updatePosition);
+
+    const handleResize = () => {
+      calculatePosition();
+    };
+
+    const handleScroll = () => {
+      calculatePosition();
+    };
+
+    // Listen to scroll events on window and all scrollable containers
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("scroll", handleScroll, true);
+    document.addEventListener("scroll", handleScroll, true);
+
+    return () => {
+      clearTimeout(timeoutId1);
+      clearTimeout(timeoutId2);
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("scroll", handleScroll, true);
+      document.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [open, calculatePosition, triggerRef]);
 
   if (!open || !mounted || typeof document === "undefined") return null;
 

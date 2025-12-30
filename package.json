@@ -12,6 +12,7 @@
     "@reduxjs/toolkit": "^2.11.1",
     "axios": "^1.7.9",
     "cookies-next": "^6.1.1",
+    "date-fns": "^4.1.0",
     "formik": "^2.4.6",
     "framer-motion": "^12.23.26",
     "jsonwebtoken": "^9.0.3",

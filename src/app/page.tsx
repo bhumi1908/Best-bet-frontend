@@ -243,10 +243,8 @@ export default function LandingPage() {
   }
 
   useEffect(() => {
-    if (!plans.length) {
-      dispatch(getAllSubscriptionPlansThunk());
-    }
-  }, [dispatch, plans.length]);
+    dispatch(getAllSubscriptionPlansThunk());
+  }, []);
 
 
   return (

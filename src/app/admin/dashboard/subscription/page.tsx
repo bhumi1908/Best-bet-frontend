@@ -65,6 +65,7 @@ import PricingCardSkeleton from "@/components/PricingCardSkeleton";
 import { zodFormikValidate } from "@/utilities/zodFormikValidate";
 import { createSubscriptionPlanSchema } from "@/utilities/schema";
 import { useFormik } from "formik";
+import SubscriptionPlansWrapper from "@/components/subscriptionManagment/SubscriptionPlansWrapper";
 
 type PlanDuration = "monthly" | "yearly"
 
@@ -81,7 +82,7 @@ interface SubscriptionPlan {
   duration: PlanDuration;
   features: Feature[];
   isActive: boolean;
-  popular: boolean;
+  isRecommended: boolean;
 }
 
 
@@ -184,7 +185,7 @@ export default function SubscriptionPage() {
     billingCycle: "monthly" as "monthly" | "yearly",
     features: [""],
     isActive: true,
-    popular: false,
+    isRecommended: false,
   });
 
   // Stats
@@ -207,111 +208,17 @@ export default function SubscriptionPage() {
       activeSubscriptions: activeSubscriptions.length,
       totalRevenue,
       monthlyRevenue,
-      totalPlans: plans.length,
-      activePlans: plans.filter((p) => p.isActive).length,
+      totalPlans: subscriptionPlan.length,
+      activePlans: subscriptionPlan.filter((p) => p.isActive).length,
     };
-  }, [subscriptions, payments, plans]);
+  }, [subscriptions, payments, subscriptionPlan]);
 
-  // Fetch data
-  // TODO: Remove dummy
   const fetchDummyData = useCallback(async () => {
     try {
       setLoading(true);
       // TODO: Replace with actual API calls
       // Simulated data for now
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Mock plans
-      // const mockPlans: SubscriptionPlan[] = [
-      //   {
-      //     id: "1",
-      //     name: "Basic Plan",
-      //     description: "Perfect for getting started with Pick 3 predictions",
-      //     price: 9.99,
-      //     annualPrice: 99.99,
-      //     billingCycle: "monthly",
-      //     features: [
-      //       "Daily Pick 3 Predictions",
-      //       "Access to 1 State",
-      //       "Draw History (Last 30 Days)",
-      //       "Email Support",
-      //       "Basic Hit Tracker",
-      //     ],
-      //     isActive: true,
-      //     stripeProductId: "prod_123",
-      //     stripePriceId: "price_123",
-      //     createdAt: new Date().toISOString(),
-      //     updatedAt: new Date().toISOString(),
-      //   },
-      //   {
-      //     id: "2",
-      //     name: "Premium Plan",
-      //     description: "Best value for serious players",
-      //     price: 19.99,
-      //     annualPrice: 199.99,
-      //     billingCycle: "monthly",
-      //     features: [
-      //       "Daily Pick 3 Predictions",
-      //       "Access to All States",
-      //       "Full Draw History",
-      //       "Priority Email Support",
-      //       "Advanced Hit Tracker",
-      //       "Weekly Performance Reports",
-      //       "Early Access to New Features",
-      //     ],
-      //     isActive: true,
-      //     popular: true,
-      //     stripeProductId: "prod_456",
-      //     stripePriceId: "price_456",
-      //     createdAt: new Date().toISOString(),
-      //     updatedAt: new Date().toISOString(),
-      //   },
-      //   {
-      //     id: "3",
-      //     name: "VIP Plan",
-      //     description: "Ultimate experience for maximum success",
-      //     price: 39.99,
-      //     annualPrice: 399.99,
-      //     billingCycle: "monthly",
-      //     features: [
-      //       "Everything in Premium",
-      //       "Real-time Predictions",
-      //       "24/7 Priority Support",
-      //       "Custom Prediction Requests",
-      //       "Monthly Strategy Consultation",
-      //       "Exclusive VIP Community Access",
-      //       "Money-Back Guarantee",
-      //       "Advanced Pattern Recognition",
-      //     ],
-      //     isActive: true,
-      //     stripeProductId: "prod_789",
-      //     stripePriceId: "price_789",
-      //     createdAt: new Date().toISOString(),
-      //     updatedAt: new Date().toISOString(),
-      //   },
-      //   {
-      //     id: "4",
-      //     name: "Enterprise Plan",
-      //     description: "Custom solution for large businesses",
-      //     price: 99.99,
-      //     annualPrice: 999.99,
-      //     billingCycle: "monthly",
-      //     features: [
-      //       "Everything in VIP",
-      //       "Customizable Predictions",
-      //       "Priority Support",
-      //       "Custom API Access",
-      //       "Monthly Strategy Consultation",
-      //       "Exclusive VIP Community Access",
-      //       "Money-Back Guarantee",
-      //     ],
-      //     isActive: false,
-      //     stripeProductId: "prod_101",
-      //     stripePriceId: "price_101",
-      //     createdAt: new Date().toISOString(),
-      //     updatedAt: new Date().toISOString(),
-      //   },
-      // ];
 
       // Mock subscriptions
       const mockSubscriptions: Subscription[] = [
@@ -507,7 +414,6 @@ export default function SubscriptionPage() {
         },
       ];
 
-
       // Mock payments
       const mockPayments: Payment[] = [
         {
@@ -559,7 +465,7 @@ export default function SubscriptionPage() {
       duration: selectedPlan?.duration || "monthly",
       features: selectedPlan?.features?.map(f => ({ name: f.name })) || [{ name: "" }],
       isActive: selectedPlan?.isActive ?? true,
-      popular: selectedPlan?.popular ?? false,
+      isRecommended: selectedPlan?.isRecommended ?? false,
     },
     validate: zodFormikValidate(createSubscriptionPlanSchema),
     onSubmit: async (values, { resetForm }) => {
@@ -748,7 +654,7 @@ export default function SubscriptionPage() {
             billingCycle: planFormData.billingCycle,
             features: planFormData.features.filter((f) => f.trim()),
             isActive: planFormData.isActive,
-            popular: planFormData.popular,
+            isRecommended: planFormData.isRecommended,
             updatedAt: new Date().toISOString(),
           }
           : p
@@ -763,7 +669,7 @@ export default function SubscriptionPage() {
         billingCycle: "monthly",
         features: [""],
         isActive: true,
-        popular: false,
+        isRecommended: false,
       });
       toast.success("Plan updated successfully");
     } catch (error: any) {
@@ -1399,99 +1305,7 @@ export default function SubscriptionPage() {
 
         {/* Subscription Plans Tab */}
         <TabPane tab="Subscription Plans" tabKey="plans">
-          <div className="bg-bg-card border border-border-primary rounded-lg p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-lg font-semibold text-text-primary">Subscription Plans</h2>
-                <p className="text-sm text-text-tertiary mt-1">Manage your subscription plans</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="primary"
-                  className="!w-fit rounded-lg"
-                  icon={<Plus className="w-4 h-4" />}
-                  onClick={() => setCreatePlanDialogOpen(true)}
-                >
-                  Create Plan
-                </Button>
-              </div>
-            </div>
-
-            {isLoading ? <PricingCardSkeleton /> : <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-              {subscriptionPlan.map((plan) => (
-                <div
-                  key={plan.id}
-                  className={cn(
-                    "relative flex flex-col rounded-xl border border-border-primary bg-gradient-to-b from-bg-secondary/80 via-bg-secondary to-bg-secondary/60 py-6 px-5 shadow-lg hover:border-border-accent transition-colors",
-                    plan.isRecommended ? "ring-1 ring-accent-primary/40 shadow-accent" : ""
-                  )}
-                >
-                  {plan.isRecommended && (
-                    <span className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-fit px-2 py-0.5 rounded-full bg-accent-primary text-black text-xs font-semibold">
-                      Most Popular
-                    </span>
-                  )}
-                  <div className="absolute right-3 top-3">
-                    <Dropdown>
-                      <DropdownTrigger className="!w-fit !px-2 border-none bg-transparent">
-                        <MoreVertical className="w-4 h-4" /></DropdownTrigger>
-                      <DropdownContent className="!w-36 !min-w-0">
-                        <DropdownItem
-                          // onClick={() => openEditPlanDialog(plan)} 
-                          icon={<Edit className="w-4 h-4" />}>
-                          Edit
-                        </DropdownItem>
-                        <DropdownItem danger
-                          // onClick={() => openDeletePlanDialog(plan)} 
-                          icon={<Trash2 className="w-4 h-4" />}>
-                          Delete
-                        </DropdownItem>
-                      </DropdownContent>
-                    </Dropdown>
-                  </div>
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-text-primary flex items-center gap-3">
-                        {plan.name}{" "}
-
-                        <span
-                          className={cn(
-                            "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border",
-                            plan.isActive
-                              ? "bg-green-500/20 text-green-400 border-green-500/30"
-                              : "bg-gray-500/20 text-gray-400 border-gray-500/30"
-                          )}
-                        >
-                          {plan.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </h3>
-                      <p className="text-sm text-text-tertiary mt-1">{plan.description}</p>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <p className="text-3xl font-bold text-accent-primary leading-tight">
-                      ${plan.price.toFixed(2)}
-                      <span className="text-sm font-normal text-text-tertiary ml-1">
-                        {plan.duration === 12 ? "/yr (billed annually)" : "/mo"}
-                      </span>
-                    </p>
-                  </div>
-
-                  <div className="space-y-3">
-                    {plan.features.map((feature, idx) => (
-                      <div key={idx} className="flex items-center text-sm text-text-primary/90">
-                        <div className="w-5 h-5 rounded-full  flex items-center justify-center mr-2">
-                          <Check className="w-4 h-4 text-accent-primary" />
-                        </div>
-                        <span>{feature.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>}
-          </div>
+          <SubscriptionPlansWrapper />
         </TabPane>
 
         {/* Stripe Integration Tab */}
@@ -1594,37 +1408,19 @@ export default function SubscriptionPage() {
         </TabPane>
       </Tabs>
 
-      {/* Create Plan Dialog */}
-      <Popup
-        open={createPlanDialogOpen}
-        onOpenChange={setCreatePlanDialogOpen}
-        title="Create New Subscription Plan"
-        description="Create a new subscription plan that will be available for customers to purchase."
+      {/* Delete Plan Dialog */}
+      {/* <Popup
+        open={deletePlanDialogOpen}
+        onOpenChange={setDeletePlanDialogOpen}
+        title="Delete Subscription Plan"
+        description={`Are you sure you want to delete the plan "${deletePlan?.name}"? This action cannot be undone. Existing subscriptions using this plan will not be affected.`}
         footer={
           <div className="flex flex-col-reverse sm:flex-row justify-end items-center gap-3 w-full">
-            <Button
-              className="!w-full sm:!w-fit"
-              onClick={() => {
-                setCreatePlanDialogOpen(false);
-                resetForm()
-              }}
-            >
+            <Button className="!w-full sm:!w-fit" onClick={() => setDeletePlanDialogOpen(false)}>
               Cancel
             </Button>
-            <Button
-              type="primary"
-              className="!w-full sm:!w-fit"
-              onClick={(e) => {
-                e.stopPropagation();
-                formik.setTouched({
-                  ...formik.touched,
-                  features: values.features.map(() => ({ name: true })),
-                });
-                formik.handleSubmit();
-              }}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
+            <Button type="primary" danger className="!w-full sm:!w-fit" onClick={handleDeletePlan}>
+              {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg
                     className="animate-spin h-5 w-5"
@@ -1646,421 +1442,23 @@ export default function SubscriptionPage() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Creating...
+                  Deleting...
                 </span>
               ) : (
-                'Create Plan'
+                "Delete Plan"
               )}
             </Button>
           </div>
         }
-      >
-        <form className="space-y-4" noValidate onSubmit={(e) => e.preventDefault()}>
-          {/* Plan Name */}
-          <div className="space-y-2 w-full">
-            <label htmlFor="planName" className="block text-sm font-medium text-gray-300">
-              Plan Name
-            </label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              placeholder="e.g., Premium Plan"
-              value={values.name}
-              onChange={handleChange}
-              onBlur={handleBlur}
-            />
-            {touched.name && errors.name && (
-              <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                {errors.name}
-              </p>
-            )}
-          </div>
 
-          {/* Price and Billing Cycle */}
-          <div className="flex flex-col md:flex-row gap-4 w-full">
-            <div className="space-y-2 w-full">
-              <label htmlFor="price" className="block text-sm font-medium text-gray-300">
-                Price ($)
-              </label>
-              <Input
-                id="price"
-                name="price"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={values.price === 0 ? "" : values.price}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setFieldValue("price", val === "" ? "" : parseFloat(val));
-                }}
-                onBlur={handleBlur}
-              />
-              {touched.price && errors.price && (
-                <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {errors.price}
-                </p>
-              )}
-            </div>
 
-            <div className="space-y-2 w-full">
-              <label htmlFor="billingCycle" className="block text-sm font-medium text-gray-300">
-                Billing Cycle
-              </label>
-              <Select
-                value={values.duration}
-                onValueChange={(val) =>
-                  formik.setFieldValue("duration", val as PlanDuration)
-                }
-
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select billing cycle" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="yearly">Yearly</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="space-y-2 w-full">
-            <label htmlFor="description" className="block text-sm font-medium text-gray-300">
-              Description
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              rows={3}
-              placeholder="Brief description of the plan"
-              onChange={handleChange}
-              onBlur={handleBlur}
-              className="w-full px-3 py-2 text-sm bg-bg-primary border border-border-primary rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-border-accent resize-none"
-            />
-          </div>
-
-          {/* Features */}
-          <div className="space-y-2 w-full -mt-3">
-            <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-gray-300">
-                Features
-              </label>
-              <Button
-                size="small"
-                icon={<Plus className="w-4 h-4" />}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setFieldValue("features", [
-                    ...values.features,
-                    { name: "" },
-                  ]);
-                }}
-                className="!w-fit !h-fit !px-2 !py-1"
-              >
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {values.features.map((feature, index) => (
-                <div key={index} className="flex gap-2 items-center">
-                  <Input
-                    name={`features.${index}.name`}
-                    value={feature.name}
-                    onChange={(e) => {
-                      const updated = [...values.features];
-                      updated[index] = { name: e.target.value };
-                      setFieldValue("features", updated);
-                    }}
-                    onBlur={handleBlur}
-                    placeholder={`Feature ${index + 1}`}
-                  />
-                  {values.features.length > 1 && (
-                    <Button
-                      type="text"
-                      size="small"
-                      danger
-                      icon={<X className="w-4 h-4" />}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setFieldValue(
-                          "features",
-                          values.features.filter((_, i) => i !== index)
-                        );
-                      }}
-                      className="!w-fit !h-fit !px-2 !py-2"
-                    />
-                  )}
-                </div>
-              ))}
-              {touched.features && typeof errors.features === "string" && (
-                <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {errors.features}
-                </p>)}
-
-            </div>
-          </div>
-
-          {/* Switches */}
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full">
-            <div className="flex items-center gap-3">
-              <Switch
-                checked={values.isActive}
-                onCheckedChange={(val) => setFieldValue("isActive", val)}
-
-              />
-              <label htmlFor="isActive" className="text-sm font-medium text-gray-300 cursor-pointer">
-                Plan is active and available for purchase
-              </label>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Switch
-                checked={values.popular}
-                onCheckedChange={(val) => setFieldValue("popular", val)}
-              />
-              <label htmlFor="popular" className="text-sm font-medium text-gray-300 cursor-pointer">
-                Mark as Most Popular
-              </label>
-            </div>
-          </div>
-        </form>
-      </Popup>
-
-      {/* Edit Plan Dialog */}
-      <Popup
-        open={editPlanDialogOpen}
-        onOpenChange={setEditPlanDialogOpen}
-        title="Edit Subscription Plan"
-        description="Update the subscription plan details."
-        footer={
-          <div className="flex flex-col-reverse sm:flex-row justify-end items-center gap-3 w-full">
-            <Button
-              className="!w-full sm:!w-fit"
-              onClick={() => {
-                setEditPlanDialogOpen(false);
-                setSelectedPlan(null);
-                setPlanFormData({
-                  name: "",
-                  description: "",
-                  price: "",
-                  billingCycle: "monthly",
-                  features: [""],
-                  isActive: true,
-                  popular: false,
-                });
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="primary"
-              className="!w-full sm:!w-fit"
-            // onClick={handleEditPlan}
-            >
-              Update Plan
-            </Button>
-          </div>
-        }
-      >
-        <form className="space-y-6" noValidate onSubmit={(e) => e.preventDefault()}>
-          {/* Plan Name */}
-          <div className="space-y-2 w-full">
-            <label htmlFor="editPlanName" className="block text-sm font-medium text-gray-300">
-              Plan Name
-            </label>
-            <Input
-              id="editPlanName"
-              name="planName"
-              type="text"
-              placeholder="e.g., Premium Plan"
-              value={planFormData.name}
-              onChange={(e) => setPlanFormData({ ...planFormData, name: e.target.value })}
-            />
-          </div>
-
-          {/* Price and Billing Cycle */}
-          <div className="flex flex-col md:flex-row gap-4 w-full">
-            <div className="space-y-2 w-full">
-              <label htmlFor="editPrice" className="block text-sm font-medium text-gray-300">
-                Price ($)
-              </label>
-              <Input
-                id="editPrice"
-                name="price"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={planFormData.price}
-                onChange={(e) => setPlanFormData({ ...planFormData, price: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2 w-full">
-              <label htmlFor="editBillingCycle" className="block text-sm font-medium text-gray-300">
-                Billing Cycle
-              </label>
-              <Select
-                value={planFormData.billingCycle}
-                onValueChange={(value) =>
-                  setPlanFormData({ ...planFormData, billingCycle: value as "monthly" | "yearly" })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select billing cycle" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="yearly">Yearly</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="space-y-2 w-full">
-            <label htmlFor="editDescription" className="block text-sm font-medium text-gray-300">
-              Description
-            </label>
-            <textarea
-              id="editDescription"
-              name="description"
-              rows={3}
-              placeholder="Brief description of the plan"
-              value={planFormData.description}
-              onChange={(e) => setPlanFormData({ ...planFormData, description: e.target.value })}
-              className="w-full px-3 py-2 text-sm bg-bg-primary border border-border-primary rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-border-accent resize-none"
-            />
-          </div>
-
-          {/* Features */}
-          <div className="space-y-2 w-full">
-            <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-gray-300">
-                Features
-              </label>
-              <Button
-                type="text"
-                size="small"
-                icon={<Plus className="w-4 h-4" />}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPlanFormData({
-                    ...planFormData,
-                    features: [...planFormData.features, ""],
-                  });
-                }}
-                className="!w-fit !h-fit !px-2 !py-1"
-              >
-                Add Feature
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {planFormData.features.map((feature, index) => (
-                <div key={index} className="flex gap-2 items-center">
-                  <Input
-                    value={feature}
-                    onChange={(e) => {
-                      const newFeatures = [...planFormData.features];
-                      newFeatures[index] = e.target.value;
-                      setPlanFormData({ ...planFormData, features: newFeatures });
-                    }}
-                    placeholder={`Feature ${index + 1}`}
-                  />
-                  {planFormData.features.length > 1 && (
-                    <Button
-                      type="text"
-                      size="small"
-                      danger
-                      icon={<X className="w-4 h-4" />}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        const newFeatures = planFormData.features.filter((_, i) => i !== index);
-                        setPlanFormData({ ...planFormData, features: newFeatures });
-                      }}
-                      className="!w-fit !h-fit !px-2 !py-2"
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Switches */}
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full">
-            <div className="flex items-center gap-3">
-              <Switch
-                id="editIsActive"
-                checked={planFormData.isActive}
-                onCheckedChange={(checked) =>
-                  setPlanFormData({ ...planFormData, isActive: checked })
-                }
-              />
-              <label htmlFor="editIsActive" className="text-sm font-medium text-gray-300 cursor-pointer">
-                Plan is active and available for purchase
-              </label>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Switch
-                id="editPopular"
-                checked={planFormData.popular}
-                onCheckedChange={(checked) =>
-                  setPlanFormData({ ...planFormData, popular: checked })
-                }
-              />
-              <label htmlFor="editPopular" className="text-sm font-medium text-gray-300 cursor-pointer">
-                Mark as Most Popular
-              </label>
-            </div>
-          </div>
-        </form>
-      </Popup>
-
-      {/* Delete Plan Dialog */}
-      <Popup
-        open={deletePlanDialogOpen}
-        onOpenChange={setDeletePlanDialogOpen}
-        title="Delete Subscription Plan"
-        description={`Are you sure you want to delete the plan "${selectedPlan?.name}"? This action cannot be undone. Existing subscriptions using this plan will not be affected.`}
-        footer={
-          <div className="flex flex-col-reverse sm:flex-row justify-end items-center gap-3 w-full">
-            <Button className="!w-full sm:!w-fit" onClick={() => setDeletePlanDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="primary" danger className="!w-full sm:!w-fit" onClick={handleDeletePlan}>
-              Delete Plan
-            </Button>
-          </div>
-        }
       >
         <div className="p-4 bg-bg-tertiary rounded-lg">
           <p className="text-sm text-text-primary">
-            This will permanently delete the <span className="font-semibold text-accent-primary">{selectedPlan?.name}</span> plan from the system.
+            This will permanently delete the <span className="font-semibold text-accent-primary">{deletePlan?.name}</span> plan from the system.
           </p>
         </div>
-      </Popup>
+      </Popup> */}
 
     </div>
   );

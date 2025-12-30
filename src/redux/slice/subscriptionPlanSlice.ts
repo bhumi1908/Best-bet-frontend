@@ -1,9 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { createSubscriptionPlanThunk, deleteSubscriptionPlanThunk, getAllSubscriptionPlansAdminThunk, getAllSubscriptionPlansThunk, RejectPayload, updateSubscriptionPlanThunk } from '../thunk/subscriptionPlanThunk';
+import { createSubscriptionPlanThunk, deleteSubscriptionPlanThunk, getAllSubscriptionPlansAdminThunk, getAllSubscriptionPlansThunk, getSubscriptionPlansByIdAdminThunk, RejectPayload, updateSubscriptionPlanThunk } from '../thunk/subscriptionPlanThunk';
 import { SubscriptionPlan, SubscriptionPlanState } from '@/types/subscriptionPlan';
 
 const initialState: SubscriptionPlanState = {
     plans: [],
+    planById: null,
     isLoading: false,
     error: null,
 };
@@ -14,6 +15,13 @@ const subscriptionPlanSlice = createSlice({
     reducers: {
         clearError: (state) => {
             state.error = null;
+        },
+        cleanPlanById: (state) => {
+            state.planById = null;
+        },
+        togglePlanActiveStatus: (state, action: PayloadAction<number | string>) => {
+            const plan = state.plans.find((p) => p.id === action.payload);
+            if (plan) plan.isActive = !plan.isActive;
         },
     },
     extraReducers: (builder) => {
@@ -60,6 +68,27 @@ const subscriptionPlanSlice = createSlice({
                 }
             )
 
+            // GET By Id PLAN FOR ADMIN
+            .addCase(getSubscriptionPlansByIdAdminThunk.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(
+                getSubscriptionPlansByIdAdminThunk.fulfilled,
+                (state, action: PayloadAction<SubscriptionPlan>) => {
+                    state.isLoading = false;
+                    state.planById = action.payload;
+                }
+            )
+            .addCase(
+                getSubscriptionPlansByIdAdminThunk.rejected,
+                (state, action: PayloadAction<RejectPayload | any>) => {
+                    state.isLoading = false;
+                    state.error = action.payload?.message || 'Failed to fetch subscription plans';
+                    state.planById = null;
+                }
+            )
+
             // CREATE PLAN 
             .addCase(createSubscriptionPlanThunk.pending, (state) => {
                 state.isLoading = true;
@@ -69,7 +98,7 @@ const subscriptionPlanSlice = createSlice({
                 createSubscriptionPlanThunk.fulfilled,
                 (state, action: PayloadAction<SubscriptionPlan>) => {
                     state.isLoading = false;
-                  state.plans.unshift(action.payload);
+                    state.plans.unshift(action.payload);
                 }
             )
             .addCase(
@@ -88,6 +117,7 @@ const subscriptionPlanSlice = createSlice({
             .addCase(
                 updateSubscriptionPlanThunk.fulfilled,
                 (state, action: PayloadAction<SubscriptionPlan>) => {
+                    console.log('action.payload', action.payload)
                     state.isLoading = false;
                     const index = state.plans.findIndex((plan) => plan.id === action.payload.id);
                     if (index !== -1) state.plans[index] = action.payload;
@@ -123,6 +153,6 @@ const subscriptionPlanSlice = createSlice({
     },
 });
 
-export const { clearError } = subscriptionPlanSlice.actions;
+export const { clearError, cleanPlanById, togglePlanActiveStatus } = subscriptionPlanSlice.actions;
 
 export default subscriptionPlanSlice.reducer;

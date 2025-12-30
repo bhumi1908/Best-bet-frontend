@@ -295,6 +295,57 @@ export default function HistoryPage() {
                     createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
                     updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
                 },
+                {
+                    id: "9",
+                    drawDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+                    drawTime: "14:00",
+                    entryTime: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000).toISOString(),
+                    selectedNumbers: [1, 1, 1],
+                    winningNumbers: [1, 1, 1],
+                    resultStatus: "win",
+                    prizeAmount: 750,
+                    gameType: "pick3",
+                    gameStatus: "completed",
+                    state: "Florida",
+                    userId: "user_9",
+                    userName: "George White",
+                    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+                    updatedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+                },
+                {
+                    id: "10",
+                    drawDate: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+                    drawTime: "14:00",
+                    entryTime: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000).toISOString(),
+                    selectedNumbers: [2, 2, 2],
+                    winningNumbers: [2, 2, 2],
+                    resultStatus: "loss",
+                    prizeAmount: 0,
+                    gameType: "pick3",
+                    gameStatus: "completed",
+                    state: "Florida",
+                    userId: "user_10",
+                    userName: "Harry Black",
+                    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+                    updatedAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+                },
+                {
+                    id: "11",
+                    drawDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+                    drawTime: "14:00",
+                    entryTime: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000 - 2 * 60 * 60 * 1000).toISOString(),
+                    selectedNumbers: [3, 3, 3],
+                    winningNumbers: [3, 3, 3],
+                    resultStatus: "win",
+                    prizeAmount: 750,
+                    gameType: "pick3",
+                    gameStatus: "completed",
+                    state: "Florida",
+                    userId: "user_11",
+                    userName: "Ivy White",
+                    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+                    updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+                },
             ];
 
             setHistories(mockHistories);
@@ -761,9 +812,9 @@ export default function HistoryPage() {
             </div>
 
             {/* Table */}
-            <div className="bg-bg-card border border-border-primary rounded-lg overflow-hidden">
+            <div className=" rounded-lg overflow-hidden">
                 <div className="overflow-x-auto -mx-1 sm:mx-0">
-                    <div className="min-w-[1200px] p-4">
+                    <div className="min-w-[1200px]">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -1573,18 +1624,25 @@ export default function HistoryPage() {
                     </div>
                 }
             >
-                {selectedHistory && (
-                    <div className="p-4 bg-bg-tertiary rounded-lg">
-                        <p className="text-sm text-text-primary mb-2">
-                            <strong>Draw Date:</strong>{" "}
-                            {new Date(selectedHistory.drawDate).toLocaleDateString()}
-                        </p>
-                        <p className="text-sm text-text-primary">
-                            <strong>Numbers:</strong> {selectedHistory.selectedNumbers.join(" - ")} vs{" "}
-                            {selectedHistory.winningNumbers.join(" - ")}
-                        </p>
-                    </div>
-                )}
+                <div className="py-3">
+                    {selectedHistory && (
+                        <div className="p-4 bg-bg-tertiary/50 rounded-lg">
+                            <p className="text-sm text-text-primary mb-2">
+                                <strong>Draw Date:</strong>{" "}
+                                {new Date(selectedHistory.drawDate).toLocaleDateString()} at {selectedHistory.drawTime}
+                            </p>
+                            <p className="text-sm text-text-primary mb-2">
+                                <strong>Game type:</strong> {selectedHistory.gameType}
+                            </p>
+                            <p className="text-sm text-text-primary mb-2">
+                                <strong>Selected Numbers:</strong> {selectedHistory.selectedNumbers.join(" - ")} 
+                            </p>
+                            <p className="text-sm text-text-primary mb-2">
+                                <strong>Winning Numbers:</strong> {selectedHistory.winningNumbers.join(" - ")}
+                            </p>
+                        </div>
+                    )}
+                </div>
             </Popup>
         </div>
     );

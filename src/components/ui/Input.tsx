@@ -177,7 +177,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const inputElement = (
       <div className={`relative ${hasAddon ? "flex-1" : ""} ${wrapperClasses}`}>
         {prefix && (
-          <span className={`flex items-center ${sizeConfig.padding} text-text-tertiary`}>
+          <span className={`flex items-center ${sizeConfig.padding} text-text-tertiary absolute left-0 top-1/2 -translate-y-1/2`}>
             {prefix}
           </span>
         )}
@@ -201,8 +201,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           maxLength={maxLength}
           className={`
             ${inputClasses}
-            ${prefix ? "pl-0" : sizeConfig.padding}
-            ${suffix || showClear || isPassword ? "pr-0" : sizeConfig.padding}
+            ${prefix ? "pl-10" : sizeConfig.padding}
+            ${suffix || showClear || isPassword ? "pr-10" : sizeConfig.padding}
             ${hasAddon ? "rounded-none" : "rounded-lg"}
             ${hasAffix ? "border-0" : ""}
             ${className}

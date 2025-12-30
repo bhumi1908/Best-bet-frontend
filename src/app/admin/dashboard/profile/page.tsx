@@ -13,8 +13,9 @@ import { changeAdminPasswordThunk, editAdminProfileThunk } from "@/redux/thunk/p
 import { toast } from "react-toastify";
 import { useFormik } from "formik";
 import { toFormikValidationSchema } from "zod-formik-adapter";
-import { changePasswordSchema } from "@/utilities/schema";
 import { clearError, clearSuccessMessage } from "@/redux/slice/profileSlice";
+import { changePasswordSchema } from "@/utilities/schema";
+import { zodFormikValidate } from "@/utilities/zodFormikValidate";
 
 export default function ProfilePage() {
   const { data: session, update } = useSession();
@@ -57,7 +58,7 @@ export default function ProfilePage() {
       newPassword: "",
       confirmPassword: "",
     },
-    validationSchema: toFormikValidationSchema(changePasswordSchema),
+    validate: zodFormikValidate(changePasswordSchema),
     onSubmit: async (values) => {
       try {
         await dispatch(changeAdminPasswordThunk(values)).unwrap();
@@ -241,7 +242,8 @@ export default function ProfilePage() {
                       danger
                       icon={<X className="w-4 h-4" />}
                       onClick={handleCancel}
-                      className="!w-9 !h-9"
+                      className="!w-9 !h-9 border border-error"
+
                     />
                   )}
 

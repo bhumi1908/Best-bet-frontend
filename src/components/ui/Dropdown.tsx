@@ -34,6 +34,7 @@ export function Dropdown({ children, className }: DropdownProps) {
   const [position, setPosition] = React.useState<{ top: number; left: number } | null>(null);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const contentRef = React.useRef<HTMLDivElement>(null);
+  
 
   // Calculate position function
   const calculatePosition = React.useCallback(() => {
@@ -61,7 +62,7 @@ export function Dropdown({ children, className }: DropdownProps) {
     // Flip to top if not enough space below
     const spaceBelow = viewportHeight - triggerRect.bottom;
     const spaceAbove = triggerRect.top;
-    
+
     if (spaceBelow < dropdownHeight + gap && spaceAbove > dropdownHeight + gap) {
       top = triggerRect.top - dropdownHeight - gap;
     }
@@ -213,7 +214,7 @@ export function DropdownContent({ children, className, align = "right" }: Dropdo
     if (open && contentRef.current && position) {
       const recalculate = () => {
         if (!contentRef.current || !triggerRef.current) return;
-        
+
         const triggerRect = triggerRef.current.getBoundingClientRect();
         const contentRect = contentRef.current.getBoundingClientRect();
         const viewportHeight = window.innerHeight;
@@ -226,7 +227,7 @@ export function DropdownContent({ children, className, align = "right" }: Dropdo
         // Flip to top if not enough space
         const spaceBelow = viewportHeight - triggerRect.bottom;
         const spaceAbove = triggerRect.top;
-        
+
         if (spaceBelow < contentRect.height + gap && spaceAbove > contentRect.height + gap) {
           top = triggerRect.top - contentRect.height - gap;
         }
@@ -274,9 +275,11 @@ interface DropdownItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement
   children: React.ReactNode;
   icon?: React.ReactNode;
   danger?: boolean;
+  success?: boolean;
 }
 
-export function DropdownItem({ children, icon, danger, className, ...props }: DropdownItemProps) {
+
+export function DropdownItem({ children, icon, danger, success, className, ...props }: DropdownItemProps) {
   const { setOpen } = useDropdownContext();
 
   return (
@@ -291,7 +294,12 @@ export function DropdownItem({ children, icon, danger, className, ...props }: Dr
         "hover:bg-bg-tertiary",
         danger
           ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
-          : "text-text-primary hover:text-text-secondary",
+          : success
+            ? "text-green-400 hover:text-green-300 hover:bg-green-500/10" :
+            "text-text-primary hover:text-text-secondary",
+
+
+
         className
       )}
       {...props}

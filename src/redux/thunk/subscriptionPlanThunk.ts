@@ -66,6 +66,39 @@ export const getAllSubscriptionPlansAdminThunk = createAsyncThunk<
   }
 );
 
+// GET By PLANID FOR ADMIN
+export const getSubscriptionPlansByIdAdminThunk = createAsyncThunk<
+  SubscriptionPlan,       
+  { id: number | string },                     
+  { rejectValue: RejectPayload }
+>(
+  'subscriptionPlan/admin/getById',
+  async ({id}, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get<{
+        data: { plan: SubscriptionPlan };
+        message: string;
+      }>(routes.api.subscriptionPlan.admin.getByPlanId(id));
+      console.log('response', response)
+
+      if (response.data && response.data.data.plan) {
+        console.log('Fire-1');
+        return response.data.data.plan;
+      }
+      console.log('Fire-2');
+      
+
+      throw new Error('Invalid response format');
+    } catch (error: any) {
+      const message =
+        typeof error.response?.data?.message === 'string'
+          ? error.response.data.message
+          : error.message || 'Failed to fetch subscription plans';
+      return rejectWithValue({ message });
+    }
+  }
+);
+
 // CREATE PLAN FOR ADMIN
 export const createSubscriptionPlanThunk = createAsyncThunk<
   SubscriptionPlan,
@@ -105,6 +138,7 @@ export const updateSubscriptionPlanThunk = createAsyncThunk<
   'subscriptionPlan/admin/update',
   async ({ id, payload }, { rejectWithValue }) => {
     try {
+      console.log('Thunk--payload', payload)
       const response = await apiClient.put<{
         data: { plan: SubscriptionPlan };
         message: string;
@@ -154,3 +188,4 @@ export const deleteSubscriptionPlanThunk = createAsyncThunk<
     }
   }
 );
+

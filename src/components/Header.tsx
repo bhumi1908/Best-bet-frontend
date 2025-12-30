@@ -5,10 +5,8 @@ import { useSession, signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import { routes } from "@/utilities/routes";
 import { useEffect, useRef, useState } from "react";
-import { HelpCircle, Lock, LogOut, Menu, X } from "lucide-react";
+import { HelpCircle, Lock, LogOut, Menu, X, ChevronDown, User } from "lucide-react";
 import { Button } from "./ui/Button";
-import { useAppSelector } from "@/redux/store/hooks";
-
 
 export default function Header() {
   const { data: session, status } = useSession();
@@ -18,7 +16,9 @@ export default function Header() {
   const router = useRouter();
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const gamesDropdownRef = useRef<HTMLDivElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isGamesDropdownOpen, setIsGamesDropdownOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const getUserInitials = () => {
@@ -52,6 +52,10 @@ export default function Header() {
     await signOut({ callbackUrl: "/auth/login" });
   };
 
+  const handleProfile = () => {
+    router.push(routes.profile);
+  }
+
   const handleSupportUs = () => {
     router.push(routes.support);
   }
@@ -65,6 +69,10 @@ export default function Header() {
   ];
 
   const isActive = (href: string) => pathname === href;
+
+  const isGameRoute = () => {
+    return pathname === routes.threePicGame || pathname === routes.frontNumberGame;
+  };
 
   const handleLinkClick = (href: string, requiresAuth: boolean) => {
     if (requiresAuth && !isAuthenticated) {
@@ -89,16 +97,22 @@ export default function Header() {
       ) {
         setIsDropdownOpen(false);
       }
+      if (
+        gamesDropdownRef.current &&
+        !gamesDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsGamesDropdownOpen(false);
+      }
     };
 
-    if (isDropdownOpen) {
+    if (isDropdownOpen || isGamesDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isDropdownOpen]);
+  }, [isDropdownOpen, isGamesDropdownOpen]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-white/10">
@@ -124,6 +138,55 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-5">
+            {/* Games Dropdown */}
+            <div className="relative" ref={gamesDropdownRef}>
+              <button
+                onClick={() => setIsGamesDropdownOpen(!isGamesDropdownOpen)}
+                className={`relative py-2 flex gap-1 items-center rounded-lg text-sm font-medium transition-colors ${isGameRoute()
+                  ? "text-yellow-400"
+                  : "text-white hover:text-yellow-300"
+                  }`}
+              >
+                Games
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform duration-200 ${isGamesDropdownOpen ? "rotate-180" : ""
+                    }`}
+                />
+                <span
+                  className={`absolute bottom-1 left-1/2 -translate-x-1/2 h-0.5 rounded-lg bg-yellow-400 transition-all duration-400 ${isGameRoute() ? "w-full" : "w-0"
+                    }`}
+                ></span>
+              </button>
+
+              {/* Games Dropdown Menu */}
+              {isGamesDropdownOpen && (
+                <div className="absolute top-full left-0 mt-2 w-56 border border-white/10 bg-black/95 backdrop-blur-md rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="p-1.5 flex flex-col gap-0.5">
+                    <Link
+                      href={routes.threePicGame}
+                      onClick={() => setIsGamesDropdownOpen(false)}
+                      className={`px-3 py-2 text-sm rounded-lg transition-colors flex items-center gap-2 ${pathname === routes.threePicGame
+                        ? "bg-yellow-400/20 text-yellow-400"
+                        : "text-white hover:bg-white/10 hover:text-yellow-300"
+                        }`}
+                    >
+                      Three Pic Game
+                    </Link>
+                    <Link
+                      href={routes.frontNumberGame}
+                      onClick={() => setIsGamesDropdownOpen(false)}
+                      className={`px-3 py-2 text-sm rounded-lg transition-colors flex items-center gap-2 ${pathname === routes.frontNumberGame
+                        ? "bg-yellow-400/20 text-yellow-400"
+                        : "text-white hover:bg-white/10 hover:text-yellow-300"
+                        }`}
+                    >
+                      Front Number Game
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -171,7 +234,13 @@ export default function Header() {
                         </p>
                       </div>
                       <div className="p-1.5 flex flex-col gap-0.5">
-
+                        <button
+                          onClick={handleProfile}
+                          className="w-full text-left px-3 py-2 text-sm text-text-secondary hover:bg-bg-muted rounded-lg transition-colors flex items-center gap-2"
+                        >
+                          <User className="w-4 h-4" />
+                          <span>Profile</span>
+                        </button>
                         <button
                           onClick={handleSupportUs}
                           className="w-full text-left px-3 py-2 text-sm text-text-secondary hover:bg-bg-muted rounded-lg transition-colors flex items-center gap-2"
@@ -202,6 +271,53 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         <nav className={`md:hidden pb-4 space-y-2 ${isMenuOpen ? "block" : "hidden"}`}>
+          {/* Games Dropdown - Mobile */}
+          <div className="space-y-1">
+            <button
+              onClick={() => setIsGamesDropdownOpen(!isGamesDropdownOpen)}
+              className={`w-full flex items-center justify-between px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isGameRoute()
+                ? "bg-yellow-400/20 text-yellow-400"
+                : "text-white hover:text-yellow-300 hover:bg-white/5"
+                }`}
+            >
+              <span>Games</span>
+              <ChevronDown
+                className={`w-4 h-4 transition-transform duration-200 ${isGamesDropdownOpen ? "rotate-180" : ""
+                  }`}
+              />
+            </button>
+            {isGamesDropdownOpen && (
+              <div className="pl-4 space-y-1">
+                <Link
+                  href={routes.threePicGame}
+                  onClick={() => {
+                    setIsGamesDropdownOpen(false);
+                    setIsMenuOpen(false);
+                  }}
+                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pathname === routes.threePicGame
+                    ? "bg-yellow-400/20 text-yellow-400"
+                    : "text-white hover:text-yellow-300 hover:bg-white/5"
+                    }`}
+                >
+                  Three Pic Game
+                </Link>
+                <Link
+                  href={routes.frontNumberGame}
+                  onClick={() => {
+                    setIsGamesDropdownOpen(false);
+                    setIsMenuOpen(false);
+                  }}
+                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pathname === routes.frontNumberGame
+                    ? "bg-yellow-400/20 text-yellow-400"
+                    : "text-white hover:text-yellow-300 hover:bg-white/5"
+                    }`}
+                >
+                  Front Number Game
+                </Link>
+              </div>
+            )}
+          </div>
+
           {navLinks.map((link) => (
             <Link
               key={link.href}
