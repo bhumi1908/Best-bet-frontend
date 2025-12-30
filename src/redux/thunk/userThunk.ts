@@ -96,7 +96,7 @@ export const getUserByIdThunk = createAsyncThunk<
       const response = await apiClient.get<{
         data: User;
         message: string;
-      }>(routes.api.user.getById.replace(':id', userId.toString()));
+      }>(routes.api.user.getById(userId));
 
       if (response.data && response.data.data) {
         return response.data.data;
@@ -129,7 +129,7 @@ export const updateUserThunk = createAsyncThunk<
       const response = await apiClient.put<{
         data: User;
         message: string;
-      }>(routes.api.user.update.replace(':id', id.toString()), updateData);
+      }>(routes.api.user.update(id), updateData);
 
       if (response.data && response.data.data) {
         return response.data.data;

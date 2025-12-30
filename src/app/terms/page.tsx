@@ -26,7 +26,7 @@ export default function TermsOfServicePage() {
       {/* Content Container */}
       <div className="relative z-10 pt-20">
         {/* ==================== HERO SECTION ==================== */}
-        <section className="relative px-4 py-24">
+        <section className="relative px-4 pt-24">
           <div className="max-w-7xl mx-auto w-full">
             <motion.div
               className="text-center mb-20"
@@ -78,7 +78,7 @@ export default function TermsOfServicePage() {
         </section>
 
         {/* ==================== TERMS CONTENT SECTION ==================== */}
-        <section className="relative px-4 py-24 bg-gradient-to-b from-gray-900/15 via-gray-900/10 to-gray-900/5">
+        <section className="relative px-4 pb-24">
           <div className="max-w-4xl mx-auto">
             <motion.div
               className="prose prose-invert prose-lg max-w-none"

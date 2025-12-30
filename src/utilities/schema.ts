@@ -79,6 +79,27 @@ export const resetPasswordSchema = z
     path: ['confirmPassword'],
   });
 
+// Create subscription plan schema
+export const createSubscriptionPlanSchema = z
+  .object({
+    name: z.string().min(1, "Plan name is required"),
+    description: z.string().min(1, "Description is required"),
+   price: z
+      .number({ invalid_type_error: "Price is required" })
+      .refine((val) => val > 0, "Price must be greater than 0"),
+    features: z.array(
+      z.object({
+        name: z.string().min(1, "Feature is required"),
+      })
+    ),
+    isActive: z.boolean(),
+    isRecommended: z.boolean(),
+  })
+  .refine((data) => data.features.length > 0, {
+    path: ["features"],
+    message: "At least one feature is required",
+  });
+
 export const changePasswordSchema = z
   .object({
     currentPassword: z

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
+  CreditCard,
+  Gamepad2,
   LayoutDashboard,
   Users,
 } from "lucide-react";
@@ -19,6 +21,16 @@ const navItems = [
     href: routes.admin.user,
     label: "Users", 
     icon: Users,
+  },
+  {
+    href: routes.admin.subscriptions,
+    label: "Subscriptions",
+    icon: CreditCard,
+  },
+  {
+    href: routes.admin.history,
+    label: "Games History",
+    icon: Gamepad2,
   },
   // {
   //   href: "/dashboard/subscriptions",
@@ -111,12 +123,11 @@ export default function DashboardSidebar({ isOpen = true, onClose }: DashboardSi
                 onClick={(e) => {
                   handleLinkClick(item.href, e);
                 }}
-                className={`
+                 className={`
                   flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-150
-                  ${
-                    active
-                      ? "bg-gradient-to-r from-accent-primary/20 to-accent-tertiary/20 text-accent-primary border border-border-accent shadow-lg shadow-accent-primary/10"
-                      : "text-text-tertiary hover:text-accent-hover hover:bg-bg-tertiary"
+                  ${active
+                    ? "bg-gradient-to-r from-accent-primary/20 to-accent-tertiary/20 text-accent-primary border border-border-accent shadow-lg shadow-accent-primary/10"
+                    : "text-text-tertiary hover:text-accent-hover hover:bg-bg-tertiary"
                   }
                 `}
               >

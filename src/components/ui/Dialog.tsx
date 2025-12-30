@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -86,7 +87,7 @@ function DialogOverlay({ className }: DialogOverlayProps) {
     <div
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-black/50",
+        "fixed inset-0 z-[999] bg-black/50",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         className
@@ -109,6 +110,11 @@ function DialogContent({
 }: DialogContentProps) {
   const { open, onOpenChange } = useDialogContext();
   const contentRef = React.useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   React.useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -132,14 +138,14 @@ function DialogContent({
 
   if (!open) return null;
 
-  return (
+  const content = (
     <>
       <DialogOverlay />
       <div
         ref={contentRef}
         data-slot="dialog-content"
         className={cn(
-          "fixed top-[50%] left-[50%] z-50 w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-lg border border-border-primary bg-bg-card p-6 shadow-lg outline-none sm:max-w-lg",
+          "fixed top-[50%] left-[50%] z-[1000] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-lg border border-border-primary bg-bg-card p-6 shadow-lg outline-none sm:max-w-lg",
           "data-[state=open]:animate-in data-[state=closed]:animate-out",
           "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
           "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
@@ -164,6 +170,10 @@ function DialogContent({
       </div>
     </>
   );
+
+  // Portal to body only when mounted (client-side)
+  if (!mounted) return null;
+  return createPortal(content, document.body);
 }
 
 function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
@@ -222,4 +232,3 @@ export {
   DialogTitle,
   DialogTrigger,
 };
-

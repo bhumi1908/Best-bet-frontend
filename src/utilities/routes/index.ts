@@ -16,6 +16,9 @@ export const routes = {
   privacy: '/privacy',
   about: '/about-us',
   support: '/support',
+  threePicGame: '/three-pic-game',
+  frontNumberGame: '/front-number-game',
+  profile: '/profile',
 
   // Auth routes
   auth: {
@@ -31,6 +34,8 @@ export const routes = {
   admin: {
     dashboard: '/admin/dashboard',
     user: '/admin/dashboard/user',
+    subscriptions: '/admin/dashboard/subscription',
+    history: '/admin/dashboard/history',
     profile: '/admin/dashboard/profile',
   },
 
@@ -46,18 +51,34 @@ export const routes = {
     },
     user: {
       getAll: '/users',
-      getById: '/users/:id',
-      update: '/users/:id',
+      getById: (id: number | string) => `/users/${id}`,
+      update: (id: number | string) => `/users/${id}`,
     },
     support: {
       create: '/support/create'
     },
     profile: {
-      editAdmin: '/admin/profile',
+      editAdmin: (id: number | string) => `/admin/profile/${id}`,
       changePasswordAdmin: '/admin/profile/change-password'
     },
     subscriptionPlan: {
-      getAll: '/subscription-plan'
+      getAll: '/subscription-plan',
+      admin: {
+        getAll: "/admin/subscription-plan",
+        getByPlanId: (id: number | string) => `/admin/subscription-plan/${id}`,
+        create: "/admin/subscription-plan",
+        update: (id: number | string) => `/admin/subscription-plan/${id}`,
+        delete: (id: number | string) => `/admin/subscription-plan/${id}`,
+      },
+    },
+    subscription: {
+      admin: {
+        getAll: '/subscription/users',
+        getSubscriptionDetails: (id: number | string) => `/subscription/users/${id}`
+      }
+    },
+    stripe: {
+      getIntegrationStatus: '/stripe/status',
     }
   },
 } as const;
