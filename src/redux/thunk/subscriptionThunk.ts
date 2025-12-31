@@ -15,9 +15,7 @@ export const getAllUserSubscriptionsAdminThunk = createAsyncThunk<
   {
     page?: number;
     limit?: number;
-    filters?: SubscriptionFilters;
-    sortBy?: string;
-    sortOrder?: "asc" | "desc" | "ascend" | "descend";
+    filters: SubscriptionFilters;
   },
   { rejectValue: RejectPayload }
 >(
@@ -26,49 +24,28 @@ export const getAllUserSubscriptionsAdminThunk = createAsyncThunk<
     {
       page = 1,
       limit = 10,
-      filters = {},
-      sortBy = "createdAt",
-      sortOrder = "desc",
+      filters
     },
     { rejectWithValue }
   ) => {
     try {
+      console.log('filters----------1', filters)
       const params: Record<string, string> = {
         page: String(page),
         limit: String(limit),
-        sortBy,
-        sortOrder:
-          sortOrder === "ascend"
-            ? "asc"
-            : sortOrder === "descend"
-              ? "desc"
-              : sortOrder,
+        sortBy: filters.sortBy,
+        sortOrder: filters.sortOrder === "ascend" ? "asc" : "desc",
       };
 
-      // Filters
-      if (filters.search) {
-        params.search = filters.search;
-      }
+      // add filters
+      if (filters.search) params.search = filters.search;
+      if (filters.status) params.status = filters.status;
+      if (typeof filters.planId === "number") params.planId = String(filters.planId);
+      if (filters.plan) params.plan = filters.plan;
+      if (filters.startDateFrom instanceof Date) params.startDateFrom = filters.startDateFrom.toISOString();
+      if (filters.startDateTo instanceof Date) params.startDateTo = filters.startDateTo.toISOString();
 
-      if (filters.status) {
-        params.status = filters.status;
-      }
-
-      if (typeof filters.planId === "number") {
-        params.planId = String(filters.planId);
-      }
-
-      if (filters.plan) {
-        params.plan = filters.plan;
-      }
-
-      if (filters.startDateFrom instanceof Date) {
-        params.startDateFrom = filters.startDateFrom.toISOString();
-      }
-
-      if (filters.startDateTo instanceof Date) {
-        params.startDateTo = filters.startDateTo.toISOString();
-      }
+      console.log('params', params)
 
       const response = await apiClient.get<{
         data: GetAllSubscriptionsResponse;
@@ -108,6 +85,7 @@ export const getSubscriptionDetailsAdminThunk = createAsyncThunk<
       }>(
         `${routes.api.subscription.admin.getSubscriptionDetails(subscriptionId)}`
       );
+      console.log(' response.data ',  response.data )
 
       if (
         response.data &&

@@ -21,8 +21,11 @@ export default function ProfilePage() {
   const { data: session, update } = useSession();
   const user = session?.user
 
+  console.log('session', session)
+
   const firstNameRef = useRef<HTMLInputElement>(null);
   const lastNameRef = useRef<HTMLInputElement>(null);
+  const phoneNoRef = useRef<HTMLInputElement>(null);
   const [isEditProfile, setIsEditProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -34,10 +37,12 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState({
     firstName: "",
     lastName: "",
+    phoneNo: "",
   });
   const [formValues, setFormValues] = useState({
     firstName: "",
     lastName: "",
+    phoneNo: "",
   });
 
   const dispatch = useAppDispatch();
@@ -112,7 +117,8 @@ export default function ProfilePage() {
 
       const isDirty =
         formValues.firstName.trim() !== profile.firstName.trim() ||
-        formValues.lastName.trim() !== profile.lastName.trim();
+        formValues.lastName.trim() !== profile.lastName.trim() ||
+        formValues.phoneNo.trim() !== profile.phoneNo.trim();
 
       if (!isDirty) {
         setIsEditProfile(false);
@@ -126,12 +132,14 @@ export default function ProfilePage() {
             id: session!.user.id,
             firstName: formValues.firstName.trim(),
             lastName: formValues.lastName.trim(),
+            phoneNo: formValues.phoneNo.trim(),
           })
         ).unwrap();
 
         setProfile({
           firstName: updatedUser.firstName,
           lastName: updatedUser.lastName,
+          phoneNo: updatedUser.phoneNo || "",
         });
 
         update({
@@ -139,6 +147,7 @@ export default function ProfilePage() {
             ...session?.user,
             firstName: updatedUser.firstName,
             lastName: updatedUser.lastName,
+            phoneNo: updatedUser.phoneNo,
           },
         });
 
@@ -178,6 +187,7 @@ export default function ProfilePage() {
       const data = {
         firstName: session.user.firstName,
         lastName: session.user.lastName,
+        phoneNo: session.user.phoneNo
       };
 
       setProfile(data);
@@ -283,6 +293,19 @@ export default function ProfilePage() {
                     />
                   ) : (
                     <p className="text-sm text-text-primary">{user.lastName || "N/A"}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-xs text-text-tertiary mb-1.5 block font-medium">Phone Number</label>
+                  {isEditProfile ? (
+                    <Input
+                      defaultValue={user?.phoneNo}
+                      ref={phoneNoRef}
+                      size="middle"
+                      onChange={handleChange("phoneNo")}
+                    />
+                  ) : (
+                    <p className="text-sm text-text-primary">{user.phoneNo || "N/A"}</p>
                   )}
                 </div>
                 <div>

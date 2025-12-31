@@ -18,6 +18,7 @@ export interface User {
   email: string;
   firstName: string | null;
   lastName: string | null;
+  phoneNo: string | null;
   role: UserRole;
   isInactive: boolean;
   createdAt: string;
@@ -33,6 +34,7 @@ export interface UIUser {
   email: string;
   firstName?: string | null;
   lastName?: string | null;
+  phoneNo?: string | null;
   name?: string;
   role: UserRole;
   isActive: boolean;
@@ -48,6 +50,7 @@ export interface UserContextUser {
   email: string;
   firstName?: string;
   lastName?: string;
+  phoneNo?: string;
   name?: string;
   role: UserRole;
   isActive?: boolean;
@@ -153,6 +156,7 @@ export interface UpdateUserPayload {
   id: number;
   firstName?: string;
   lastName?: string;
+  phoneNo?: string;
   role?: UserRole;
   isInactive?: boolean;
 }
@@ -179,6 +183,7 @@ export interface UserListResponse {
 export interface UpdateUserData {
   firstName?: string;
   lastName?: string;
+  phoneNo?: string;
   email?: string;
   role?: UserRole;
 }
@@ -193,6 +198,7 @@ export interface UpdateUserData {
 export interface UserFormData {
   firstName: string;
   lastName: string;
+  phoneNo: string;
   email: string;
   role: UserRole;
   isActive: boolean;
@@ -211,6 +217,7 @@ export const userToUIUser = (user: User): UIUser => {
     email: user.email,
     firstName: user.firstName,
     lastName: user.lastName,
+    phoneNo: user.phoneNo,
     name: user.firstName && user.lastName
       ? `${user.firstName} ${user.lastName}`
       : user.firstName || user.lastName || 'N/A',
@@ -230,6 +237,7 @@ export const uiUserToContextUser = (user: UIUser): UserContextUser => {
     email: user.email,
     firstName: user.firstName || undefined,
     lastName: user.lastName || undefined,
+    phoneNo: user.phoneNo || undefined,
     name: user.name,
     role: user.role,
     isActive: user.isActive,

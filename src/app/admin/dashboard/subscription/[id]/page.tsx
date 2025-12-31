@@ -22,6 +22,7 @@ import {
     Shield,
     Package,
     Activity,
+    MoreVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -42,6 +43,10 @@ import {
 } from "@/components/ui/Dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "react-toastify";
+import { useAppDispatch, useAppSelector } from "@/redux/store/hooks";
+import { getSubscriptionDetailsAdminThunk } from "@/redux/thunk/subscriptionThunk";
+import SubscriptionDetailsSkeleton from "@/components/SubscritionDetailSkeleton";
+import { Dropdown, DropdownContent, DropdownItem, DropdownTrigger } from "@/components/ui/Dropdown";
 
 // Types
 interface SubscriptionPlan {
@@ -90,6 +95,16 @@ interface Payment {
     description?: string;
 }
 
+const formatDate = (date?: string | Date) =>
+    date
+        ? new Intl.DateTimeFormat("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        }).format(new Date(date))
+        : "-";
+
+
 export default function SubscriptionDetailsPage() {
     const params = useParams();
     const router = useRouter();
@@ -115,6 +130,19 @@ export default function SubscriptionDetailsPage() {
         amount: "",
         reason: "",
     });
+
+    const dispatch = useAppDispatch();
+    const { selectedSubscription, isLoading } = useAppSelector((state) => state.subscription)
+
+    console.log('selectedSubscription', selectedSubscription)
+
+    const fetchSubscriptionDetails = async () => {
+        try {
+            dispatch(getSubscriptionDetailsAdminThunk(Number(subscriptionId))).unwrap();
+        } catch (error: any) {
+            console.error("Failed to fetch subscriptions details:", error.message || error);
+        }
+    }
 
     // Fetch data
     useEffect(() => {
@@ -218,26 +246,6 @@ export default function SubscriptionDetailsPage() {
                         transactionId: "txn_1234567890",
                         date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
                         description: "Monthly subscription payment",
-                    },
-                    {
-                        id: "pay_2",
-                        subscriptionId: subscriptionId,
-                        amount: 19.99,
-                        status: "succeeded",
-                        paymentMethod: "Credit Card",
-                        transactionId: "txn_0987654321",
-                        date: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-                        description: "Monthly subscription payment",
-                    },
-                    {
-                        id: "pay_3",
-                        subscriptionId: subscriptionId,
-                        amount: 19.99,
-                        status: "succeeded",
-                        paymentMethod: "Credit Card",
-                        transactionId: "txn_1122334455",
-                        date: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
-                        description: "Initial subscription payment",
                     },
                 ];
 
@@ -367,17 +375,18 @@ export default function SubscriptionDetailsPage() {
     };
 
     const getPaymentStatusBadge = (status: string) => {
+        console.log('status', status)
         const styles = {
-            succeeded: "bg-green-500/20 text-green-400 border-green-500/30",
-            pending: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-            failed: "bg-red-500/20 text-red-400 border-red-500/30",
-            refunded: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+            SUCCESS: "bg-green-500/20 text-green-400 border-green-500/30",
+            PENDING: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+            FAILED: "bg-red-500/20 text-red-400 border-red-500/30",
+            REFUNDED: "bg-gray-500/20 text-gray-400 border-gray-500/30",
         };
         return (
             <span
                 className={cn(
                     "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border",
-                    styles[status as keyof typeof styles] || styles.succeeded
+                    styles[status as keyof typeof styles] || styles.SUCCESS
                 )}
             >
                 {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -385,18 +394,17 @@ export default function SubscriptionDetailsPage() {
         );
     };
 
-    if (loading) {
+    useEffect(() => {
+        if (subscriptionId) fetchSubscriptionDetails();
+    }, [subscriptionId]);
+
+    if (isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="flex flex-col items-center gap-4">
-                    <RefreshCw className="w-8 h-8 text-accent-primary animate-spin" />
-                    <p className="text-text-tertiary">Loading subscription details...</p>
-                </div>
-            </div>
-        );
+            <SubscriptionDetailsSkeleton />
+        )
     }
 
-    if (!subscription || !currentPlan) {
+    if (!selectedSubscription) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
@@ -421,7 +429,7 @@ export default function SubscriptionDetailsPage() {
                     <h1 className="text-2xl sm:text-4xl font-bold mt-2 mb-2 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 bg-clip-text text-transparent">
                         Subscription Details
                     </h1>
-                    <p className="text-text-tertiary text-sm sm:text-base">Comprehensive view of subscription #{subscription.id}</p>
+                    <p className="text-text-tertiary text-sm sm:text-base">Comprehensive view of subscription #{selectedSubscription.subscriptionId}</p>
                 </div>
             </div>
 
@@ -431,7 +439,7 @@ export default function SubscriptionDetailsPage() {
                     danger
                     icon={<Ban className="w-4 h-4" />}
                     onClick={() => setRevokeDialogOpen(true)}
-                    disabled={subscription.status !== "active"}
+                    disabled={selectedSubscription.status !== "ACTIVE"}
                     className="!w-fit border border-border-error"
                 >
                     Revoke Access
@@ -440,32 +448,15 @@ export default function SubscriptionDetailsPage() {
                     type="default"
                     icon={<RefreshCw className="w-4 h-4" />}
                     onClick={() => {
-                        setRefundFormData({ amount: subscription.amount.toString(), reason: "" });
+                        setRefundFormData({ amount: selectedSubscription.plan.price.toString(), reason: "" });
                         setRefundDialogOpen(true);
                     }}
-                    disabled={subscription.status !== "active"}
+                    disabled={selectedSubscription.status !== "ACTIVE"}
                     className="!w-fit"
                 >
                     Process Refund
                 </Button>
-                <Button
-                    type="default"
-                    icon={<ArrowDown className="w-4 h-4" />}
-                    onClick={() => setDowngradeDialogOpen(true)}
-                    disabled={subscription.status !== "active"}
-                    className="!w-fit"
-                >
-                    Downgrade Plan
-                </Button>
-                <Button
-                    type="primary"
-                    className="!w-fit"
-                    icon={<ArrowUp className="w-4 h-4" />}
-                    onClick={() => setUpgradeDialogOpen(true)}
-                    disabled={subscription.status !== "active"}
-                >
-                    Upgrade Plan
-                </Button>
+
             </div>
 
             {/* Main Content Grid */}
@@ -485,7 +476,7 @@ export default function SubscriptionDetailsPage() {
                                 <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
                                     Full Name
                                 </label>
-                                <p className="text-base text-text-primary font-medium">{subscription.userName}</p>
+                                <p className="text-base text-text-primary font-medium">{selectedSubscription.user.name}</p>
                             </div>
                             <div>
                                 <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
@@ -493,45 +484,39 @@ export default function SubscriptionDetailsPage() {
                                 </label>
                                 <p className="text-base text-text-primary flex items-center gap-2">
                                     <Mail className="w-4 h-4 text-text-tertiary" />
-                                    {subscription.userEmail}
+                                    {selectedSubscription?.user.email}
                                 </p>
                             </div>
-                            {subscription.userPhone && (
+                            {selectedSubscription?.user.phoneNo && (
                                 <div>
                                     <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
                                         Phone Number
                                     </label>
-                                    <p className="text-base text-text-primary">{subscription.userPhone}</p>
+                                    <p className="text-base text-text-primary">{selectedSubscription.user.phoneNo}</p>
                                 </div>
                             )}
                             <div>
                                 <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
                                     User ID
                                 </label>
-                                <p className="text-base text-text-primary font-mono text-sm">{subscription.userId}</p>
+                                <p className="text-base text-text-primary font-mono text-sm">{selectedSubscription.user.id}</p>
                             </div>
                             <div>
                                 <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
                                     Member Since
                                 </label>
                                 <p className="text-base text-text-primary">
-                                    {new Date(subscription.userJoinDate).toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                    })}
+                                    {formatDate(selectedSubscription.user.createdAt)}
                                 </p>
                             </div>
-                            {subscription.stripeCustomerId && (
-                                <div>
-                                    <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
-                                        Stripe Customer ID
-                                    </label>
-                                    <p className="text-base text-text-primary font-mono text-sm">
-                                        {subscription.stripeCustomerId}
-                                    </p>
-                                </div>
-                            )}
+                            <div>
+                                <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
+                                    Stripe Customer ID
+                                </label>
+                                <p className="text-base text-text-primary font-mono text-sm">
+                                    {selectedSubscription.user.stripeCustomerId || "N/A"}
+                                </p>
+                            </div>
                         </div>
                     </div>
 
@@ -548,13 +533,13 @@ export default function SubscriptionDetailsPage() {
                                 <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
                                     Subscription ID
                                 </label>
-                                <p className="text-base text-text-primary font-mono text-sm">{subscription.id}</p>
+                                <p className="text-base text-text-primary font-mono text-sm">{selectedSubscription.subscriptionId}</p>
                             </div>
                             <div>
                                 <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
                                     Status
                                 </label>
-                                <div>{getStatusBadge(subscription.status)}</div>
+                                <div>{getStatusBadge(selectedSubscription!.status)}</div>
                             </div>
                             <div>
                                 <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
@@ -562,11 +547,8 @@ export default function SubscriptionDetailsPage() {
                                 </label>
                                 <p className="text-base text-text-primary flex items-center gap-2">
                                     <Calendar className="w-4 h-4 text-text-tertiary" />
-                                    {new Date(subscription.startDate).toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                    })}
+
+                                    {formatDate(selectedSubscription.startDate)}
                                 </p>
                             </div>
                             <div>
@@ -575,25 +557,17 @@ export default function SubscriptionDetailsPage() {
                                 </label>
                                 <p className="text-base text-text-primary flex items-center gap-2">
                                     <Calendar className="w-4 h-4 text-text-tertiary" />
-                                    {new Date(subscription.endDate).toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                    })}
+                                    {formatDate(selectedSubscription.endDate)}
                                 </p>
                             </div>
-                            {subscription.nextBillingDate && subscription.status === "active" && (
+                            {subscription?.endDate && selectedSubscription.status === "ACTIVE" && (
                                 <div>
                                     <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
                                         Next Billing Date
                                     </label>
                                     <p className="text-base text-accent-primary font-medium flex items-center gap-2">
                                         <Calendar className="w-4 h-4" />
-                                        {new Date(subscription.nextBillingDate).toLocaleDateString("en-US", {
-                                            year: "numeric",
-                                            month: "long",
-                                            day: "numeric",
-                                        })}
+                                        {formatDate(selectedSubscription.endDate)}
                                     </p>
                                 </div>
                             )}
@@ -601,52 +575,39 @@ export default function SubscriptionDetailsPage() {
                                 <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
                                     Billing Cycle
                                 </label>
-                                <p className="text-base text-text-primary capitalize">{subscription.billingCycle}</p>
+                                <p className="text-base text-text-primary capitalize">{selectedSubscription.plan.duration === 1 ? 'monthly' : 'yearly'}</p>
                             </div>
-                            <div>
-                                <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
-                                    Auto Renewal
-                                </label>
-                                <span
-                                    className={cn(
-                                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border",
-                                        subscription.autoRenewal
-                                            ? "bg-green-500/20 text-green-400 border-green-500/30"
-                                            : "bg-red-500/20 text-red-400 border-red-500/30"
-                                    )}
-                                >
-                                    {subscription.autoRenewal ? (
-                                        <>
-                                            <CheckCircle className="w-3.5 h-3.5" />
-                                            Enabled
-                                        </>
-                                    ) : (
-                                        <>
-                                            <XCircle className="w-3.5 h-3.5" />
-                                            Disabled
-                                        </>
-                                    )}
-                                </span>
-                            </div>
+
                             <div>
                                 <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
                                     Payment Method
                                 </label>
                                 <p className="text-base text-text-primary flex items-center gap-2">
                                     <CreditCard className="w-4 h-4 text-text-tertiary" />
-                                    {subscription.paymentMethod}
+                                    {selectedSubscription.payment?.paymentMethod}
                                 </p>
                             </div>
-                            {subscription.stripeSubscriptionId && (
-                                <div className="sm:col-span-2">
+                            {selectedSubscription.payment?.stripePaymentId && (
+                                <div>
                                     <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
                                         Stripe Subscription ID
                                     </label>
                                     <p className="text-base text-text-primary font-mono text-sm">
-                                        {subscription.stripeSubscriptionId}
+                                        {selectedSubscription.payment?.stripePaymentId}
                                     </p>
                                 </div>
                             )}
+                            {selectedSubscription.payment?.stripePaymentId && (
+                                <div>
+                                    <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
+                                        Stripe Payment ID
+                                    </label>
+                                    <p className="text-base text-text-primary font-mono text-sm">
+                                        {selectedSubscription.payment.stripePaymentId}
+                                    </p>
+                                </div>
+                            )}
+
                         </div>
                     </div>
 
@@ -659,42 +620,35 @@ export default function SubscriptionDetailsPage() {
                             <h2 className="text-xl font-semibold text-text-primary">Payment History</h2>
                         </div>
                         <div className="space-y-3">
-                            {payments.length === 0 ? (
+                            {!selectedSubscription.payment ? (
                                 <p className="text-text-tertiary text-center py-8">No payment history available</p>
                             ) : (
-                                payments.map((payment) => (
-                                    <div
-                                        key={payment.id}
-                                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-bg-secondary border border-border-primary rounded-lg hover:border-border-accent transition-colors"
-                                    >
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <p className="font-medium text-text-primary">
-                                                    ${payment.amount.toFixed(2)}
-                                                </p>
-                                                {getPaymentStatusBadge(payment.status)}
-                                            </div>
-                                            {payment.description && (
-                                                <p className="text-sm text-text-tertiary">{payment.description}</p>
-                                            )}
-                                            <p className="text-xs text-text-muted mt-1">
-                                                Transaction ID: {payment.transactionId}
+                                <div
+                                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-bg-secondary border border-border-primary rounded-lg hover:border-border-accent transition-colors"
+                                >
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <p className="font-medium text-text-primary">
+                                                ${selectedSubscription.payment.amount.toFixed(2)}
                                             </p>
+                                            {getPaymentStatusBadge(selectedSubscription.payment.status)}
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                            <div className="text-right">
-                                                <p className="text-sm text-text-primary">
-                                                    {new Date(payment.date).toLocaleDateString("en-US", {
-                                                        year: "numeric",
-                                                        month: "short",
-                                                        day: "numeric",
-                                                    })}
-                                                </p>
-                                                <p className="text-xs text-text-tertiary">{payment.paymentMethod}</p>
-                                            </div>
+                                        {selectedSubscription.plan.duration && (
+                                            <p className="text-sm text-text-tertiary">{selectedSubscription.plan.duration === 1 ? 'Monthly subscription payment' : 'Yearly subscription payment'}</p>
+                                        )}
+                                        <p className="text-xs text-text-muted mt-1">
+                                            Transaction ID: {selectedSubscription.payment.stripePaymentId}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="text-right">
+                                            <p className="text-sm text-text-primary">
+                                                {formatDate(selectedSubscription.payment.createdAt)}
+                                            </p>
+                                            <p className="text-xs text-text-tertiary">{selectedSubscription.payment.paymentMethod}</p>
                                         </div>
                                     </div>
-                                ))
+                                </div>
                             )}
                         </div>
                     </div>
@@ -704,23 +658,49 @@ export default function SubscriptionDetailsPage() {
                 <div className="space-y-6">
                     {/* Current Plan Card */}
                     <div className="bg-gradient-to-br from-accent-primary/10 via-bg-card to-bg-card border-2 border-accent-primary/30 rounded-lg p-6 shadow-lg">
-                        <div className="flex items-center gap-3 mb-4">
+                        <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-lg bg-accent-primary/20 border border-border-accent flex items-center justify-center">
                                 <Package className="w-5 h-5 text-accent-primary" />
                             </div>
                             <h2 className="text-xl font-semibold text-text-primary">Current Plan</h2>
                         </div>
+                          <Dropdown>
+                                <DropdownTrigger className="!w-fit !p-2 border-none bg-transparent hover:bg-bg-secondary rounded-lg">
+                                    <MoreVertical className="w-5 h-5 text-text-tertiary" />
+                                </DropdownTrigger>
+
+                                <DropdownContent className="!w-50 !min-w-0">
+                                    <DropdownItem
+                                        icon={<ArrowUp className="w-4 h-4" />}
+                                        onClick={() => setUpgradeDialogOpen(true)}
+                                        disabled={selectedSubscription.status !== "ACTIVE"}
+                                    >
+                                        Upgrade Plan
+                                    </DropdownItem>
+
+                                    <DropdownItem
+                                        icon={<ArrowDown className="w-4 h-4" />}
+                                        onClick={() => setDowngradeDialogOpen(true)}
+                                        disabled={selectedSubscription.status !== "ACTIVE"}
+                                        danger
+                                    >
+                                        Downgrade Plan
+                                    </DropdownItem>
+                                </DropdownContent>
+                            </Dropdown>
+                        </div>
                         <div className="mb-4">
-                            <h3 className="text-2xl font-bold text-accent-primary mb-1">{currentPlan.name}</h3>
-                            <p className="text-sm text-text-tertiary">{currentPlan.description}</p>
+                            <h3 className="text-2xl font-bold text-accent-primary mb-1">{selectedSubscription.plan.name}</h3>
+                            <p className="text-sm text-text-tertiary">{selectedSubscription.plan.description}</p>
                         </div>
                         <div className="mb-6">
                             <div className="flex items-baseline gap-1">
                                 <span className="text-4xl font-bold text-text-primary">
-                                    ${subscription.amount.toFixed(2)}
+                                    ${selectedSubscription.plan.price.toFixed(2)}
                                 </span>
                                 <span className="text-text-tertiary">
-                                    /{subscription.billingCycle === "monthly" ? "month" : "year"}
+                                    /{selectedSubscription.plan.duration === 1 ? "month" : "year"}
                                 </span>
                             </div>
                         </div>
@@ -728,52 +708,15 @@ export default function SubscriptionDetailsPage() {
                             <p className="text-xs font-semibold text-text-muted tracking-wide uppercase">
                                 Included Features
                             </p>
-                            {currentPlan.features.map((feature, idx) => (
+                            {selectedSubscription.plan.features.map((feature, idx) => (
                                 <div key={idx} className="flex items-start gap-3">
                                     <div className="w-5 h-5 rounded-full bg-accent-primary/15 border border-border-accent flex items-center justify-center shrink-0 mt-0.5">
                                         <Check className="w-3.5 h-3.5 text-accent-primary" />
                                     </div>
-                                    <span className="text-sm text-text-primary">{feature}</span>
+                                    <span className="text-sm text-text-primary">{feature.name}</span>
                                 </div>
                             ))}
-                        </div>
-                    </div>
 
-                    {/* Summary Stats Card */}
-                    <div className="bg-bg-card border border-border-primary rounded-lg p-6">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-lg bg-accent-primary/20 border border-border-accent flex items-center justify-center">
-                                <DollarSign className="w-5 h-5 text-accent-primary" />
-                            </div>
-                            <h2 className="text-xl font-semibold text-text-primary">Summary</h2>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between pb-3 border-b border-border-primary">
-                                <span className="text-sm text-text-tertiary">Total Payments</span>
-                                <span className="text-lg font-semibold text-text-primary">{payments.length}</span>
-                            </div>
-                            <div className="flex items-center justify-between pb-3 border-b border-border-primary">
-                                <span className="text-sm text-text-tertiary">Total Paid</span>
-                                <span className="text-lg font-semibold text-accent-primary">
-                                    ${subscription.totalPaid.toFixed(2)}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between pb-3 border-b border-border-primary">
-                                <span className="text-sm text-text-tertiary">Current Amount</span>
-                                <span className="text-lg font-semibold text-text-primary">
-                                    ${subscription.amount.toFixed(2)}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-text-tertiary">Subscription Age</span>
-                                <span className="text-lg font-semibold text-text-primary">
-                                    {Math.floor(
-                                        (new Date().getTime() - new Date(subscription.startDate).getTime()) /
-                                        (1000 * 60 * 60 * 24)
-                                    )}{" "}
-                                    days
-                                </span>
-                            </div>
                         </div>
                     </div>
 
@@ -806,7 +749,7 @@ export default function SubscriptionDetailsPage() {
                     <DialogHeader>
                         <DialogTitle>Upgrade Subscription</DialogTitle>
                         <DialogDescription>
-                            Upgrade {subscription.userName}'s subscription from {subscription.planName} to a higher
+                            Upgrade {selectedSubscription.user.name}'s subscription from {selectedSubscription.plan.name} to a higher
                             tier plan.
                         </DialogDescription>
                     </DialogHeader>
@@ -819,7 +762,7 @@ export default function SubscriptionDetailsPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {availablePlans
-                                        .filter((plan) => plan.isActive && plan.price > subscription.amount)
+                                        // .filter((plan) => plan.isActive && plan.price > subscription.amount)
                                         .map((plan) => (
                                             <SelectItem key={plan.id} value={plan.id}>
                                                 {plan.name} - ${plan.price.toFixed(2)}/mo
@@ -853,7 +796,7 @@ export default function SubscriptionDetailsPage() {
                     <DialogHeader>
                         <DialogTitle>Downgrade Subscription</DialogTitle>
                         <DialogDescription>
-                            Downgrade {subscription.userName}'s subscription from {subscription.planName} to a lower
+                            Downgrade {selectedSubscription.user.name}'s subscription from {selectedSubscription.plan.name} to a lower
                             tier plan.
                         </DialogDescription>
                     </DialogHeader>
@@ -866,7 +809,7 @@ export default function SubscriptionDetailsPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {availablePlans
-                                        .filter((plan) => plan.isActive && plan.price < subscription.amount)
+                                        // .filter((plan) => plan.isActive && plan.price < subscription.amount)
                                         .map((plan) => (
                                             <SelectItem key={plan.id} value={plan.id}>
                                                 {plan.name} - ${plan.price.toFixed(2)}/mo
@@ -900,7 +843,7 @@ export default function SubscriptionDetailsPage() {
                     <DialogHeader>
                         <DialogTitle>Revoke Subscription</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to revoke the subscription for {subscription.userName}? This will
+                            Are you sure you want to revoke the subscription for {selectedSubscription.user.name}? This will
                             cancel the subscription immediately and the user will lose access to premium features.
                         </DialogDescription>
                     </DialogHeader>
@@ -931,7 +874,7 @@ export default function SubscriptionDetailsPage() {
                     <DialogHeader>
                         <DialogTitle>Process Refund</DialogTitle>
                         <DialogDescription>
-                            Process a refund for {subscription.userName}'s subscription payment.
+                            Process a refund for {selectedSubscription.user.name}'s subscription payment.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
@@ -945,7 +888,7 @@ export default function SubscriptionDetailsPage() {
                                 placeholder="0.00"
                             />
                             <p className="text-xs text-text-muted mt-1">
-                                Maximum refundable: ${subscription.amount.toFixed(2)}
+                                {/* Maximum refundable: ${subscription.amount.toFixed(2)} */}
                             </p>
                         </div>
                         <div>

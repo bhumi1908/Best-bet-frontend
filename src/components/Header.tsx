@@ -69,9 +69,9 @@ export default function Header() {
   ];
 
   const isActive = (href: string) => pathname === href;
-
+  
   const isGameRoute = () => {
-    return pathname === routes.threePicGame || pathname === routes.frontNumberGame;
+    return pathname === routes.game1 || pathname === routes.game2;
   };
 
   const handleLinkClick = (href: string, requiresAuth: boolean) => {
@@ -160,27 +160,27 @@ export default function Header() {
 
               {/* Games Dropdown Menu */}
               {isGamesDropdownOpen && (
-                <div className="absolute top-full left-0 mt-2 w-56 border border-white/10 bg-black/95 backdrop-blur-md rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute top-full left-0 mt-2 w-24 border border-white/10 bg-black/95 backdrop-blur-md rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="p-1.5 flex flex-col gap-0.5">
                     <Link
-                      href={routes.threePicGame}
+                      href={routes.game1}
                       onClick={() => setIsGamesDropdownOpen(false)}
-                      className={`px-3 py-2 text-sm rounded-lg transition-colors flex items-center gap-2 ${pathname === routes.threePicGame
+                      className={`px-3 py-2 text-sm rounded-lg transition-colors flex items-center gap-2 justify-center ${pathname === routes.game1
                         ? "bg-yellow-400/20 text-yellow-400"
                         : "text-white hover:bg-white/10 hover:text-yellow-300"
                         }`}
                     >
-                      Three Pic Game
+                      Game 1
                     </Link>
                     <Link
-                      href={routes.frontNumberGame}
+                      href={routes.game2}
                       onClick={() => setIsGamesDropdownOpen(false)}
-                      className={`px-3 py-2 text-sm rounded-lg transition-colors flex items-center gap-2 ${pathname === routes.frontNumberGame
+                      className={`px-3 py-2 text-sm rounded-lg transition-colors flex items-center gap-2 justify-center ${pathname === routes.game2
                         ? "bg-yellow-400/20 text-yellow-400"
                         : "text-white hover:bg-white/10 hover:text-yellow-300"
                         }`}
                     >
-                      Front Number Game
+                      Game 2
                     </Link>
                   </div>
                 </div>
@@ -289,30 +289,30 @@ export default function Header() {
             {isGamesDropdownOpen && (
               <div className="pl-4 space-y-1">
                 <Link
-                  href={routes.threePicGame}
+                  href={routes.game1}
                   onClick={() => {
                     setIsGamesDropdownOpen(false);
                     setIsMenuOpen(false);
                   }}
-                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pathname === routes.threePicGame
+                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pathname === routes.game1
                     ? "bg-yellow-400/20 text-yellow-400"
                     : "text-white hover:text-yellow-300 hover:bg-white/5"
                     }`}
                 >
-                  Three Pic Game
+                  Game 1
                 </Link>
                 <Link
-                  href={routes.frontNumberGame}
+                  href={routes.game2}
                   onClick={() => {
                     setIsGamesDropdownOpen(false);
                     setIsMenuOpen(false);
                   }}
-                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pathname === routes.frontNumberGame
+                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pathname === routes.game2
                     ? "bg-yellow-400/20 text-yellow-400"
                     : "text-white hover:text-yellow-300 hover:bg-white/5"
                     }`}
                 >
-                  Front Number Game
+                  Game 2
                 </Link>
               </div>
             )}

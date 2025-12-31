@@ -4,12 +4,15 @@
    Core domain types
 ========================= */
 
-export type SubscriptionStatus = "ACTIVE" | "EXPIRED" | "CANCELED";
+export type SubscriptionStatus = "ACTIVE" | "EXPIRED" | "CANCELED" | "REFUNDED";
 
 export interface User {
   id: number;
   name: string;
   email: string;
+  phoneNo: string;
+  createdAt: string;
+  stripeCustomerId:string;
 }
 
 export interface Feature {
@@ -23,14 +26,16 @@ export interface Plan {
   name: string;
   price: number;
   duration: number;
+  description: string;
   features: Feature[];
 }
 
 export interface Payment {
   amount: number;
-  status: string;
   paymentMethod: string,
   stripePaymentId: string | null;
+  status: string,
+  createdAt: Date
 }
 
 export interface Subscription {

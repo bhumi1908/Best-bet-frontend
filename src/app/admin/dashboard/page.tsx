@@ -14,7 +14,7 @@ import {
   Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, RadialBarChart, RadialBar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, RadialBarChart, RadialBar } from 'recharts';
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useSession } from "next-auth/react";
 
@@ -31,8 +31,9 @@ interface DashboardStats {
     newThisWeek: number;
     growth: number;
     active: {
-      daily: number;
-      monthly: number;
+      basic: number;
+      premium: number;
+      vip: number;
     };
   };
   revenue: {
@@ -59,26 +60,36 @@ interface DashboardStats {
   recentSubscriptions?: SubscriptionPurchase[];
 }
 
-// Weekly data for AreaChart
+// Monthly data for AreaChart
 const weeklyData = [
-  { day: 'Mon', visits: 320 },
-  { day: 'Tue', visits: 380 },
-  { day: 'Wed', visits: 350 },
-  { day: 'Thu', visits: 420 },
-  { day: 'Fri', visits: 390 },
-  { day: 'Sat', visits: 450 },
-  { day: 'Sun', visits: 410 },
+  { month: 'Jan', visits: 320 },
+  { month: 'Feb', visits: 380 },
+  { month: 'Mar', visits: 350 },
+  { month: 'Apr', visits: 420 },
+  { month: 'May', visits: 390 },
+  { month: 'Jun', visits: 450 },
+  { month: 'Jul', visits: 410 },
+  { month: 'Aug', visits: 470 },
+  { month: 'Sep', visits: 440 },
+  { month: 'Oct', visits: 500 },
+  { month: 'Nov', visits: 480 },
+  { month: 'Dec', visits: 520 },
 ];
 
 // Revenue data for BarChart
 const revenueWeeklyData = [
-  { day: 'Mon', revenue: 8500 },
-  { day: 'Tue', revenue: 9200 },
-  { day: 'Wed', revenue: 10100 },
-  { day: 'Thu', revenue: 11200 },
-  { day: 'Fri', revenue: 11800 },
-  { day: 'Sat', revenue: 12200 },
-  { day: 'Sun', revenue: 12500 },
+  { month: 'Jan', revenue: 8500 },
+  { month: 'Feb', revenue: 9200 },
+  { month: 'Mar', revenue: 10100 },
+  { month: 'Apr', revenue: 11200 },
+  { month: 'May', revenue: 11800 },
+  { month: 'Jun', revenue: 12200 },
+  { month: 'Jul', revenue: 12500 },
+  { month: 'Aug', revenue: 13000 },
+  { month: 'Sep', revenue: 12800 },
+  { month: 'Oct', revenue: 13500 },
+  { month: 'Nov', revenue: 13200 },
+  { month: 'Dec', revenue: 14000 },
 ];
 
 // Mock chart data
@@ -183,8 +194,9 @@ export default function DashboardPage() {
           newThisWeek: 45,
           growth: 12.5,
           active: {
-            daily: 320,
-            monthly: 890,
+            basic: 320,
+            premium: 750,
+            vip: 120,
           },
         },
         revenue: {
@@ -478,7 +490,7 @@ export default function DashboardPage() {
             <StatCard
               title="Total Users"
               value={stats?.users.total.toLocaleString() || "0"}
-              subtitle={`${stats?.users.active.daily || 0} active today`}
+              subtitle={`${stats?.users.active.basic || 0} active today`}
               icon={Users}
               trend={{ value: stats?.users.growth || 0, isPositive: true }}
               chartData={userGrowthData}
@@ -538,9 +550,13 @@ export default function DashboardPage() {
                         <stop offset="95%" stopColor="#fbbf24" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                    <XAxis dataKey="day" stroke="#64748b" fontSize={12} />
-                    <YAxis stroke="#64748b" fontSize={12} />
+                    <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
+                    <YAxis
+                      stroke="#64748b"
+                      fontSize={12}
+                      domain={[0, 600]}
+                      ticks={[0, 300, 600]}
+                    />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: '#1a1a1a',
@@ -591,9 +607,13 @@ export default function DashboardPage() {
                         <stop offset="95%" stopColor="#fbbf24" stopOpacity={0.3} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                    <XAxis dataKey="day" stroke="#64748b" fontSize={12} />
-                    <YAxis stroke="#64748b" fontSize={12} />
+                    <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
+                    <YAxis
+                      stroke="#64748b"
+                      fontSize={12}
+                      domain={[0, 14000]}
+                      ticks={[0, 7000, 14000]}
+                    />
                     <Tooltip
                       cursor={false}
                       contentStyle={{
@@ -632,37 +652,46 @@ export default function DashboardPage() {
                     <Activity className="w-3 h-3 text-accent-primary" />
                   </div>
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-border-primary rounded-full h-2 overflow-hidden">
-                        <div
-                          className="h-full bg-accent-primary rounded-full transition-all duration-500"
-                          style={{ width: `${((stats?.users.active.daily || 0) / (stats?.users.total || 1)) * 100}%` }}
-                        />
+                    <div className="flex items-center gap-1">
+                      <div className="flex flex-col gap-1 w-full">
+                        <span className="text-xs font-medium text-text-primary">Basic</span>
+                        <div className="bg-border-primary rounded-full !h-2 overflow-hidden w-full">
+                          <div
+                            className="h-full bg-accent-primary rounded-full transition-all duration-500"
+                            style={{ width: `${((stats?.users.active.basic || 0) / (stats?.users.total || 1)) * 100}%` }}
+                          />
+                        </div>
                       </div>
                       <span className="text-xs font-medium text-text-primary w-12 text-right">
-                        {stats?.users.active.daily || 0}
+                        {stats?.users.active.basic || 0}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-border-primary rounded-full h-2 overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-accent-primary to-yellow-500 rounded-full transition-all duration-500"
-                          style={{ width: `${((stats?.users.active.monthly || 0) / (stats?.users.total || 1)) * 100}%` }}
-                        />
+                    <div className="flex items-center gap-1">
+                      <div className="flex flex-col gap-1 w-full">
+                        <span className="text-xs font-medium text-text-primary">Premium</span>
+                        <div className="bg-border-primary rounded-full !h-2 overflow-hidden w-full">
+                          <div
+                            className="h-full bg-accent-primary rounded-full transition-all duration-500"
+                            style={{ width: `${((stats?.users.active.premium || 0) / (stats?.users.total || 1)) * 100}%` }}
+                          />
+                        </div>
                       </div>
                       <span className="text-xs font-medium text-text-primary w-12 text-right">
-                        {stats?.users.active.monthly || 0}
+                        {stats?.users.active.premium || 0}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-border-primary rounded-full h-2 overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-full transition-all duration-500"
-                          style={{ width: `${((stats?.users.newThisWeek || 0) / (stats?.users.total || 1)) * 100}%` }}
-                        />
+                    <div className="flex items-center gap-1">
+                      <div className="flex flex-col gap-1 w-full">
+                        <span className="text-xs font-medium text-text-primary">VIP</span>
+                        <div className="bg-border-primary rounded-full !h-2 overflow-hidden w-full">
+                          <div
+                            className="h-full bg-accent-primary rounded-full transition-all duration-500"
+                            style={{ width: `${((stats?.users.active.vip || 0) / (stats?.users.total || 1)) * 100}%` }}
+                          />
+                        </div>
                       </div>
                       <span className="text-xs font-medium text-text-primary w-12 text-right">
-                        {stats?.users.newThisWeek || 0}
+                        {stats?.users.active.vip || 0}
                       </span>
                     </div>
                   </div>
@@ -671,21 +700,21 @@ export default function DashboardPage() {
                 {/* Key Metrics Grid */}
                 <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border-primary mt-auto">
                   <div className="text-center">
-                    <p className="text-xs text-text-muted mb-1">Daily</p>
+                    <p className="text-xs text-text-muted mb-1">Basic plan</p>
                     <p className="text-lg font-semibold text-accent-primary">
-                      {stats?.users.active.daily || 0}
+                      {stats?.users.active.basic || 0}
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-text-muted mb-1">Monthly</p>
+                    <p className="text-xs text-text-muted mb-1">Premium plan</p>
                     <p className="text-lg font-semibold text-accent-primary">
-                      {stats?.users.active.monthly || 0}
+                      {stats?.users.active.premium || 0}
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-text-muted mb-1">New</p>
-                    <p className="text-lg font-semibold text-green-400">
-                      +{stats?.users.newThisWeek || 0}
+                    <p className="text-xs text-text-muted mb-1">VIP plan</p>
+                    <p className="text-lg font-semibold text-accent-primary">
+                      {stats?.users.newThisWeek || 0}
                     </p>
                   </div>
                 </div>

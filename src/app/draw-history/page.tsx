@@ -161,6 +161,14 @@ export default function DrawHistoryPage() {
     if (sortBy === "date") {
       const dateA = new Date(a.date).getTime();
       const dateB = new Date(b.date).getTime();
+      
+      // If dates are the same, sort by type (Evening first, then Midday)
+      if (dateA === dateB) {
+        if (a.type === "Evening" && b.type === "Midday") return -1;
+        if (a.type === "Midday" && b.type === "Evening") return 1;
+        return 0;
+      }
+      
       return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
     } else {
       return sortOrder === "asc"
@@ -236,8 +244,18 @@ export default function DrawHistoryPage() {
       initial="initial"
       animate="animate"
     >
-      {/* Animated Background Gradient */}
-      <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-900 to-black">
+      {/* Background Image with Overlay */}
+      <div className="fixed inset-0">
+        {/* Blue Background Image with 50% opacity */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: 'url(/images/Blue-Background.png)',
+          }}
+        ></div>
+        {/* Dark overlay to maintain theme */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-gray-900/50 to-black/50"></div>
+        {/* Animated gradient overlays for Las Vegas vibe */}
         <motion.div
           className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-yellow-900/20 via-transparent to-transparent"
           animate={{ opacity: [0.5, 1, 0.5] }}
@@ -298,7 +316,7 @@ export default function DrawHistoryPage() {
         <section className="relative px-4 py-8" style={{ zIndex: 1 }}>
           <div className="max-w-7xl mx-auto">
             <motion.div
-              className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10"
+              className="bg-black/75 backdrop-blur-md rounded-2xl p-6 border border-white/10"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
@@ -524,7 +542,7 @@ export default function DrawHistoryPage() {
                     {sortedDraws.map((draw, index) => (
                       <motion.div
                         key={draw.id}
-                        className="group bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10 hover:border-yellow-400/50 transition-all duration-300"
+                        className="group bg-black/75 backdrop-blur-md rounded-xl p-6 border border-white/10 hover:border-yellow-400/50 transition-all duration-300"
                         variants={staggerItem}
                         whileHover={{ scale: 1.01, y: -2 }}
                       >
@@ -611,7 +629,7 @@ export default function DrawHistoryPage() {
                   </motion.div>
                 ) : (
                   <motion.div
-                    className="text-center py-16 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10"
+                    className="text-center py-16 bg-black/75 backdrop-blur-md rounded-2xl border border-white/10"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6 }}
@@ -639,7 +657,7 @@ export default function DrawHistoryPage() {
               </>
             ) : (
               <motion.div
-                className="text-center py-16 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10"
+                className="text-center py-16 bg-black/75 backdrop-blur-md rounded-2xl border border-white/10"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
@@ -663,7 +681,7 @@ export default function DrawHistoryPage() {
         <section className="relative px-4 py-16">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div
-              className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10"
+              className="bg-black/75 backdrop-blur-md rounded-2xl p-8 border border-white/10"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}

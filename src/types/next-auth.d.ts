@@ -16,6 +16,7 @@ declare module "next-auth" {
       role: UserRole;
       firstName: string;
       lastName: string;
+      phoneNo: string;
     } & DefaultSession["user"];
   }
 
@@ -25,6 +26,7 @@ declare module "next-auth" {
     role: UserRole;
     firstName: string;
     lastName: string;
+    phoneNo: string;
     accessToken: string;
     refreshToken: string;
     accessTokenExpires: number;
@@ -37,6 +39,7 @@ declare module "next-auth/jwt" {
     role?: UserRole;
     firstName: string;
     lastName: string;
+    phoneNo: string;
     accessToken?: string;
     refreshToken?: string;
     accessTokenExpires?: number;
