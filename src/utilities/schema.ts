@@ -33,6 +33,13 @@ export const registerSchema = z
       .string()
       .nonempty('Email is required')
       .email('Invalid email address'),
+    phoneNo: z
+      .string()
+      .nonempty('Phone number is required')
+      .regex(
+        /^\+?[1-9]\d{0,2}[\s.-]?\(?\d{1,4}\)?([\s.-]?\d{2,4}){2,4}$/,
+        'Please provide a valid phone number'
+      ),
     password: z
       .string()
       .nonempty('Password is required')
@@ -84,7 +91,7 @@ export const createSubscriptionPlanSchema = z
   .object({
     name: z.string().min(1, "Plan name is required"),
     description: z.string().min(1, "Description is required"),
-   price: z
+    price: z
       .number({ invalid_type_error: "Price is required" })
       .refine((val) => val > 0, "Price must be greater than 0"),
     features: z.array(

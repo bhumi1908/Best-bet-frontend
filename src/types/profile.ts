@@ -3,6 +3,7 @@ export interface EditProfilePayload {
   id: string | number;
   firstName: string;
   lastName: string;
+  phoneNo?: string;
 }
 
 export interface UserProfile {
@@ -10,6 +11,7 @@ export interface UserProfile {
   email: string;
   firstName: string;
   lastName: string;
+  phoneNo?: string;
   role: string;
 }
 

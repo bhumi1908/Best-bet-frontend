@@ -12,6 +12,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  phoneNo: string;
   role?: UserRole;
 }
 
@@ -19,6 +20,7 @@ export interface UserRegister {
   email: string;
   firstName: string;
   lastName: string;
+  phoneNo: string;
   password: string;
   role?: UserRole;
 }
@@ -65,12 +67,14 @@ export interface NextAuthUser {
   email: string;
   firstName: string;
   lastName: string;
+  phoneNo: string;
 }
 
 export interface User {
    id: string;
     email: string;
     firstName: string;
+  phoneNo: string;
     lastName: string;
     role?: UserRole;
 }

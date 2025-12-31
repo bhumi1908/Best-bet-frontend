@@ -26,6 +26,7 @@ export const registerInitialValues = {
   firstName: '',
   lastName: '',
   email: '',
+  phoneNo:'',
   password: '',
   confirmPassword: '',
   terms: false,
@@ -41,7 +42,10 @@ export default function RegisterPage() {
     initialValues: registerInitialValues,
     validate: zodFormikValidate(registerSchema),
 
+
+
     onSubmit: async (registerDetails: UserRegister, { setSubmitting }) => {
+      console.log('registerDetails', registerDetails)
       try {
         const res = await apiClient.post(routes.api.auth.register, registerDetails);
         if (res.status === 201) {
@@ -103,8 +107,9 @@ export default function RegisterPage() {
 
           {/* Register Form */}
           <form className="space-y-6" noValidate>
+            <div className='flex item-center gap-3 '>
             {/* First Name */}
-            <div className="space-y-2">
+            <div className="w-full space-y-2">
               <label htmlFor="firstName" className="block text-sm font-medium text-gray-300">
                 First Name
               </label>
@@ -135,7 +140,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Last Name */}
-            <div className="space-y-2">
+            <div className="w-full space-y-2">
               <label htmlFor="lastName" className="block text-sm font-medium text-gray-300">
                 Last Name
               </label>
@@ -160,6 +165,38 @@ export default function RegisterPage() {
                       />
                     </svg>
                     {formik.errors.lastName}
+                  </p>
+                )}
+              </div>
+            </div>
+            </div>
+
+              {/* Phone No */}
+            <div className="space-y-2">
+              <label htmlFor="phoneNo" className="block text-sm font-medium text-gray-300">
+                Phone No
+              </label>
+              <div className="relative">
+                <Input
+                  id="phoneNo"
+                  name="phoneNo"
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder="Enter your phone number"
+                  value={formik.values.phoneNo}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                />
+                {formik.touched.phoneNo && formik.errors.phoneNo && (
+                  <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {formik.errors.phoneNo}
                   </p>
                 )}
               </div>

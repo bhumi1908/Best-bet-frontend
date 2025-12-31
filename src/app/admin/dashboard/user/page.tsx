@@ -41,7 +41,7 @@ import { toast } from "react-toastify";
 import { Popup } from "@/components/ui/Popup";
 
 type SortOrder = "ascend" | "descend" | null;
-type SortColumn = "name" | "email" | "role" | "isActive" | "createdAt" | null;
+type SortColumn = "name" | "email" | "phoneNo" | "role" | "isActive" | "createdAt" | null;
 
 const getUserInitials = (user: UIUser) => {
   if (user?.firstName && user?.lastName) {
@@ -63,6 +63,8 @@ export default function UserPage() {
     (state) => state.user
   );
 
+  console.log('reduxUsers', reduxUsers)
+
   // Local UI state
 
   // Search state (local for debouncing, synced with Redux)
@@ -81,6 +83,7 @@ export default function UserPage() {
       lastName: '',
       email: '',
       role: 'USER',
+      phoneNo: '',
       password: '',
       confirmPassword: '',
       terms: true,
@@ -113,12 +116,15 @@ export default function UserPage() {
     return reduxUsers.map(userToUIUser);
   }, [reduxUsers]);
 
+  console.log('users', users)
+
 
   // Fetch users using Redux thunk
   const fetchUsers = useCallback(async () => {
     const sortByMap: Record<string, string> = {
       name: "firstName", // Backend doesn't have name, use firstName
       email: "email",
+      phoneNo: "phoneNo",
       role: "role",
       isActive: "isInactive", // Backend uses isInactive
       createdAt: "createdAt",
@@ -255,6 +261,7 @@ export default function UserPage() {
                       )}
                     </div>
                   </TableHead>
+
                   <TableHead
                     className="cursor-pointer select-none hover:bg-bg-tertiary min-w-[180px]"
                     onClick={() => handleSort("email")}
@@ -279,6 +286,38 @@ export default function UserPage() {
                       )}
                     </div>
                   </TableHead>
+
+                  <TableHead
+                    className="cursor-pointer select-none hover:bg-bg-tertiary min-w-[180px]"
+                    onClick={() => handleSort("phoneNo")}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>Phone No</span>
+
+                      {sortedColumn === "phoneNo" && (
+                        <span className="flex flex-col">
+                          <ChevronUp
+                            className={cn(
+                              "w-3 h-3",
+                              sortOrder === "ascend"
+                                ? "text-accent-primary"
+                                : "text-text-muted"
+                            )}
+                          />
+                          <ChevronDown
+                            className={cn(
+                              "w-3 h-3 -mt-1",
+                              sortOrder === "descend"
+                                ? "text-accent-primary"
+                                : "text-text-muted"
+                            )}
+                          />
+                        </span>
+                      )}
+                    </div>
+                  </TableHead>
+
+
                   <TableHead
                     className="cursor-pointer select-none hover:bg-bg-tertiary min-w-[100px]"
                     onClick={() => handleSort("role")}
@@ -377,6 +416,9 @@ export default function UserPage() {
                       <TableRow key={user.id}>
                         <TableCell className="font-medium text-text-primary truncate"><div className="flex items-center gap-2"><div className="w-8 h-8 rounded-full bg-accent-primary text-black !text-xs font-semibold flex items-center shrink-0 justify-center">{getUserInitials(user)}</div> {name}</div></TableCell>
                         <TableCell className="text-text-primary truncate">{user.email}</TableCell>
+                        <TableCell className="text-text-primary truncate">
+                          {user.phoneNo ? user.phoneNo : "N/A"}
+                        </TableCell>
                         <TableCell className="truncate">
                           <span
                             className={cn(

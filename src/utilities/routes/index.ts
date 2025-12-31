@@ -16,8 +16,8 @@ export const routes = {
   privacy: '/privacy',
   about: '/about-us',
   support: '/support',
-  threePicGame: '/three-pic-game',
-  frontNumberGame: '/front-number-game',
+    game1: '/game-1',
+  game2: '/game-2',
   profile: '/profile',
 
   // Auth routes

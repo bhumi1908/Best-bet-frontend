@@ -308,7 +308,7 @@ function SelectContent({
       ref={contentRef}
       data-slot="select-content"
       className={cn(
-        "fixed z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border border-border-primary bg-bg-card text-text-primary shadow-lg",
+        "fixed z-1000 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border border-border-primary bg-bg-card text-text-primary shadow-lg",
         dropdownPosition && "animate-in fade-in-0 zoom-in-95",
         className
       )}

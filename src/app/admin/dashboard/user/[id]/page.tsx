@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, User, Mail, Shield, DollarSign, Pencil, Ban } from "lucide-react";
+import { ArrowLeft, User, Mail, Shield, DollarSign, Pencil, Ban, TrendingUp, CreditCard, Clock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import {
@@ -76,6 +76,7 @@ export default function UserDetailPage() {
     firstName: "",
     lastName: "",
     email: "",
+    phoneNo: "",
     role: "USER",
     isActive: true,
   });
@@ -100,6 +101,7 @@ export default function UserDetailPage() {
         email: uiUser.email,
         firstName: uiUser.firstName || undefined,
         lastName: uiUser.lastName || undefined,
+        phoneNo: uiUser.phoneNo || undefined,
         name: uiUser.name,
         role: uiUser.role,
         createdAt: result.createdAt,
@@ -117,6 +119,7 @@ export default function UserDetailPage() {
         firstName: userData.firstName || "",
         lastName: userData.lastName || "",
         email: userData.email,
+        phoneNo: userData.phoneNo || "",
         role: userData.role,
         isActive: userData.isActive,
       });
@@ -131,6 +134,7 @@ export default function UserDetailPage() {
           email: selectedUser.email,
           firstName: selectedUser.firstName,
           lastName: selectedUser.lastName,
+          phoneNo: selectedUser.phoneNo,
           name: selectedUser.name,
           role: selectedUser.role,
           createdAt: selectedUser.createdAt || new Date(Date.now() - 30 * 86400000).toISOString(),
@@ -145,6 +149,7 @@ export default function UserDetailPage() {
           firstName: userData.firstName || "",
           lastName: userData.lastName || "",
           email: userData.email,
+          phoneNo: userData.phoneNo || "",
           role: userData.role,
           isActive: userData.isActive,
         });
@@ -165,7 +170,8 @@ export default function UserDetailPage() {
     const hasChanges =
       (formData.firstName || "") !== (user.firstName || "") ||
       (formData.lastName || "") !== (user.lastName || "") ||
-      formData.role !== user.role;
+      (formData.phoneNo || "") !== (user.phoneNo || "")
+    formData.role !== user.role;
 
     // If no changes, just close editing mode without calling API
     if (!hasChanges) {
@@ -189,6 +195,7 @@ export default function UserDetailPage() {
         id: userIdNum,
         firstName: formData.firstName || undefined,
         lastName: formData.lastName || undefined,
+        phoneNo: formData.phoneNo || undefined,
         role: formData.role,
         // Note: isInactive is not updated here, only via toggle active button
       };
@@ -203,6 +210,7 @@ export default function UserDetailPage() {
         email: uiUser.email,
         firstName: uiUser.firstName || undefined,
         lastName: uiUser.lastName || undefined,
+        phoneNo: uiUser.phoneNo || undefined,
         name: uiUser.name,
         role: uiUser.role,
         createdAt: updatedUser.createdAt,
@@ -231,6 +239,7 @@ export default function UserDetailPage() {
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         email: user.email,
+        phoneNo: user.phoneNo || "",
         role: user.role,
         isActive: user.isActive,
       });
@@ -440,6 +449,18 @@ export default function UserDetailPage() {
                     )}
                   </div>
                   <div>
+                    <label className="text-xs text-text-muted mb-1 block">Phone Number</label>
+                    {editing ? (
+                      <Input
+                        value={formData.phoneNo}
+                        onChange={(e) => setFormData({ ...formData, phoneNo: e.target.value })}
+                        className="w-full"
+                      />
+                    ) : (
+                      <p className="text-text-primary">{user.phoneNo || "N/A"}</p>
+                    )}
+                  </div>
+                  <div>
                     <label className="text-xs text-text-muted mb-1 block">Email</label>
                     <p className="text-text-primary">{user.email}</p>
                     {editing && (
@@ -497,10 +518,10 @@ export default function UserDetailPage() {
                   {user.subscriptions.map((subscription) => (
                     <div
                       key={subscription.id}
-                      className="flex flex-col gap-2 p-3 bg-bg-secondary rounded-lg border border-border-primary"
+                      className="flex flex-col gap-2 p-3 bg-bg-secondary rounded-lg border-2 border-border-accent"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-accent-primary">{subscription.plan}</p>
+                        <p className="text-md font-medium text-accent-primary">{subscription.plan}</p>
                         <p className="text-sm font-medium text-accent-primary">
                           ${subscription.amount.toFixed(2)}
                         </p>
@@ -533,110 +554,170 @@ export default function UserDetailPage() {
                       </div>
                     </div>
                   ))}
-                  <div className="px-3 bg-bg-secondary rounded-lg border border-border-primary">
-                    <Accordion type="single" collapsible className="w-full">
-                      <AccordionItem value="subscription-history">
-                        <AccordionTrigger>
-                          <h2 className="text-md font-semibold text-gray-300">Subscription History</h2>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="overflow-x-auto">
-                            <Table className="w-full rounded-lg overflow-hidden">
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead className="min-w-[120px]">Plan</TableHead>
-                                  <TableHead className="min-w-[100px]">Status</TableHead>
-                                  <TableHead className="min-w-[120px]">Start Date</TableHead>
-                                  <TableHead className="min-w-[120px]">End Date</TableHead>
-                                  <TableHead className="min-w-[100px]">Amount</TableHead>
-                                  <TableHead className="min-w-[100px]">Payment Method</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {[
-                                  {
-                                    id: "2",
-                                    plan: "Premium Plan",
-                                    status: "Expired",
-                                    startDate: new Date(Date.now() - 90 * 86400000).toISOString(),
-                                    endDate: new Date(Date.now() - 60 * 86400000).toISOString(),
-                                    amount: 19.99,
-                                    paymentMethod: "Credit Card",
-                                  },
-                                  {
-                                    id: "3",
-                                    plan: "Basic Plan",
-                                    status: "Expired",
-                                    startDate: new Date(Date.now() - 120 * 86400000).toISOString(),
-                                    endDate: new Date(Date.now() - 90 * 86400000).toISOString(),
-                                    amount: 9.99,
-                                    paymentMethod: "PayPal",
-                                  },
-                                  {
-                                    id: "4",
-                                    plan: "Premium Plan",
-                                    status: "Cancelled",
-                                    startDate: new Date(Date.now() - 150 * 86400000).toISOString(),
-                                    endDate: new Date(Date.now() - 120 * 86400000).toISOString(),
-                                    amount: 19.99,
-                                    paymentMethod: "Credit Card",
-                                  },
-                                  {
-                                    id: "5",
-                                    plan: "Basic Plan",
-                                    status: "Expired",
-                                    startDate: new Date(Date.now() - 180 * 86400000).toISOString(),
-                                    endDate: new Date(Date.now() - 150 * 86400000).toISOString(),
-                                    amount: 9.99,
-                                    paymentMethod: "Credit Card",
-                                  },
-                                ].map((subscription) => (
-                                  <TableRow key={subscription.id}>
-                                    <TableCell className="text-text-primary font-medium">
-                                      {subscription.plan}
-                                    </TableCell>
-                                    <TableCell>
-                                      <span
-                                        className={cn(
-                                          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
-                                          subscription.status === "Active"
-                                            ? "bg-green-500/20 text-green-400 border-green-500/30"
-                                            : subscription.status === "Expired"
-                                              ? "bg-gray-500/20 text-gray-400 border-gray-500/30"
-                                              : "bg-red-500/20 text-red-400 border-red-500/30"
-                                        )}
-                                      >
-                                        {subscription.status}
-                                      </span>
-                                    </TableCell>
-                                    <TableCell className="text-text-primary">
-                                      {new Date(subscription.startDate).toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "short",
-                                        day: "numeric",
-                                      })}
-                                    </TableCell>
-                                    <TableCell className="text-text-primary">
-                                      {new Date(subscription.endDate).toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "short",
-                                        day: "numeric",
-                                      })}
-                                    </TableCell>
-                                    <TableCell className="text-accent-primary font-medium">
-                                      ${subscription.amount.toFixed(2)}
-                                    </TableCell>
-                                    <TableCell className="text-text-tertiary">
-                                      {subscription.paymentMethod}
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
+                  {/* Subscription Statistics Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    {/* Total Payments Card */}
+                    <div className="group relative bg-gradient-to-br from-yellow-500/10 via-bg-secondary to-bg-secondary border border-border-primary rounded-lg p-4 hover:border-yellow-500/50 transition-all duration-300 overflow-hidden">
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-500/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="w-10 h-10 rounded-lg bg-yellow-500/20 border border-yellow-500/30 flex items-center justify-center">
+                            <CreditCard className="w-5 h-5 text-yellow-400" />
                           </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
+                        </div>
+                        <p className="text-xs text-text-muted mb-1 uppercase tracking-wide font-medium">Total Payments</p>
+                        <p className="text-2xl font-bold text-text-primary">{user.subscriptions.length}</p>
+                        <p className="text-xs text-text-tertiary mt-1">Active subscriptions</p>
+                      </div>
+                    </div>
+
+                    {/* Total Paid Card */}
+                    <div className="group relative bg-gradient-to-br from-yellow-500/10 via-bg-secondary to-bg-secondary border border-border-primary rounded-lg p-4 hover:border-yellow-500/50 transition-all duration-300 overflow-hidden">
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-500/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="w-10 h-10 rounded-lg bg-yellow-500/20 border border-yellow-500/30 flex items-center justify-center">
+                            <DollarSign className="w-5 h-5 text-yellow-400" />
+                          </div>
+                        </div>
+                        <p className="text-xs text-text-muted mb-1 uppercase tracking-wide font-medium">Total Paid</p>
+                        <p className="text-2xl font-bold text-accent-primary">
+                          ${user.subscriptions.reduce((acc, subscription) => acc + subscription.amount, 0).toFixed(2)}
+                        </p>
+                        <p className="text-xs text-text-tertiary mt-1">Lifetime value</p>
+                      </div>
+                    </div>
+
+                    {/* Current Amount Card */}
+                    <div className="group relative bg-gradient-to-br from-yellow-500/10 via-bg-secondary to-bg-secondary border border-border-primary rounded-lg p-4 hover:border-yellow-500/50 transition-all duration-300 overflow-hidden">
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-500/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="w-10 h-10 rounded-lg bg-yellow-500/20 border border-yellow-500/30 flex items-center justify-center">
+                            <TrendingUp className="w-5 h-5 text-yellow-400" />
+                          </div>
+                        </div>
+                        <p className="text-xs text-text-muted mb-1 uppercase tracking-wide font-medium">Current Amount</p>
+                        <p className="text-2xl font-bold text-text-primary">
+                          ${user.subscriptions.reduce((acc, subscription) => acc + subscription.amount, 0).toFixed(2)}
+                        </p>
+                        <p className="text-xs text-text-tertiary mt-1">Monthly recurring</p>
+                      </div>
+                    </div>
+
+                    {/* Subscription Age Card */}
+                    <div className="group relative bg-gradient-to-br from-yellow-500/10 via-bg-secondary to-bg-secondary border border-border-primary rounded-lg p-4 hover:border-yellow-500/50 transition-all duration-300 overflow-hidden">
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-500/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="w-10 h-10 rounded-lg bg-yellow-500/20 border border-yellow-500/30 flex items-center justify-center">
+                            <Clock className="w-5 h-5 text-yellow-400" />
+                          </div>
+                        </div>
+                        <p className="text-xs text-text-muted mb-1 uppercase tracking-wide font-medium">Subscription Age</p>
+                        <p className="text-2xl font-bold text-text-primary">
+                          {user.subscriptions.length > 0 ? Math.floor(
+                            (new Date().getTime() - new Date(user.subscriptions[0].date).getTime()) /
+                            (1000 * 60 * 60 * 24)
+                          ) : 0}
+                        </p>
+                        <p className="text-xs text-text-tertiary mt-1">Days active</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <Table className="w-full rounded-lg overflow-hidden">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="min-w-[120px]">Plan</TableHead>
+                          <TableHead className="min-w-[100px]">Status</TableHead>
+                          <TableHead className="min-w-[120px]">Start Date</TableHead>
+                          <TableHead className="min-w-[120px]">End Date</TableHead>
+                          <TableHead className="min-w-[100px]">Amount</TableHead>
+                          <TableHead className="min-w-[100px]">Payment Method</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {[
+                          {
+                            id: "2",
+                            plan: "Premium Plan",
+                            status: "Expired",
+                            startDate: new Date(Date.now() - 90 * 86400000).toISOString(),
+                            endDate: new Date(Date.now() - 60 * 86400000).toISOString(),
+                            amount: 19.99,
+                            paymentMethod: "Credit Card",
+                          },
+                          {
+                            id: "3",
+                            plan: "Basic Plan",
+                            status: "Expired",
+                            startDate: new Date(Date.now() - 120 * 86400000).toISOString(),
+                            endDate: new Date(Date.now() - 90 * 86400000).toISOString(),
+                            amount: 9.99,
+                            paymentMethod: "PayPal",
+                          },
+                          {
+                            id: "4",
+                            plan: "Premium Plan",
+                            status: "Cancelled",
+                            startDate: new Date(Date.now() - 150 * 86400000).toISOString(),
+                            endDate: new Date(Date.now() - 120 * 86400000).toISOString(),
+                            amount: 19.99,
+                            paymentMethod: "Credit Card",
+                          },
+                          {
+                            id: "5",
+                            plan: "Basic Plan",
+                            status: "Expired",
+                            startDate: new Date(Date.now() - 180 * 86400000).toISOString(),
+                            endDate: new Date(Date.now() - 150 * 86400000).toISOString(),
+                            amount: 9.99,
+                            paymentMethod: "Credit Card",
+                          },
+                        ].map((subscription) => (
+                          <TableRow key={subscription.id}>
+                            <TableCell className="text-text-primary font-medium">
+                              {subscription.plan}
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={cn(
+                                  "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
+                                  subscription.status === "Active"
+                                    ? "bg-green-500/20 text-green-400 border-green-500/30"
+                                    : subscription.status === "Expired"
+                                      ? "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                                      : "bg-red-500/20 text-red-400 border-red-500/30"
+                                )}
+                              >
+                                {subscription.status}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-text-primary">
+                              {new Date(subscription.startDate).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </TableCell>
+                            <TableCell className="text-text-primary">
+                              {new Date(subscription.endDate).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </TableCell>
+                            <TableCell className="text-accent-primary font-medium">
+                              ${subscription.amount.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-text-tertiary">
+                              {subscription.paymentMethod}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               </div>
@@ -899,6 +980,7 @@ export default function UserDetailPage() {
                         email: uiUser.email,
                         firstName: uiUser.firstName || undefined,
                         lastName: uiUser.lastName || undefined,
+                        phoneNo: uiUser.phoneNo || undefined,
                         name: uiUser.name,
                         role: uiUser.role,
                         createdAt: updatedUser.createdAt,

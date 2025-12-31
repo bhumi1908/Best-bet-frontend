@@ -23,6 +23,7 @@ export const editAdminProfileThunk = createAsyncThunk<
         {
           firstName: payload.firstName,
           lastName: payload.lastName,
+          phoneNo: payload.phoneNo,
         }
       );
 

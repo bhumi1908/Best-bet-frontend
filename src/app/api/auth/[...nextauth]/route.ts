@@ -183,6 +183,7 @@ export const authOptions: NextAuthOptions = {
             email: data.user.email,
             firstName: data.user.firstName,
             lastName: data.user.lastName,
+            phoneNo: data.user.phoneNo,
             role: data.user.role ?? 'USER',
             accessToken: data.token.accessToken,
             refreshToken: data.token.refreshToken,
@@ -208,6 +209,7 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.firstName = user.firstName;
         token.lastName = user.lastName;
+        token.phoneNo = user.phoneNo;
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
         token.accessTokenExpires = user.accessTokenExpires;
@@ -218,6 +220,7 @@ export const authOptions: NextAuthOptions = {
       if (trigger === "update" && session?.user) {
         token.firstName = session.user.firstName;
         token.lastName = session.user.lastName;
+        token.phoneNo = session.user.phoneNo;
       }
 
       // Access token still valid
@@ -239,6 +242,7 @@ export const authOptions: NextAuthOptions = {
         role: token.role as UserRole,
         firstName: token.firstName as string,
         lastName: token.lastName as string,
+        phoneNo: token.phoneNo as string,
       };
 
       session.accessToken = token.accessToken as string;
