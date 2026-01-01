@@ -149,7 +149,7 @@ export default function FrontNumberGamePage() {
       {/* Background Image with Overlay */}
       <div className="fixed inset-0">
         {/* Yellow Gradient Background Image with 50% opacity */}
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: 'url(/images/yellow-gredient-Background.png)',
@@ -527,7 +527,7 @@ export default function FrontNumberGamePage() {
                     <tbody>
                       {recentDraws.map((draw, index) => {
                         const numbers = draw.numbers.split("");
-                        
+
                         return (
                           <motion.tr
                             key={draw.id}
@@ -540,10 +540,10 @@ export default function FrontNumberGamePage() {
                               {index + 1}
                             </td>
                             <td className="py-4 px-4 text-sm text-gray-300">
-                              {new Date(draw.date).toLocaleDateString('en-US', { 
-                                month: '2-digit', 
-                                day: '2-digit', 
-                                year: 'numeric' 
+                              {new Date(draw.date).toLocaleDateString('en-US', {
+                                month: '2-digit',
+                                day: '2-digit',
+                                year: 'numeric'
                               })}
                             </td>
                             <td className="py-4 px-4 text-center">
@@ -594,7 +594,7 @@ export default function FrontNumberGamePage() {
           <div className="flex items-start gap-4">
             <div className="flex-1">
               <p className="text-gray-300 leading-relaxed mb-2">
-                This is a fun little game where, if you have a personal system you use and are pretty good at getting the front number right, this is a perfect game! Simply click one of the numbers (0 thru 9) and the entire prediction list will adjust to your targeted front number — we'll handle the other 2 numbers for you.
+                This is a fun little game where, if you have a personal system you use and are pretty good at getting the front number right, this is a perfect game! Simply click one of the numbers (0 thru 9) and the entire prediction list will adjust to your targeted front number. We'll handle the other 2 numbers for you.
               </p>
             </div>
           </div>
@@ -610,7 +610,7 @@ export default function FrontNumberGamePage() {
             <div className="flex items-start gap-3">
               <CheckCircle2 className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-1" />
               <p className="text-gray-300 leading-relaxed">
-                <strong className="text-yellow-400">Combo numbers</strong> locks in an exact hit but be cautious, some of the prediction number lists are quite a bit bigger than others and combo all six ways is more expensive. As we always say, "the math has to work" (financially speaking). That being said, a better bet might be to play as "box" / "any" instead of exact order on your play slips if the investment cost doesn't make sense.
+                <span className="text-yellow-400">Combo numbers</span> locks in an exact hit but be cautious, some of the prediction number lists are quite a bit bigger than others and combo all six ways is more expensive. As we always say, "the math has to work" (financially speaking). That being said, a better bet might be to play as "box" / "any" instead of exact order on your play slips if the investment cost doesn't make sense.
               </p>
             </div>
           </div>
@@ -619,7 +619,7 @@ export default function FrontNumberGamePage() {
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm text-gray-300 leading-relaxed">
+                <p className="text-gray-300 leading-relaxed">
                   <span className="text-yellow-400">Remember:</span> Pick 3 and other ball lottery games are unforgiving and brutal so play with no emotion, play consistently, with patience and discipline and realistic budget because in reality, we lose more times than we win, the real talent is not how many wins but the quality of the win (investment against profit). If you feel unsure / not confident, just don't play but observe until you feel confident about which numbers you are going to play from the list.
                 </p>
               </div>

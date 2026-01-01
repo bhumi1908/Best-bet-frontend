@@ -295,7 +295,7 @@ export default function StateDetailsPage() {
               >
                 Sample performance overview for Best Bet's Pick 3 predictions in {stateName}. All
                 statistics below are placeholders and will be replaced with live data once we connect
-                our final pipeline — stay tuned, we are working hard on our site!
+                our final pipeline. Stay tuned, we are working hard on our site!
               </motion.p>
             </motion.div>
           </div>

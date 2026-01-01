@@ -23,6 +23,7 @@ export interface User {
   isInactive: boolean;
   createdAt: string;
   updatedAt: string;
+  subscriptions:UserAllSubscription[]
 }
 
 /**
@@ -40,6 +41,7 @@ export interface UIUser {
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
+  subscriptions: UserAllSubscription[]
 }
 
 /**
@@ -130,6 +132,7 @@ export interface UserFilters {
  */
 export interface UserState {
   users: User[];
+  selectedUser: ApiUserDetail | null;
   pagination: Pagination;
   filters: UserFilters;
   isLoading: boolean;
@@ -148,6 +151,24 @@ export interface GetAllUsersResponse {
   users: User[];
   pagination: Pagination;
 }
+
+export interface UserAllSubscription {
+  id: number
+  startDate: string
+  endDate: string
+  status: string
+  createdAt: string
+  plan: UserALlSubscriptionPlan
+}
+
+export interface UserALlSubscriptionPlan {
+  id: number
+  name: string
+  price: number
+  duration: number
+  isRecommended: boolean
+}
+
 
 /**
  * Payload for updating a user
@@ -212,6 +233,8 @@ export interface UserFormData {
  * Convert backend User to UIUser format
  */
 export const userToUIUser = (user: User): UIUser => {
+  console.log('user12345', user)
+  console.log('user?.subscription', user)
   return {
     id: user.id.toString(),
     email: user.email,
@@ -225,6 +248,8 @@ export const userToUIUser = (user: User): UIUser => {
     isActive: !user.isInactive,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+    subscriptions: user?.subscriptions
+    
   };
 };
 
@@ -246,3 +271,43 @@ export const uiUserToContextUser = (user: UIUser): UserContextUser => {
   };
 };
 
+// User By Id:
+
+export interface ApiUserSubscription {
+  id: number;
+  planName: string;
+  price: number;
+  startDate: string;
+  endDate: string;
+  status: string;
+  paymentMethod: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ApiCurrentSubscription {
+  id: number;
+  planName: string;
+  price: number;
+  startDate: string;
+  endDate: string;
+  status: string;
+  paymentMethod: string;
+}
+
+export interface ApiUserDetail {
+  id: number;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  phoneNo: string | null;
+  role: UserRole;
+  isInactive: boolean;
+  createdAt: string;
+  updatedAt: string;
+
+  currentSubscription: ApiCurrentSubscription | null;
+  totalPayments: number;
+  subscriptionAgeDays: number;
+  allSubscriptions: ApiUserSubscription[];
+}

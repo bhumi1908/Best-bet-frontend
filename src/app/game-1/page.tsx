@@ -656,10 +656,10 @@ export default function ThreePicGamePage() {
             <div className="flex items-start gap-3">
               <Info className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm text-gray-300 leading-relaxed mb-2">
+                <p className="text-gray-300 leading-relaxed mb-2">
                   <span className="text-yellow-400">*Note:</span> As with all predictions, (these included), we are obviously targeting exact hits and you will get exact hits just by playing the prediction numbers as they are displayed but there absolutely will also be hits that are in "any" / "box" order from the prediction list so you have to decide on your own how you are going to play these numbers.
                 </p>
-                <p className="text-sm text-gray-300 leading-relaxed">
+                <p className="text-gray-300 leading-relaxed">
                   As you know, Pick 3 and all lottery ball games are punishing, brutal and require a lot of patience and discipline. Play consistently yet responsibly. If you don't see it jumping out in your face, might be better to not play some draws if the numbers just don't feel right.
                 </p>
               </div>

@@ -48,6 +48,7 @@ interface Plan {
   period: string;
   description?: string;
   popular: boolean;
+    discount?: boolean;
   cta: string;
   icon: JSX.Element;
   features: {
@@ -199,11 +200,13 @@ export default function LandingPage() {
   );
 
   const mappedPlans: Plan[] = useMemo(() => {
-    return plans.map((plan) => {
+    return plans.map((plan,index) => {
       const uiConfig = PLAN_UI_CONFIG[plan.name];
 
       // Period derived from duration
       const period = plan.duration === 12 ? 'per year' : 'per month';
+      const hasDiscount = index === 2;
+
 
       return {
         id: plan.id,
@@ -212,6 +215,8 @@ export default function LandingPage() {
         price: `$${plan.price.toFixed(2)}`,
         period,
         popular: plan.isRecommended,
+        discount: hasDiscount,
+
         cta: uiConfig?.cta ?? 'Get Started',
         icon: uiConfig?.icon ?? <Target className="w-6 h-6" />,
         features: plan.features.map((feature) => ({
@@ -308,16 +313,23 @@ export default function LandingPage() {
           >
             {/* Announcement Badge */}
             <motion.div
-              className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:border-yellow-400/50 transition-all duration-300 cursor-pointer group"
-              initial={{ opacity: 0, y: -20 }}
+            className="flex items-center justify-center gap-2 mb-2 rounded-full "
+                initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+              {/* <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
               <span className="text-sm text-gray-300 group-hover:text-yellow-400 transition-colors flex items-center gap-2">
                 <Target className="w-4 h-4" />
                 Join 10,000+ Winners Today
-              </span>
+              </span> */}
+               <Image
+                src="/images/small-logo.png"
+                alt="Hero Background"
+                width={400}
+                height={120}
+                priority
+              />
             </motion.div>
 
             {/* Main Headline */}
@@ -327,7 +339,7 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
             >
-              Get your winning
+             Welcome to you
               <br />
               <motion.span
                 className="bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 bg-clip-text text-transparent animate-gradient pl-2 md:pl-3 lg:pl-4 2xl:pl-5"
@@ -335,39 +347,29 @@ export default function LandingPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
               >
-                Lucky Numbers
+                 VIP Source!
               </motion.span>
 
-              <motion.span
-                className="text-white pl-2 md:pl-3 lg:pl-4 2xl:pl-5"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.5 }}
-              >
-                instantly
-              </motion.span>
-              <br />
-              <motion.span
-                className="animate-gradient pl-2 md:pl-3 lg:pl-4 2xl:pl-5"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-              >
-                in every draw
-              </motion.span>
+          
             </motion.h1>
 
             {/* Subheadline */}
             <motion.p
+              className="text-xl md:text-xl 2xl:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+            >
+              The <span className="text-gray-200">Most Accurate</span> <span className="bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 bg-clip-text text-transparent ">Pick 3 Predictions</span>  On The Planet!
+            </motion.p>
+
+             <motion.p
               className="text-xl md:text-xl 2xl:text-2xl text-gray-400 mb-4 max-w-3xl mx-auto leading-relaxed"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.7 }}
             >
-              Unlock <span className="text-gray-200">real-time predictions</span>,
-              comprehensive <span className="text-gray-200">draw history</span>,
-              and <span className="text-gray-200">live performance tracking</span>
-              ,  <span className="bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 bg-clip-text text-transparent ">all in one powerful platform.</span>
+              Real time <span className="text-gray-200">draw history</span> and <span className="text-gray-200">live predictions</span> Daily!
             </motion.p>
 
             {/* Trust Indicators */}
@@ -413,18 +415,18 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 1.2 }}
             >
-              <Button
+             <Button
                 type="primary"
                 size="large"
                 onClick={() => window.location.href = isAuthenticated ? routes.home : routes.auth.register}
-                className="px-4 py-3 md:px-6 md:py-4 2xl:px-8 2xl:py-4 !w-fit h-fit rounded-lg font-semibold !text-lg"
+                className="px-4 py-3 md:px-6 md:py-3 2xl:px-8 !w-fit h-fit rounded-lg font-semibold !text-lg"
               >
                 {isAuthenticated ? "Go to Dashboard" : "Start Winning Now"}
               </Button>
 
               <Link
                 href="#how-it-works"
-                className="px-4 py-3 md:px-6 md:py-4 2xl:px-8 2xl:py-4 bg-white/5 backdrop-blur-md border border-white/20 text-white font-semibold text-lg rounded-lg hover:bg-white/10 hover:border-yellow-400/50 transition-all duration-300"
+                className="px-4 py-3 md:px-6 md:py-3 2xl:px-8 bg-white/5 backdrop-blur-md border border-white/20 text-white font-semibold text-lg rounded-lg hover:bg-white/10 hover:border-yellow-400/50 transition-all duration-300"
               >
                 See How It Works
               </Link>
@@ -1043,6 +1045,26 @@ export default function LandingPage() {
                           <span className="bg-yellow-400 text-black px-4 py-1.5 rounded-full text-sm font-bold shadow-lg shadow-yellow-400/30">
                             Most Popular
                           </span>
+                        </motion.div>
+                      )}
+
+                      
+                      {/* Discount Badge - Top Right Corner */}
+                      {plan.discount && (
+                        <motion.div
+                          className="absolute -top-1 -right-3 z-20"
+                          initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
+                          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                          transition={{ duration: 0.5, delay: 0.2 }}
+                        >
+                          <div className="relative">
+                            <span className="bg-gradient-to-r from-green-500 to-green-600 text-black px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg shadow-green-500/40 flex items-center gap-1">
+                              <span className="text-sm">10%</span>
+                              <span>OFF</span>
+                            </span>
+                            {/* Small triangle for ribbon effect */}
+                            <div className="absolute -bottom-1 right-2 w-2 h-2 bg-green-600 transform rotate-45"></div>
+                          </div>
                         </motion.div>
                       )}
 

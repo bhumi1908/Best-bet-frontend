@@ -12,6 +12,7 @@ import {
   UserFilters,
   GetAllUsersResponse,
   UpdateUserPayload,
+  ApiUserDetail,
 } from '@/types/user';
 
 interface RejectPayload {
@@ -65,6 +66,8 @@ export const getAllUsersThunk = createAsyncThunk<
         message: string;
       }>(routes.api.user.getAll, { params });
 
+      console.log('response.data.data', response.data.data)
+
       if (response.data && response.data.data) {
         return response.data.data;
       }
@@ -86,7 +89,7 @@ export const getAllUsersThunk = createAsyncThunk<
  * Fetches a single user by their ID
  */
 export const getUserByIdThunk = createAsyncThunk<
-  User,
+  ApiUserDetail,
   number,
   { rejectValue: RejectPayload }
 >(
@@ -94,7 +97,7 @@ export const getUserByIdThunk = createAsyncThunk<
   async (userId, { rejectWithValue }) => {
     try {
       const response = await apiClient.get<{
-        data: User;
+        data: ApiUserDetail;
         message: string;
       }>(routes.api.user.getById(userId));
 

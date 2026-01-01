@@ -1,6 +1,6 @@
 // subscription.thunk.ts
 
-import { GetAllSubscriptionsResponse, Subscription, SubscriptionFilters } from "@/types/subscription";
+import { GetAllSubscriptionsResponse, Subscription, SubscriptionDashboardResponse, SubscriptionFilters } from "@/types/subscription";
 import apiClient from "@/utilities/axios/instance";
 import { routes } from "@/utilities/routes";
 import { createAsyncThunk } from "@reduxjs/toolkit";
@@ -101,6 +101,38 @@ export const getSubscriptionDetailsAdminThunk = createAsyncThunk<
         typeof error.response?.data?.message === "string"
           ? error.response.data.message
           : error.message || "Failed to fetch subscription details";
+
+      return rejectWithValue({ message });
+    }
+  }
+);
+
+
+export const getSubscriptionDashboardAdminThunk = createAsyncThunk<
+  SubscriptionDashboardResponse,
+  void,
+  { rejectValue: RejectPayload }
+>(
+  "admin/getSubscriptionDashboard",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get<{
+        data: SubscriptionDashboardResponse;
+        message: string;
+      }>(
+        routes.api.subscription.admin.dashboard
+      );
+
+      if (response.data?.data) {
+        return response.data.data;
+      }
+
+      throw new Error("Invalid dashboard response format");
+    } catch (error: any) {
+      const message =
+        typeof error.response?.data?.message === "string"
+          ? error.response.data.message
+          : error.message || "Failed to fetch subscription dashboard";
 
       return rejectWithValue({ message });
     }

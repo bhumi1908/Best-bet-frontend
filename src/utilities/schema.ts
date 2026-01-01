@@ -130,3 +130,29 @@ export const changePasswordSchema = z
     message: "Passwords don't match",
     path: ['confirmPassword'],
   });
+
+
+export const updateUserSchema = z.object({
+  firstName: z
+    .string()
+    .nonempty("First name is required")
+    .min(2, "First name must be at least 2 characters"),
+
+  lastName: z
+    .string()
+    .nonempty("Last name is required")
+    .min(2, "Last name must be at least 2 characters"),
+
+  phoneNo: z
+    .string()
+    .nonempty('Phone number is required')
+    .regex(
+      /^\+?[1-9]\d{0,2}[\s.-]?\(?\d{1,4}\)?([\s.-]?\d{2,4}){2,4}$/,
+      'Please provide a valid phone number'
+    ),
+
+  role: z
+    .enum(["USER", "ADMIN"], {
+      errorMap: () => ({ message: "Role is required" }),
+    }),
+});

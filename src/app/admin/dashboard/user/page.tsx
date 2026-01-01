@@ -62,9 +62,6 @@ export default function UserPage() {
   const { users: reduxUsers, pagination: reduxPagination, filters, isLoading, error } = useAppSelector(
     (state) => state.user
   );
-
-  console.log('reduxUsers', reduxUsers)
-
   // Local UI state
 
   // Search state (local for debouncing, synced with Redux)
@@ -115,8 +112,6 @@ export default function UserPage() {
   const users: UIUser[] = useMemo(() => {
     return reduxUsers.map(userToUIUser);
   }, [reduxUsers]);
-
-  console.log('users', users)
 
 
   // Fetch users using Redux thunk
@@ -408,9 +403,9 @@ export default function UserPage() {
                   users.map((user) => {
                     const name = user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "N/A";
                     // Get subscription data if available (from user object or subscriptions array)
-                    const subscription = (user as any)?.subscription || (user as any)?.subscriptions?.[0];
-                    const subscriptionPlan = subscription?.plan || subscription?.planName || "N/A";
-                    const subscriptionDate = subscription?.date || subscription?.createdAt || subscription?.startDate || null;
+                  const subscription = user.subscriptions[0] ?? null
+                  const subscriptionPlan = subscription?.plan.name ||  "N/A"
+                  const subscriptionDate = subscription?.createdAt || null
 
                     return (
                       <TableRow key={user.id}>
