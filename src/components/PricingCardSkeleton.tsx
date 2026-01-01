@@ -1,5 +1,5 @@
 import React from 'react'
-import { Skeleton } from './ui/Skeleton'
+import { Skeleton } from "@/components/ui/Skeleton";
 import { motion } from "framer-motion";
 
 const staggerContainer = {
