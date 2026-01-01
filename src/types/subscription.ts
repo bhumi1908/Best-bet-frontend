@@ -106,4 +106,37 @@ export interface AdminSubscriptionState {
   selectedSubscription: Subscription | null;
   pagination: Pagination;
   filters: AdminSubscriptionUIFilters;
+   stats: SubscriptionDashboardResponse["stats"] | null;
+  charts: SubscriptionDashboardResponse["charts"] | null;
+}
+
+
+// Dashboard
+export interface ChartPoint {
+  label: string;
+  value: number;
+}
+
+export interface SubscriptionDashboardStats {
+  totalRevenue: number;
+  monthlyRevenue: number;
+  activeSubscriptions: number;
+  totalSubscriptions: number;
+  activePlans: number;
+  totalPlans: number;
+
+  totalRevenueGrowth: number;
+  monthlyRevenueGrowth: number;
+  activeSubscriptionsGrowth: number;
+}
+
+export interface SubscriptionDashboardCharts {
+  revenueChartData: ChartPoint[];
+  subscriptionsChartData: ChartPoint[];
+  monthlyRevenueChartData: ChartPoint[];
+}
+
+export interface SubscriptionDashboardResponse {
+  stats: SubscriptionDashboardStats;
+  charts: SubscriptionDashboardCharts;
 }

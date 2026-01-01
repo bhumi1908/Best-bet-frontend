@@ -28,6 +28,8 @@ interface Plan {
   price: string;
   period: string;
   description?: string;
+    discount?: boolean;
+
   popular: boolean;
   cta: string;
   icon: JSX.Element;
@@ -69,11 +71,14 @@ export default function PlansPage() {
   );
 
   const mappedPlans: Plan[] = useMemo(() => {
-    return plans.map((plan) => {
+    return plans.map((plan, index) => {
       const uiConfig = PLAN_UI_CONFIG[plan.name];
 
       // Period derived from duration
       const period = plan.duration === 12 ? 'per year' : 'per month';
+      
+      // Add discount tag to first two plans (you can modify this logic as needed)
+      const hasDiscount = index === 2;
 
       return {
         id: plan.id,
@@ -82,6 +87,7 @@ export default function PlansPage() {
         price: `$${plan.price.toFixed(2)}`,
         period,
         popular: plan.isRecommended ?? false,
+        discount: hasDiscount,
         tier: PLAN_TIER_MAP[plan.name],
         cta: uiConfig?.cta ?? 'Get Started',
         icon: uiConfig?.icon ?? <Target className="w-6 h-6" />,
@@ -261,6 +267,24 @@ export default function PlansPage() {
                             Most Popular
                           </span>
                         </motion.div>
+                      )}
+
+                       {plan.discount && (
+                      <motion.div
+                        className="absolute -top-1 -right-3 z-20"
+                        initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
+                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                      >
+                        <div className="relative">
+                          <span className="bg-gradient-to-r from-green-500 to-green-600 text-black px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg shadow-green-500/40 flex items-center gap-1">
+                            <span className="text-sm">10%</span>
+                            <span>OFF</span>
+                          </span>
+                          {/* Small triangle for ribbon effect */}
+                          <div className="absolute -bottom-1 right-2 w-2 h-2 bg-green-600 transform rotate-45"></div>
+                        </div>
+                      </motion.div>
                       )}
 
                       {/* Plan Icon */}

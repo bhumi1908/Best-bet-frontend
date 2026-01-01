@@ -73,6 +73,7 @@ export const routes = {
     },
     subscription: {
       admin: {
+        dashboard: '/subscription/dashboard',
         getAll: '/subscription/users',
         getSubscriptionDetails: (id: number | string) => `/subscription/users/${id}`
       }

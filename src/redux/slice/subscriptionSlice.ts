@@ -5,9 +5,11 @@ import {
     Pagination,
     Subscription,
     AdminSubscriptionUIFilters,
+    SubscriptionDashboardResponse,
 } from "@/types/subscription";
 import {
     getAllUserSubscriptionsAdminThunk,
+    getSubscriptionDashboardAdminThunk,
     getSubscriptionDetailsAdminThunk,
 } from "../thunk/subscriptionThunk";
 
@@ -31,6 +33,8 @@ const initialState: AdminSubscriptionState = {
         sortBy: "createdAt",
         sortOrder: "descend",
     },
+    stats: null,
+    charts: null,
 };
 
 const adminSubscriptionSlice = createSlice({
@@ -114,7 +118,32 @@ const adminSubscriptionSlice = createSlice({
                         action.payload?.message ||
                         "Failed to fetch subscription details";
                 }
-            );
+            )
+
+            // Subscription Dashboard
+            .addCase(getSubscriptionDashboardAdminThunk.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+
+            .addCase(
+                getSubscriptionDashboardAdminThunk.fulfilled,
+                (
+                    state,
+                    action: PayloadAction<SubscriptionDashboardResponse>
+                ) => {
+                    state.isLoading = false;
+                    state.stats = action.payload.stats;
+                    state.charts = action.payload.charts;
+                }
+            )
+
+            .addCase(getSubscriptionDashboardAdminThunk.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error =
+                    action.payload?.message ||
+                    "Failed to load subscription dashboard";
+            });
     },
 });
 

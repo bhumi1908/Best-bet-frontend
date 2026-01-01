@@ -4,17 +4,19 @@
  */
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { getAllUsersThunk, updateUserThunk } from '../thunk/userThunk';
+import { getAllUsersThunk, getUserByIdThunk, updateUserThunk } from '../thunk/userThunk';
 import {
     User,
     Pagination,
     UserFilters,
     UserState,
+    ApiUserDetail,
 } from '@/types/user';
 
 // Initial state
 const initialState: UserState = {
     users: [],
+    selectedUser: null,
     pagination: {
         page: 1,
         limit: 10,
@@ -93,6 +95,21 @@ const userSlice = createSlice({
             .addCase(getAllUsersThunk.rejected, (state, action: PayloadAction<any>) => {
                 state.isLoading = false;
                 state.error = action.payload?.message || 'Failed to fetch users';
+            })
+
+            //GET USER BY ID
+            .addCase(getUserByIdThunk.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(getUserByIdThunk.fulfilled, (state, action: PayloadAction<ApiUserDetail>) => {
+                state.isLoading = false;
+                state.selectedUser = action.payload;
+                state.error = null;
+            })
+            .addCase(getUserByIdThunk.rejected, (state, action: PayloadAction<any>) => {
+                state.isLoading = false;
+                state.error = action.payload?.message || "Failed to fetch user";
             })
 
             // UPDATE USER
