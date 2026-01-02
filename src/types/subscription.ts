@@ -12,7 +12,7 @@ export interface User {
   email: string;
   phoneNo: string;
   createdAt: string;
-  stripeCustomerId:string;
+  stripeCustomerId: string;
 }
 
 export interface Feature {
@@ -106,8 +106,11 @@ export interface AdminSubscriptionState {
   selectedSubscription: Subscription | null;
   pagination: Pagination;
   filters: AdminSubscriptionUIFilters;
-   stats: SubscriptionDashboardResponse["stats"] | null;
+  stats: SubscriptionDashboardResponse["stats"] | null;
   charts: SubscriptionDashboardResponse["charts"] | null;
+  refundResult: RefundResponse | null;
+  lastChangedSubscription: Subscription | null;
+
 }
 
 
@@ -139,4 +142,22 @@ export interface SubscriptionDashboardCharts {
 export interface SubscriptionDashboardResponse {
   stats: SubscriptionDashboardStats;
   charts: SubscriptionDashboardCharts;
+}
+
+export interface RefundRequestPayload {
+  amount: number;
+  reason?: string;
+}
+
+export interface RefundResponse {
+  id: string;
+  status: string;
+  amount: number;
+  currency: string;
+  [key: string]: any;
+}
+
+export interface ChangePlanPayload {
+  userId: number;
+  newPlanId: number;
 }

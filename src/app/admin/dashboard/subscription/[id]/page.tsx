@@ -44,9 +44,10 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "react-toastify";
 import { useAppDispatch, useAppSelector } from "@/redux/store/hooks";
-import { getSubscriptionDetailsAdminThunk } from "@/redux/thunk/subscriptionThunk";
+import { changeUserSubscriptionPlanAdminThunk, getSubscriptionDetailsAdminThunk, refundSubscriptionPaymentAdminThunk, revokeUserSubscriptionAdminThunk } from "@/redux/thunk/subscriptionThunk";
 import SubscriptionDetailsSkeleton from "@/components/SubscritionDetailSkeleton";
 import { Dropdown, DropdownContent, DropdownItem, DropdownTrigger } from "@/components/ui/Dropdown";
+import { getAllSubscriptionPlansAdminThunk } from "@/redux/thunk/subscriptionPlanThunk";
 
 // Types
 interface SubscriptionPlan {
@@ -111,11 +112,6 @@ export default function SubscriptionDetailsPage() {
     const subscriptionId = params.id as string;
 
     // State
-    const [loading, setLoading] = useState(true);
-    const [subscription, setSubscription] = useState<Subscription | null>(null);
-    const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan | null>(null);
-    const [availablePlans, setAvailablePlans] = useState<SubscriptionPlan[]>([]);
-    const [payments, setPayments] = useState<Payment[]>([]);
 
     // Dialog states
     const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
@@ -133,199 +129,94 @@ export default function SubscriptionDetailsPage() {
 
     const dispatch = useAppDispatch();
     const { selectedSubscription, isLoading } = useAppSelector((state) => state.subscription)
-
-    console.log('selectedSubscription', selectedSubscription)
+    const { plans: availablePlans } = useAppSelector((state) => state.subscriptionPlan)
 
     const fetchSubscriptionDetails = async () => {
         try {
-            dispatch(getSubscriptionDetailsAdminThunk(Number(subscriptionId))).unwrap();
+            await dispatch(getSubscriptionDetailsAdminThunk(Number(subscriptionId))).unwrap();
+            await dispatch(getAllSubscriptionPlansAdminThunk()).unwrap();
         } catch (error: any) {
             console.error("Failed to fetch subscriptions details:", error.message || error);
         }
     }
 
-    // Fetch data
-    useEffect(() => {
-        const fetchSubscriptionDetails = async () => {
-            try {
-                setLoading(true);
-                // TODO: Replace with actual API call
-                await new Promise((resolve) => setTimeout(resolve, 1000));
-
-                // Mock subscription data
-                const mockSubscription: Subscription = {
-                    id: subscriptionId,
-                    userId: "user_123",
-                    userName: "John Doe",
-                    userEmail: "john.doe@example.com",
-                    userPhone: "+1 (555) 123-4567",
-                    userJoinDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
-                    planId: "2",
-                    planName: "Premium Plan",
-                    status: "active",
-                    amount: 19.99,
-                    billingCycle: "monthly",
-                    startDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-                    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                    nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                    paymentMethod: "Credit Card (****4242)",
-                    stripeSubscriptionId: "sub_1234567890",
-                    stripeCustomerId: "cus_1234567890",
-                    createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-                    autoRenewal: true,
-                    totalPaid: 39.98,
-                };
-
-                // Mock plan data
-                const mockPlan: SubscriptionPlan = {
-                    id: "2",
-                    name: "Premium Plan",
-                    description: "Best value for serious players",
-                    price: 19.99,
-                    annualPrice: 199.99,
-                    billingCycle: "monthly",
-                    features: [
-                        "Daily Pick 3 Predictions",
-                        "Access to All States",
-                        "Full Draw History",
-                        "Priority Email Support",
-                        "Advanced Hit Tracker",
-                        "Weekly Performance Reports",
-                        "Early Access to New Features",
-                    ],
-                    isActive: true,
-                };
-
-                // Mock available plans
-                const mockPlans: SubscriptionPlan[] = [
-                    {
-                        id: "1",
-                        name: "Basic Plan",
-                        description: "Perfect for getting started",
-                        price: 9.99,
-                        annualPrice: 99.99,
-                        billingCycle: "monthly",
-                        features: [
-                            "Daily Pick 3 Predictions",
-                            "Access to 1 State",
-                            "Draw History (Last 30 Days)",
-                            "Email Support",
-                            "Basic Hit Tracker",
-                        ],
-                        isActive: true,
-                    },
-                    {
-                        id: "3",
-                        name: "VIP Plan",
-                        description: "Ultimate experience for maximum success",
-                        price: 39.99,
-                        annualPrice: 399.99,
-                        billingCycle: "monthly",
-                        features: [
-                            "Everything in Premium",
-                            "Real-time Predictions",
-                            "24/7 Priority Support",
-                            "Custom Prediction Requests",
-                            "Monthly Strategy Consultation",
-                            "Exclusive VIP Community Access",
-                            "Money-Back Guarantee",
-                            "Advanced Pattern Recognition",
-                        ],
-                        isActive: true,
-                    },
-                ];
-
-                // Mock payment history
-                const mockPayments: Payment[] = [
-                    {
-                        id: "pay_1",
-                        subscriptionId: subscriptionId,
-                        amount: 19.99,
-                        status: "succeeded",
-                        paymentMethod: "Credit Card",
-                        transactionId: "txn_1234567890",
-                        date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-                        description: "Monthly subscription payment",
-                    },
-                ];
-
-                setSubscription(mockSubscription);
-                setCurrentPlan(mockPlan);
-                setAvailablePlans(mockPlans);
-                setPayments(mockPayments);
-            } catch (error: any) {
-                console.error("Failed to fetch subscription details:", error);
-                toast.error(error?.message || "Failed to fetch subscription details");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchSubscriptionDetails();
-    }, [subscriptionId]);
-
     // Handlers
     const handleUpgrade = async () => {
-        if (!selectedUpgradePlan) {
-            toast.error("Please select a plan to upgrade to");
-            return;
-        }
-
+        if (!selectedUpgradePlan) return toast.error("Please select a plan to upgrade to");
+        console.log('selectedUpgradePlan', selectedUpgradePlan)
         try {
-            // TODO: Implement Stripe subscription upgrade API call
-            const selectedPlan = availablePlans.find((p) => p.id === selectedUpgradePlan);
-            toast.success(`Subscription upgraded to ${selectedPlan?.name || "selected plan"} successfully`);
+            await dispatch(
+                changeUserSubscriptionPlanAdminThunk({
+                    userId: selectedSubscription!.user.id,
+                    newPlanId: Number(selectedUpgradePlan),
+                })
+            ).unwrap();
+
+            toast.success("Subscription upgraded successfully");
             setUpgradeDialogOpen(false);
             setSelectedUpgradePlan("");
-            // Refresh data
-            window.location.reload();
-        } catch (error: any) {
-            toast.error(error?.message || "Failed to upgrade subscription");
+        } catch (err: any) {
+            toast.error(err?.message || "Failed to upgrade subscription");
         }
     };
 
     const handleDowngrade = async () => {
-        if (!selectedDowngradePlan) {
-            toast.error("Please select a plan to downgrade to");
-            return;
-        }
+        if (!selectedDowngradePlan) return toast.error("Please select a plan to downgrade to");
 
         try {
-            // TODO: Implement Stripe subscription downgrade API call
-            const selectedPlan = availablePlans.find((p) => p.id === selectedDowngradePlan);
-            toast.success(`Subscription will be downgraded to ${selectedPlan?.name || "selected plan"} at the end of the billing cycle`);
+            await dispatch(
+                changeUserSubscriptionPlanAdminThunk({
+                    userId: selectedSubscription!.user.id,
+                    newPlanId: Number(selectedDowngradePlan),
+                })
+            ).unwrap();
+
+            toast.success("Subscription downgrade scheduled at billing cycle end");
             setDowngradeDialogOpen(false);
             setSelectedDowngradePlan("");
-            // Refresh data
-            window.location.reload();
-        } catch (error: any) {
-            toast.error(error?.message || "Failed to downgrade subscription");
+        } catch (err: any) {
+            toast.error(err?.message || "Failed to downgrade subscription");
         }
     };
 
     const handleRevoke = async () => {
         try {
-            // TODO: Implement Stripe subscription cancellation API call
+            await dispatch(
+                revokeUserSubscriptionAdminThunk(selectedSubscription!.user.id)
+            ).unwrap();
+
             toast.success("Subscription revoked successfully");
             setRevokeDialogOpen(false);
-            // Refresh data
-            window.location.reload();
-        } catch (error: any) {
-            toast.error(error?.message || "Failed to revoke subscription");
+        } catch (err: any) {
+            toast.error(err?.message || "Failed to revoke subscription");
         }
     };
 
     const handleRefund = async () => {
+        const amount = parseFloat(refundFormData.amount);
+        if (!amount || amount <= 0) return toast.error("Enter a valid refund amount");
+
         try {
-            // TODO: Implement Stripe refund API call
-            const refundAmount = parseFloat(refundFormData.amount);
-            toast.success(`Refund of $${refundAmount.toFixed(2)} processed successfully`);
+            const paymentIntentId = selectedSubscription?.payment?.stripePaymentId;
+
+            if (!paymentIntentId) {
+                toast.error("No payment intent found for this subscription");
+                return;
+            }
+
+            await dispatch(
+                refundSubscriptionPaymentAdminThunk({
+                    paymentIntentId: paymentIntentId,
+                    amount,
+                    reason: refundFormData.reason,
+                })
+            ).unwrap();
+
+            toast.success(`Refund of $${amount.toFixed(2)} processed successfully`);
             setRefundDialogOpen(false);
             setRefundFormData({ amount: "", reason: "" });
-            // Refresh data
-            window.location.reload();
-        } catch (error: any) {
-            toast.error(error?.message || "Failed to process refund");
+        } catch (err: any) {
+            toast.error(err?.message || "Failed to process refund");
         }
     };
 
@@ -396,7 +287,7 @@ export default function SubscriptionDetailsPage() {
 
     useEffect(() => {
         if (subscriptionId) fetchSubscriptionDetails();
-    }, [subscriptionId]);
+    }, [subscriptionId, dispatch]);
 
     if (isLoading) {
         return (
@@ -448,7 +339,7 @@ export default function SubscriptionDetailsPage() {
                     type="default"
                     icon={<RefreshCw className="w-4 h-4" />}
                     onClick={() => {
-                        setRefundFormData({ amount: selectedSubscription.plan.price.toString(), reason: "" });
+                        setRefundFormData({ amount: "", reason: "" });
                         setRefundDialogOpen(true);
                     }}
                     disabled={selectedSubscription.status !== "ACTIVE"}
@@ -560,7 +451,7 @@ export default function SubscriptionDetailsPage() {
                                     {formatDate(selectedSubscription.endDate)}
                                 </p>
                             </div>
-                            {subscription?.endDate && selectedSubscription.status === "ACTIVE" && (
+                            {selectedSubscription?.endDate && selectedSubscription.status === "ACTIVE" && (
                                 <div>
                                     <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
                                         Next Billing Date
@@ -659,13 +550,13 @@ export default function SubscriptionDetailsPage() {
                     {/* Current Plan Card */}
                     <div className="bg-gradient-to-br from-accent-primary/10 via-bg-card to-bg-card border-2 border-accent-primary/30 rounded-lg p-6 shadow-lg">
                         <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-accent-primary/20 border border-border-accent flex items-center justify-center">
-                                <Package className="w-5 h-5 text-accent-primary" />
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-accent-primary/20 border border-border-accent flex items-center justify-center">
+                                    <Package className="w-5 h-5 text-accent-primary" />
+                                </div>
+                                <h2 className="text-xl font-semibold text-text-primary">Current Plan</h2>
                             </div>
-                            <h2 className="text-xl font-semibold text-text-primary">Current Plan</h2>
-                        </div>
-                          <Dropdown>
+                            <Dropdown>
                                 <DropdownTrigger className="!w-fit !p-2 border-none bg-transparent hover:bg-bg-secondary rounded-lg">
                                     <MoreVertical className="w-5 h-5 text-text-tertiary" />
                                 </DropdownTrigger>
@@ -758,16 +649,21 @@ export default function SubscriptionDetailsPage() {
                             <label className="text-xs text-text-muted mb-1 block">Select New Plan</label>
                             <Select value={selectedUpgradePlan} onValueChange={setSelectedUpgradePlan}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select a plan to upgrade to" />
+                                    <SelectValue>
+                                        {availablePlans.find(p => p.id.toString() === selectedUpgradePlan)?.name || "Select a plan to upgrade to"}
+                                    </SelectValue>
+
                                 </SelectTrigger>
                                 <SelectContent>
                                     {availablePlans
-                                        // .filter((plan) => plan.isActive && plan.price > subscription.amount)
+                                        .filter((plan) => plan.isActive && plan.price !== undefined && plan.price > (selectedSubscription.plan.price ?? 0))
                                         .map((plan) => (
-                                            <SelectItem key={plan.id} value={plan.id}>
-                                                {plan.name} - ${plan.price.toFixed(2)}/mo
+                                            <SelectItem key={plan.id} value={plan.id.toString()}>
+                                                {plan.name} - {plan.price !== undefined ? `$${plan.price.toFixed(2)}/mo` : "Free Trial"}
                                             </SelectItem>
                                         ))}
+
+
                                 </SelectContent>
                             </Select>
                         </div>
@@ -805,14 +701,16 @@ export default function SubscriptionDetailsPage() {
                             <label className="text-xs text-text-muted mb-1 block">Select New Plan</label>
                             <Select value={selectedDowngradePlan} onValueChange={setSelectedDowngradePlan}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select a plan to downgrade to" />
+                                    <SelectValue>
+                                        {availablePlans.find(p => p.id.toString() === selectedDowngradePlan)?.name || "Select a plan to downgrade to"}
+                                    </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                     {availablePlans
-                                        // .filter((plan) => plan.isActive && plan.price < subscription.amount)
+                                        .filter((plan) => plan.isActive && plan.price !== undefined && plan.price < (selectedSubscription.plan.price ?? 0))
                                         .map((plan) => (
-                                            <SelectItem key={plan.id} value={plan.id}>
-                                                {plan.name} - ${plan.price.toFixed(2)}/mo
+                                            <SelectItem key={plan.id} value={plan.id.toString()}>
+                                                {plan.name} - {plan.price !== undefined ? `$${plan.price.toFixed(2)}/mo` : "Free Trial"}
                                             </SelectItem>
                                         ))}
                                 </SelectContent>

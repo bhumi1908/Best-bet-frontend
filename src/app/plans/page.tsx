@@ -24,15 +24,16 @@ type PlanTier = 1 | 2 | 3;
 interface Plan {
   id: number;
   name: string;
+  trialDays?: number;
   tier: PlanTier;
-  price: string;
+  originalPrice?: number;
+  price: number;
   period: string;
   description?: string;
-    discount?: boolean;
-
   popular: boolean;
   cta: string;
   icon: JSX.Element;
+  discountPercent?: number;
   features: {
     text: string;
   }[];
@@ -69,25 +70,34 @@ export default function PlansPage() {
   const { plans, isLoading } = useAppSelector(
     (state) => state.subscriptionPlan
   );
-
+  
   const mappedPlans: Plan[] = useMemo(() => {
     return plans.map((plan, index) => {
       const uiConfig = PLAN_UI_CONFIG[plan.name];
 
       // Period derived from duration
       const period = plan.duration === 12 ? 'per year' : 'per month';
-      
-      // Add discount tag to first two plans (you can modify this logic as needed)
-      const hasDiscount = index === 2;
+
+        const basePrice = Number(plan.price) ?? 0;
+    const discountPercent = Number(plan.discountPercent) ?? 0;
+
+    const discountedPrice =
+      discountPercent > 0
+        ? Number((basePrice * (1 - discountPercent / 100)).toFixed(2))
+        : basePrice;
+
+        
 
       return {
         id: plan.id,
         name: plan.name,
         description: plan.description ?? '',
-        price: `$${plan.price.toFixed(2)}`,
+        price: discountedPrice,
+        originalPrice: plan.price,
         period,
+        trialDays: plan.trialDays,
         popular: plan.isRecommended ?? false,
-        discount: hasDiscount,
+        discountPercent: plan.discountPercent,
         tier: PLAN_TIER_MAP[plan.name],
         cta: uiConfig?.cta ?? 'Get Started',
         icon: uiConfig?.icon ?? <Target className="w-6 h-6" />,
@@ -149,7 +159,7 @@ export default function PlansPage() {
     if (!plans.length) {
       dispatch(getAllSubscriptionPlansThunk());
     }
-  }, [dispatch, plans.length]);
+  }, []);
 
 
 
@@ -269,26 +279,28 @@ export default function PlansPage() {
                         </motion.div>
                       )}
 
-                       {plan.discount && (
-                      <motion.div
-                        className="absolute -top-1 -right-3 z-20"
-                        initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
-                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                      >
-                        <div className="relative">
-                          <span className="bg-gradient-to-r from-green-500 to-green-600 text-black px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg shadow-green-500/40 flex items-center gap-1">
-                            <span className="text-sm">10%</span>
-                            <span>OFF</span>
-                          </span>
-                          {/* Small triangle for ribbon effect */}
-                          <div className="absolute -bottom-1 right-2 w-2 h-2 bg-green-600 transform rotate-45"></div>
-                        </div>
-                      </motion.div>
+                      {(plan.discountPercent ?? 0) > 0 && (
+                        <motion.div
+                          className="absolute -top-1 -right-3 z-20"
+                          initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
+                          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                          transition={{ duration: 0.5, delay: 0.2 }}
+                        >
+                          <div className="relative">
+                            <span className="bg-gradient-to-r from-green-500 to-green-600 text-black px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg shadow-green-500/40 flex items-center gap-1">
+                              <span className="text-sm">{plan.discountPercent}%</span>
+                              <span>OFF</span>
+                            </span>
+                            {/* Small triangle for ribbon effect */}
+                            <div className="absolute -bottom-1 right-2 w-2 h-2 bg-green-600 transform rotate-45"></div>
+                          </div>
+                        </motion.div>
                       )}
 
+
+
                       {/* Plan Icon */}
-                      <div className="relative z-10 mb-6">
+                      <div className="relative z-10 mb-4">
                         <motion.div
                           className="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-black mb-4 shadow-lg shadow-yellow-400/20"
                           transition={{ duration: 0.6 }}
@@ -302,19 +314,32 @@ export default function PlansPage() {
                       </div>
 
                       {/* Price */}
-                      <div className="relative z-10 mb-6">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-5xl font-extrabold text-yellow-400">
-                            {plan.price}
-                          </span>
-                          <span className="text-gray-400 text-sm">
-                            {plan.period}
-                          </span>
-                        </div>
+                      <div className="relative z-10 mb-2">
+                        {plan.trialDays ? (
+                          <p className="text-3xl font-extrabold text-yellow-400">
+                            {plan.trialDays}-day Free Trial
+                          </p>
+                        ) : (
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-5xl font-extrabold text-yellow-400">
+                              ${plan.price}
+                            </span>
+                            <span className="text-gray-400 text-sm">{plan.period}</span>
+                          </div>
+                        )}
                       </div>
+                        {(plan.discountPercent ?? 0) > 0 && (
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-gray-400 text-2xl line-through">
+                            ${plan.originalPrice?.toFixed(2)}
+                          </span>
+                            <span className="text-gray-400 text-sm">{plan.period}</span>
+                          </div>
+                        )}
+
 
                       {/* Features List */}
-                      <ul className="relative z-10 space-y-3 mb-8 flex-grow">
+                      <ul className="relative z-10 space-y-3 mb-8 flex-grow mt-6">
                         {plan.features.map((feature, featureIndex) => (
                           <motion.li
                             key={featureIndex}
@@ -352,6 +377,7 @@ export default function PlansPage() {
                   </motion.div>
                 );
               })}
+
             </motion.div>}
           </div>
         </section>

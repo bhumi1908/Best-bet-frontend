@@ -68,6 +68,7 @@ export const routes = {
         getByPlanId: (id: number | string) => `/admin/subscription-plan/${id}`,
         create: "/admin/subscription-plan",
         update: (id: number | string) => `/admin/subscription-plan/${id}`,
+        updateStatus: (id: number | string) => `/admin/subscription-plan/${id}/status`,
         delete: (id: number | string) => `/admin/subscription-plan/${id}`,
       },
     },
@@ -75,7 +76,10 @@ export const routes = {
       admin: {
         dashboard: '/subscription/dashboard',
         getAll: '/subscription/users',
-        getSubscriptionDetails: (id: number | string) => `/subscription/users/${id}`
+        getSubscriptionDetails: (id: number | string) => `/subscription/users/${id}`,
+        revokeSubscription: (id: number | string) => `/subscription/users/${id}/revoke`,
+        refundSubscription: (id: number | string) => `/subscription/refund/${id}`,
+        changePlanSubscription: (id:number | string) => `/subscription/change-plan/${id}`
       }
     },
     stripe: {

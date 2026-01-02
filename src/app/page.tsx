@@ -41,20 +41,20 @@ import { useAppDispatch, useAppSelector } from "@/redux/store/hooks";
 import { getAllSubscriptionPlansThunk } from "@/redux/thunk/subscriptionPlanThunk";
 import PricingCardSkeleton from "@/components/PricingCardSkeleton";
 
-interface Plan {
-  id: number;
-  name: string;
-  price: string;
-  period: string;
-  description?: string;
-  popular: boolean;
-    discount?: boolean;
-  cta: string;
-  icon: JSX.Element;
-  features: {
-    text: string;
-  }[];
-}
+// interface Plan {
+//   id: number;
+//   name: string;
+//   price: string;
+//   period: string;
+//   description?: string;
+//   popular: boolean;
+//   discount?: boolean;
+//   cta: string;
+//   icon: JSX.Element;
+//   features: {
+//     text: string;
+//   }[];
+// }
 
 
 // Chart data for performance section
@@ -74,20 +74,20 @@ const monthlyHitRateData = [
 ];
 
 
-const PLAN_UI_CONFIG: Record<string, { icon: JSX.Element; cta: string }> = {
-  'Basic Plan': {
-    icon: <Target className="w-6 h-6" />,
-    cta: 'Get Started',
-  },
-  'Premium Plan': {
-    icon: <Star className="w-6 h-6" />,
-    cta: 'Most Popular',
-  },
-  'VIP Plan': {
-    icon: <Award className="w-6 h-6" />,
-    cta: 'Go VIP',
-  },
-};
+// const PLAN_UI_CONFIG: Record<string, { icon: JSX.Element; cta: string }> = {
+//   'Basic Plan': {
+//     icon: <Target className="w-6 h-6" />,
+//     cta: 'Get Started',
+//   },
+//   'Premium Plan': {
+//     icon: <Star className="w-6 h-6" />,
+//     cta: 'Most Popular',
+//   },
+//   'VIP Plan': {
+//     icon: <Award className="w-6 h-6" />,
+//     cta: 'Go VIP',
+//   },
+// };
 
 // Testimonials data
 const testimonials = [
@@ -199,32 +199,32 @@ export default function LandingPage() {
     (state) => state.subscriptionPlan
   );
 
-  const mappedPlans: Plan[] = useMemo(() => {
-    return plans.map((plan,index) => {
-      const uiConfig = PLAN_UI_CONFIG[plan.name];
+  // const mappedPlans: Plan[] = useMemo(() => {
+  //   return plans.map((plan, index) => {
+  //     const uiConfig = PLAN_UI_CONFIG[plan.name];
 
-      // Period derived from duration
-      const period = plan.duration === 12 ? 'per year' : 'per month';
-      const hasDiscount = index === 2;
+  //     // Period derived from duration
+  //     const period = plan.duration === 12 ? 'per year' : 'per month';
+  //     const hasDiscount = index === 2;
 
 
-      return {
-        id: plan.id,
-        name: plan.name,
-        description: plan.description ?? '',
-        price: `$${plan.price.toFixed(2)}`,
-        period,
-        popular: plan.isRecommended,
-        discount: hasDiscount,
+  //     return {
+  //       id: plan.id,
+  //       name: plan.name,
+  //       description: plan.description ?? '',
+  //       price: `$${plan.price.toFixed(2)}`,
+  //       period,
+  //       popular: plan.isRecommended,
+  //       discount: hasDiscount,
 
-        cta: uiConfig?.cta ?? 'Get Started',
-        icon: uiConfig?.icon ?? <Target className="w-6 h-6" />,
-        features: plan.features.map((feature) => ({
-          text: feature.name,
-        })),
-      };
-    });
-  }, [plans]);
+  //       cta: uiConfig?.cta ?? 'Get Started',
+  //       icon: uiConfig?.icon ?? <Target className="w-6 h-6" />,
+  //       features: plan.features.map((feature) => ({
+  //         text: feature.name,
+  //       })),
+  //     };
+  //   });
+  // }, [plans]);
 
   const staggerContainer = {
     initial: { opacity: 0 },
@@ -247,9 +247,9 @@ export default function LandingPage() {
     console.log('plan', plan)
   }
 
-  useEffect(() => {
-    dispatch(getAllSubscriptionPlansThunk());
-  }, []);
+  // useEffect(() => {
+  //   dispatch(getAllSubscriptionPlansThunk());
+  // }, []);
 
 
   return (
@@ -289,7 +289,7 @@ export default function LandingPage() {
           </div>
 
           {/* Dark Overlay - 90% opacity to make image 10% visible */}
-          <div className="absolute inset-0 bg-black/90 pointer-events-none"></div>
+          <div className="absolute inset-0 bg-black/70 pointer-events-none"></div>
 
           {/* Floating Elements Background */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
@@ -313,8 +313,8 @@ export default function LandingPage() {
           >
             {/* Announcement Badge */}
             <motion.div
-            className="flex items-center justify-center gap-2 mb-2 rounded-full "
-                initial={{ opacity: 0, y: -20 }}
+              className="flex items-center justify-center gap-2 mb-2 rounded-full "
+              initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
@@ -323,7 +323,7 @@ export default function LandingPage() {
                 <Target className="w-4 h-4" />
                 Join 10,000+ Winners Today
               </span> */}
-               <Image
+              <Image
                 src="/images/small-logo.png"
                 alt="Hero Background"
                 width={400}
@@ -339,7 +339,7 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
             >
-             Welcome to you
+              Welcome To Your
               <br />
               <motion.span
                 className="bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 bg-clip-text text-transparent animate-gradient pl-2 md:pl-3 lg:pl-4 2xl:pl-5"
@@ -347,10 +347,10 @@ export default function LandingPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
               >
-                 VIP Source!
+                VIP Source!
               </motion.span>
 
-          
+
             </motion.h1>
 
             {/* Subheadline */}
@@ -363,17 +363,16 @@ export default function LandingPage() {
               The <span className="text-gray-200">Most Accurate</span> <span className="bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 bg-clip-text text-transparent ">Pick 3 Predictions</span>  On The Planet!
             </motion.p>
 
-             <motion.p
-              className="text-xl md:text-xl 2xl:text-2xl text-gray-400 mb-4 max-w-3xl mx-auto leading-relaxed"
+            <motion.p
+              className="text-xl md:text-xl 2xl:text-2xl text-gray-400 mb-12 max-w-3xl mx-auto leading-relaxed"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.7 }}
             >
               Real time <span className="text-gray-200">draw history</span> and <span className="text-gray-200">live predictions</span> Daily!
             </motion.p>
-
             {/* Trust Indicators */}
-            <motion.div
+            {/* <motion.div
               className="flex items-center justify-center gap-6 mb-12 text-sm text-gray-300"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -406,7 +405,7 @@ export default function LandingPage() {
                 <CheckCircle2 className="w-4 h-4 text-yellow-400" />
                 <span>Daily Updates</span>
               </motion.div>
-            </motion.div>
+            </motion.div> */}
 
             {/* CTA Buttons */}
             <motion.div
@@ -415,7 +414,7 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 1.2 }}
             >
-             <Button
+              <Button
                 type="primary"
                 size="large"
                 onClick={() => window.location.href = isAuthenticated ? routes.home : routes.auth.register}
@@ -423,13 +422,13 @@ export default function LandingPage() {
               >
                 {isAuthenticated ? "Go to Dashboard" : "Start Winning Now"}
               </Button>
-
+              {/* 
               <Link
                 href="#how-it-works"
                 className="px-4 py-3 md:px-6 md:py-3 2xl:px-8 bg-white/5 backdrop-blur-md border border-white/20 text-white font-semibold text-lg rounded-lg hover:bg-white/10 hover:border-yellow-400/50 transition-all duration-300"
               >
                 See How It Works
-              </Link>
+              </Link> */}
             </motion.div>
           </motion.div>
         </section>
@@ -455,10 +454,10 @@ export default function LandingPage() {
                 <span className="text-yellow-400 text-sm font-semibold">FEATURES</span>
               </motion.div>
               <h2 className="text-4xl md:text-6xl font-black mb-6">
-                Everything You Need to <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">Win Big</span>
+                Everything You Need to <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">Win Consistently</span>
               </h2>
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                Our platform combines cutting-edge analytics with real-time data to give you the competitive edge.
+                Unlock real-time predictions, comprehensive draw history, and live performance tracking, all in one powerful platform.
               </p>
             </motion.div>
 
@@ -487,7 +486,7 @@ export default function LandingPage() {
                   </motion.div>
                   <h3 className="text-xl font-bold mb-3 text-white">Most Accurate Predictions</h3>
                   <p className="text-gray-400 text-sm leading-relaxed">
-                    Industry-leading 94.8% accuracy rate powered by advanced algorithms and historical data analysis.
+                    Industry-leading accuracy, powered by advanced algorithms and historical data analysis.
                   </p>
                 </div>
               </motion.div>
@@ -509,7 +508,7 @@ export default function LandingPage() {
                   </motion.div>
                   <h3 className="text-xl font-bold mb-3 text-white">Real-Time Updates</h3>
                   <p className="text-gray-400 text-sm leading-relaxed">
-                    Get instant notifications on new predictions and draw results the moment they're available.
+                    Get notifications on new predictions and draw results the moment they're available.
                   </p>
                 </div>
               </motion.div>
@@ -531,7 +530,7 @@ export default function LandingPage() {
                   </motion.div>
                   <h3 className="text-xl font-bold mb-3 text-white">Performance Tracking</h3>
                   <p className="text-gray-400 text-sm leading-relaxed">
-                    Track your hits, analyze patterns, and monitor your success with detailed performance metrics.
+                    Track your hits, analyz and monitor your success with detailed performance metrics.
                   </p>
                 </div>
               </motion.div>
@@ -553,7 +552,7 @@ export default function LandingPage() {
                   </motion.div>
                   <h3 className="text-xl font-bold mb-3 text-white">38 States Covered</h3>
                   <p className="text-gray-400 text-sm leading-relaxed">
-                    Access predictions for 38 states with new regions being added regularly based on demand.
+                    Access predictions in 38 States for each draw.
                   </p>
                 </div>
               </motion.div>
@@ -579,7 +578,7 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                <span className="text-yellow-500 text-sm font-semibold">SIMPLE PROCESS</span>
+                <span className="text-yellow-500 text-sm font-semibold">LET US PROVE IT!</span>
               </motion.div>
               <h2 className="text-4xl md:text-6xl font-black mb-6">
                 Start Winning in <span className="bg-gradient-to-r from-yellow-500 to-yellow-400 bg-clip-text text-transparent">4 Easy Steps</span>
@@ -712,16 +711,15 @@ export default function LandingPage() {
                 onClick={() => window.location.href = isAuthenticated ? routes.home : routes.auth.register}
                 className="px-8 py-4 text-lg !w-fit h-fit rounded-lg"
               >
-                Get Started Now
+                Start Winning Today
               </Button>
             </motion.div>
           </div>
         </section>
 
         {/* ==================== PERFORMANCE SECTION ==================== */}
-        <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/15 via-gray-900/10 to-gray-900/5">
+        {/* <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/15 via-gray-900/10 to-gray-900/5">
           <div className="max-w-7xl mx-auto">
-            {/* Section Header */}
             <motion.div
               className="text-center mb-16"
               initial={{ opacity: 0, y: 40 }}
@@ -759,7 +757,6 @@ export default function LandingPage() {
                   whileHover={{ borderColor: "rgba(251, 191, 36, 0.3)" }}
                   transition={{ duration: 0.3 }}
                 >
-                  {/* Decorative gradient overlay */}
                   <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400/5 rounded-full blur-3xl -z-0"></div>
 
                   <div className="relative z-10">
@@ -818,7 +815,7 @@ export default function LandingPage() {
                     </div>
 
                     {/* Chart Insights */}
-                    {/* <div className="mt-6 pt-6 border-t border-white/10">
+        {/* <div className="mt-6 pt-6 border-t border-white/10">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <div className="text-gray-400 text-xs mb-1">Peak Performance</div>
@@ -831,7 +828,7 @@ export default function LandingPage() {
                           <div className="text-gray-500 text-xs">Year-to-date</div>
                         </div>
                       </div>
-                    </div> */}
+                    </div> 
                   </div>
                 </motion.div>
               </motion.div>
@@ -843,7 +840,6 @@ export default function LandingPage() {
                 transition={{ duration: 0.8 }}
               >
                 <div className="rounded-2xl py-4 space-y-8">
-                  {/* Key Metric 1 */}
                   <motion.div
                     className="space-y-3"
                     initial={{ opacity: 0, y: 20 }}
@@ -874,7 +870,6 @@ export default function LandingPage() {
 
                   <div className="h-px bg-white/10"></div>
 
-                  {/* Key Metric 2 */}
                   <motion.div
                     className="space-y-3"
                     initial={{ opacity: 0, y: 20 }}
@@ -905,7 +900,6 @@ export default function LandingPage() {
 
                   <div className="h-px bg-white/10"></div>
 
-                  {/* Key Metric 3 */}
                   <motion.div
                     className="space-y-3"
                     initial={{ opacity: 0, y: 20 }}
@@ -936,7 +930,6 @@ export default function LandingPage() {
 
                   <div className="h-px bg-white/10"></div>
 
-                  {/* Key Metric 4 */}
                   <motion.div
                     className="space-y-3"
                     initial={{ opacity: 0, y: 20 }}
@@ -969,12 +962,11 @@ export default function LandingPage() {
               </motion.div>
             </div>
           </div>
-        </section>
+        </section> */}
 
         {/* ==================== SUBSCRIPTION PLANS SECTION ==================== */}
-        <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/15 via-gray-900/20 to-gray-900/5">
+        {/* <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/15 via-gray-900/20 to-gray-900/5">
           <div className="max-w-7xl mx-auto">
-            {/* Section Header */}
             <motion.div
               className="text-center mb-20"
               initial={{ opacity: 0, y: 40 }}
@@ -999,7 +991,6 @@ export default function LandingPage() {
               </p>
             </motion.div>
 
-            {/* Plans Grid - Matching plans page design */}
             {isLoading ? <PricingCardSkeleton /> : <motion.div
               className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12"
               variants={staggerContainer}
@@ -1018,7 +1009,6 @@ export default function LandingPage() {
                     onMouseLeave={() => setHoveredPlan(null)}
                   >
 
-                    {/* Plan Card */}
                     <motion.div
                       className={`relative flex flex-col h-full bg-black/55 backdrop-blur-md rounded-2xl p-8 border-2 transition-all duration-300 ${plan.popular
                         ? "border-yellow-400 shadow-2xl shadow-yellow-400/20"
@@ -1027,14 +1017,12 @@ export default function LandingPage() {
                       whileHover={{ scale: plan.popular ? 1.05 : 1.02, y: -5 }}
                       initial={{ opacity: 0, y: 30 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6, delay: index * 0.1 }}
+                      transition={{ duration: 0.4, delay: index * 0.1 }}
                     >
-                      {/* Gradient Overlay on Hover */}
                       <div
                         className={`absolute inset-0 bg-gradient-to-br from-yellow-400/10 to-transparent rounded-2xl transition-opacity duration-300 ${hoveredPlan === index ? "opacity-100" : "opacity-0"
                           }`}
                       />
-                      {/* Popular Badge */}
                       {plan.popular && (
                         <motion.div
                           className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-20"
@@ -1048,8 +1036,7 @@ export default function LandingPage() {
                         </motion.div>
                       )}
 
-                      
-                      {/* Discount Badge - Top Right Corner */}
+
                       {plan.discount && (
                         <motion.div
                           className="absolute -top-1 -right-3 z-20"
@@ -1062,13 +1049,11 @@ export default function LandingPage() {
                               <span className="text-sm">10%</span>
                               <span>OFF</span>
                             </span>
-                            {/* Small triangle for ribbon effect */}
                             <div className="absolute -bottom-1 right-2 w-2 h-2 bg-green-600 transform rotate-45"></div>
                           </div>
                         </motion.div>
                       )}
 
-                      {/* Plan Icon */}
                       <div className="relative z-10 mb-6">
                         <motion.div
                           className="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-black mb-4 shadow-lg shadow-yellow-400/20"
@@ -1082,7 +1067,6 @@ export default function LandingPage() {
                         )}
                       </div>
 
-                      {/* Price */}
                       <div className="relative z-10 mb-6">
                         <div className="flex items-baseline gap-2">
                           <span className="text-5xl font-extrabold text-yellow-400">
@@ -1094,7 +1078,6 @@ export default function LandingPage() {
                         </div>
                       </div>
 
-                      {/* Features List */}
                       <ul className="relative z-10 space-y-3 mb-8 flex-grow">
                         {plan.features.map((feature, featureIndex) => (
                           <motion.li
@@ -1115,7 +1098,6 @@ export default function LandingPage() {
                         ))}
                       </ul>
 
-                      {/* CTA Button */}
                       <div className="relative z-10 mt-auto">
                         <Button
                           type="primary"
@@ -1135,7 +1117,6 @@ export default function LandingPage() {
               })}
             </motion.div>}
 
-            {/* Plan Features Comparison */}
             <motion.div
               className="text-center"
               initial={{ opacity: 0 }}
@@ -1152,12 +1133,11 @@ export default function LandingPage() {
               </Link>
             </motion.div>
           </div>
-        </section>
+        </section> */}
 
         {/* ==================== GEOGRAPHIC REACH SECTION  ==================== */}
-        <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/15 via-gray-900/10 to-gray-900/5">
+        {/* <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/15 via-gray-900/10 to-gray-900/5">
           <div className="max-w-7xl mx-auto">
-            {/* Section Header */}
             <motion.div
               className="text-center mb-20"
               initial={{ opacity: 0, y: 40 }}
@@ -1182,7 +1162,6 @@ export default function LandingPage() {
               </p>
             </motion.div>
 
-            {/* Unified Coverage Cards - 4 Cards Grid */}
             <motion.div
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
               variants={staggerContainer}
@@ -1190,7 +1169,6 @@ export default function LandingPage() {
               whileInView="animate"
               viewport={{ once: true, margin: "-50px" }}
             >
-              {/* Card 1: East Coast */}
               <motion.div
                 className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:border-yellow-400/50 transition-all duration-300 overflow-hidden"
                 variants={staggerItem}
@@ -1220,7 +1198,6 @@ export default function LandingPage() {
                 </div>
               </motion.div>
 
-              {/* Card 2: West Coast */}
               <motion.div
                 className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:border-yellow-400/50 transition-all duration-300 overflow-hidden"
                 variants={staggerItem}
@@ -1250,7 +1227,6 @@ export default function LandingPage() {
                 </div>
               </motion.div>
 
-              {/* Card 3: Midwest */}
               <motion.div
                 className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:border-yellow-400/50 transition-all duration-300 overflow-hidden"
                 variants={staggerItem}
@@ -1280,7 +1256,6 @@ export default function LandingPage() {
                 </div>
               </motion.div>
 
-              {/* Card 4: South + Overall Stats */}
               <motion.div
                 className="group relative bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:border-yellow-400/50 transition-all duration-300 overflow-hidden"
                 variants={staggerItem}
@@ -1311,7 +1286,6 @@ export default function LandingPage() {
               </motion.div>
             </motion.div>
 
-            {/* CTA */}
             <motion.div
               className="text-center"
               initial={{ opacity: 0, y: 20 }}
@@ -1332,12 +1306,11 @@ export default function LandingPage() {
               </Button>
             </motion.div>
           </div>
-        </section>
+        </section> */}
 
         {/* ==================== TESTIMONIALS SECTION ==================== */}
-        <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/15 via-gray-900/20 to-gray-900/5">
+        {/* <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/15 via-gray-900/20 to-gray-900/5">
           <div className="max-w-7xl mx-auto">
-            {/* Section Header */}
             <motion.div
               className="text-center mb-20"
               initial={{ opacity: 0, y: 40 }}
@@ -1362,7 +1335,6 @@ export default function LandingPage() {
               </p>
             </motion.div>
 
-            {/* Testimonials Slider */}
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -1429,12 +1401,11 @@ export default function LandingPage() {
               </Slider>
             </motion.div>
           </div>
-        </section>
+        </section> */}
 
         {/* ==================== DRAW HISTORY PREVIEW SECTION ==================== */}
-        <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/15 via-gray-900/10 to-gray-900/5">
+        {/* <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/15 via-gray-900/10 to-gray-900/5">
           <div className="max-w-7xl mx-auto">
-            {/* Section Header */}
             <motion.div
               className="text-center mb-20"
               initial={{ opacity: 0, y: 40 }}
@@ -1458,7 +1429,6 @@ export default function LandingPage() {
                 Access comprehensive historical data and analyze patterns to make informed decisions.
               </p>
             </motion.div>
-            {/* Features */}
             <motion.div
               className="grid grid-cols-1 md:grid-cols-3 gap-6"
               variants={staggerContainer}
@@ -1570,7 +1540,6 @@ export default function LandingPage() {
               </motion.div>
             </motion.div>
 
-            {/* CTA Button */}
             <motion.div
               className="text-center mt-12"
               initial={{ opacity: 0, y: 40 }}
@@ -1589,12 +1558,11 @@ export default function LandingPage() {
             </motion.div>
 
           </div>
-        </section>
+        </section> */}
 
         {/* ==================== FAQ SECTION ==================== */}
-        <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/15 via-gray-900/20 to-gray-900/5">
+        {/* <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/15 via-gray-900/20 to-gray-900/5">
           <div className="max-w-4xl mx-auto">
-            {/* Section Header */}
             <motion.div
               className="text-center mb-20"
               initial={{ opacity: 0, y: 40 }}
@@ -1619,7 +1587,6 @@ export default function LandingPage() {
               </p>
             </motion.div>
 
-            {/* FAQ Accordion */}
             <motion.div
               className="space-y-4"
               variants={staggerContainer}
@@ -1638,7 +1605,7 @@ export default function LandingPage() {
                 },
                 {
                   q: "Can I cancel my subscription anytime?",
-                  a: "Yes! All our plans are month-to-month with no long-term commitment. You can cancel anytime from your dashboard, and you'll retain access until the end of your billing period. VIP members also get a 30-day money-back guarantee if you're not completely satisfied."
+                  a: "Yes! All our plans are month-to-month with no long-term commitment. You can cancel anytime from your dashboard, and you'll retain access until the end of your billing period."
                 },
                 {
                   q: "How do I access the predictions?",
@@ -1650,7 +1617,7 @@ export default function LandingPage() {
                 },
                 {
                   q: "Do you offer a free trial?",
-                  a: "While we don't offer a traditional free trial, new members can access our Basic plan to test the service at just $9.99/month. This gives you full access to one state's predictions and draw history. VIP members also get a 30-day money-back guarantee, making it risk-free to try our premium features."
+                  a: "While we don't offer a traditional free trial, new members can access our Basic plan to test the service at just $9.99/month. This gives you full access to one state's predictions and draw history. making it risk-free to try our premium features."
                 }
               ].map((faq, index) => (
                 <motion.div
@@ -1685,7 +1652,6 @@ export default function LandingPage() {
               ))}
             </motion.div>
 
-            {/* More Questions CTA */}
             <motion.div
               className="mt-12 text-center"
               initial={{ opacity: 0, y: 20 }}
@@ -1703,7 +1669,7 @@ export default function LandingPage() {
               </Link>
             </motion.div>
           </div>
-        </section>
+        </section> */}
 
         {/* ==================== TRUST & SECURITY SECTION ==================== */}
         <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/15 via-gray-900/10 to-gray-900/5">
@@ -1823,11 +1789,11 @@ export default function LandingPage() {
               transition={{ duration: 0.8 }}
             >
               <div className="flex items-center gap-2 justify-center mb-4">
-                <DollarSign className="w-8 h-8 text-yellow-400" />
-                <h3 className="text-3xl font-bold">30-Day Money-Back Guarantee</h3>
+                <Shield className="w-8 h-8 text-yellow-400" />
+                <h3 className="text-3xl font-bold">Best Bet's Guarantee to You!</h3>
               </div>
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                Try Best Bet risk-free. If you're not completely satisfied with our VIP plan within 30 days, we'll refund your money without any questions.
+                If (your State) does not get at least 15 Hits (Exact or Box / Any) within 30 days, we will refund your $9.99 for that month or give you the next month free, (your choice).
               </p>
             </motion.div>
           </div>
@@ -1867,7 +1833,7 @@ export default function LandingPage() {
               >
                 <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
                 <span className="text-sm text-yellow-400 font-semibold">
-                  Limited Time: Get 20% Off Your First Month
+                  Limited Time: Get 10% Off Your First Year
                 </span>
               </motion.div>
 
@@ -1939,7 +1905,7 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-yellow-400" />
-                  <span>30-Day Money-Back Guarantee</span>
+                  <span>Instant Access</span>
                 </div>
               </motion.div>
             </motion.div>
