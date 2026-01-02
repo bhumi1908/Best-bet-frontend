@@ -1,5 +1,5 @@
 import { motion } from "framer-motion"
-import { Skeleton } from "./ui/Skeleton"
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export const staggerContainer = {
     initial: {},

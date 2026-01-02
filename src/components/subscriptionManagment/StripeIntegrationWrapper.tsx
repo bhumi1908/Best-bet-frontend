@@ -3,7 +3,7 @@ import React, { useCallback, useEffect } from 'react'
 import StripeIntegrationSkeleton from '../stripeIntegrationSkeleton';
 import { AlertCircle, CreditCard } from 'lucide-react';
 import { StatusBadge } from '../ui/StatusBadge';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/Button'; 
 import { getStripeIntegrationStatusThunk } from '@/redux/thunk/stripeThunk';
 
 const StripeIntegrationWrapper = () => {
