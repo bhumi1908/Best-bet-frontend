@@ -35,15 +35,15 @@ interface Plan {
   icon: JSX.Element;
   discountPercent?: number;
   features: {
-    text: string;
+    name: string;
   }[];
 }
 
 
 const PLAN_TIER_MAP: Record<string, PlanTier> = {
-  'Basic Plan': 1,
-  'Premium Plan': 2,
-  'VIP Plan': 3,
+  'Free Plan': 1,
+  'Yearly Plan': 2,
+  'Monthly Plan': 3,
 };
 
 const PLAN_UI_CONFIG: Record<string, { icon: JSX.Element; cta: string }> = {
@@ -70,7 +70,7 @@ export default function PlansPage() {
   const { plans, isLoading } = useAppSelector(
     (state) => state.subscriptionPlan
   );
-  
+
   const mappedPlans: Plan[] = useMemo(() => {
     return plans.map((plan, index) => {
       const uiConfig = PLAN_UI_CONFIG[plan.name];
@@ -78,15 +78,15 @@ export default function PlansPage() {
       // Period derived from duration
       const period = plan.duration === 12 ? 'per year' : 'per month';
 
-        const basePrice = Number(plan.price) ?? 0;
-    const discountPercent = Number(plan.discountPercent) ?? 0;
+      const basePrice = Number(plan.price) ?? 0;
+      const discountPercent = Number(plan.discountPercent) ?? 0;
 
-    const discountedPrice =
-      discountPercent > 0
-        ? Number((basePrice * (1 - discountPercent / 100)).toFixed(2))
-        : basePrice;
+      const discountedPrice =
+        discountPercent > 0
+          ? Number((basePrice * (1 - discountPercent / 100)).toFixed(2))
+          : basePrice;
 
-        
+
 
       return {
         id: plan.id,
@@ -102,7 +102,7 @@ export default function PlansPage() {
         cta: uiConfig?.cta ?? 'Get Started',
         icon: uiConfig?.icon ?? <Target className="w-6 h-6" />,
         features: plan.features.map((feature) => ({
-          text: feature.name,
+          name: feature.name,
         })),
       };
     });
@@ -113,21 +113,23 @@ export default function PlansPage() {
 
     mappedPlans.forEach((plan) => {
       plan.features.forEach((feature) => {
-        featureSet.add(feature.text);
+        featureSet.add(feature.name);
       });
     });
 
     return Array.from(featureSet);
   }, [mappedPlans]);
 
+
   const planFeatureMap = useMemo(() => {
     return mappedPlans.map((plan) => ({
       ...plan,
-      featureSet: new Set(plan.features.map((f) => f.text)),
+      featureSet: new Set(plan.features.map((f) => f.name)),
     }));
   }, [mappedPlans]);
 
 
+  console.log('planFeatureMap', planFeatureMap)
 
   const staggerContainer = {
     initial: { opacity: 0 },
@@ -328,14 +330,14 @@ export default function PlansPage() {
                           </div>
                         )}
                       </div>
-                        {(plan.discountPercent ?? 0) > 0 && (
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-gray-400 text-2xl line-through">
+                      {(plan.discountPercent ?? 0) > 0 && (
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-gray-400 text-2xl line-through">
                             ${plan.originalPrice?.toFixed(2)}
                           </span>
-                            <span className="text-gray-400 text-sm">{plan.period}</span>
-                          </div>
-                        )}
+                          <span className="text-gray-400 text-sm">{plan.period}</span>
+                        </div>
+                      )}
 
 
                       {/* Features List */}
@@ -353,7 +355,7 @@ export default function PlansPage() {
                             <span
                               className={`text-sm text-gray-300`}
                             >
-                              {feature.text}
+                              {feature.name}
                             </span>
                           </motion.li>
                         ))}
@@ -468,6 +470,8 @@ export default function PlansPage() {
                                 p.tier <= plan.tier &&
                                 p.featureSet.has(feature)
                             );
+
+                            console.log('isAvailable', isAvailable)
 
                             return (
                               <td key={planIndex} className="p-6 text-center">
