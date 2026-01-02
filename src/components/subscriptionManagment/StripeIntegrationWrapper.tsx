@@ -1,6 +1,6 @@
 import { useAppDispatch, useAppSelector } from '@/redux/store/hooks';
 import React, { useCallback, useEffect } from 'react'
-import StripeIntegrationSkeleton from '../StripeIntegrationSkeleton';
+import StripeIntegrationSkeleton from '../stripeIntegrationSkeleton';
 import { AlertCircle, CreditCard } from 'lucide-react';
 import { StatusBadge } from '../ui/StatusBadge';
 import { Button } from '../ui/Button';
