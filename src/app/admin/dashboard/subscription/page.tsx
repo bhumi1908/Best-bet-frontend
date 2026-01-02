@@ -28,9 +28,6 @@ export default function SubscriptionPage() {
   const dispatch = useAppDispatch();
   const { charts, stats, isLoading } = useAppSelector((state) => state.subscription)
 
-  console.log('stats', stats)
-  console.log('charts', charts)
-
   const revenueChartData = charts?.revenueChartData ?? []
   const totalRevenue = stats?.totalRevenue ?? 0
   const revenueGrowth = stats?.totalRevenueGrowth ?? 0
@@ -65,6 +62,42 @@ export default function SubscriptionPage() {
     const safeGrowth = Math.max(0, growth)
     return safeGrowth;
   }
+
+    // Custom Tooltip Component
+  const CustomTooltip = ({ active, payload, labelText, isPositive, isCurrency = true }: any) => {
+    if (!active || !payload || !payload.length) return null;
+    
+    const value = payload[0].value;
+    const dotColor = isPositive ? '#10b981' : '#f87171';
+    const formattedValue = isCurrency 
+      ? `$${typeof value === 'number' ? value.toFixed(2) : value}`
+      : value;
+    
+    return (
+      <div
+        style={{
+          backgroundColor: '#000000',
+          border: '1px solid #6b7280',
+          borderRadius: '4px',
+          padding: '4px 8px',
+          fontSize: '11px',
+          lineHeight: '1.2',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff' }}>
+          <div
+            style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: dotColor,
+            }}
+          />
+          <span>{labelText}: {formattedValue}</span>
+        </div>
+      </div>
+    );
+  };
 
   const fetchSubscriptionsDashboard = useCallback(async () => {
     try {
@@ -134,7 +167,7 @@ export default function SubscriptionPage() {
                       borderRadius: '8px',
                       padding: '4px 8px',
                     }}
-                    formatter={(value: any) => [`$${value.toFixed(2)}`, 'Revenue']}
+                     content={<CustomTooltip labelText="Total Revenue" isPositive={isPositive} />}
                     cursor={{ stroke: '#10b981', strokeWidth: 1, strokeDasharray: '3 3' }}
                   />
                   <Area
@@ -191,7 +224,7 @@ export default function SubscriptionPage() {
                       borderRadius: '8px',
                       padding: '4px 8px',
                     }}
-                    formatter={(value: any) => [value, 'Subscriptions']}
+                     content={<CustomTooltip labelText="Subscriptions" isPositive={isPositive} />}
                     cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}
                   />
                   <Area
@@ -249,7 +282,7 @@ export default function SubscriptionPage() {
                       borderRadius: '8px',
                       padding: '4px 8px',
                     }}
-                    formatter={(value: any) => [`$${value}`, 'Revenue']}
+                     content={<CustomTooltip labelText="Monthly Revenue" isPositive={isPositive} />}
                     cursor={{
                       stroke: strokeColor,
                       strokeWidth: 1, strokeDasharray: '3 3'

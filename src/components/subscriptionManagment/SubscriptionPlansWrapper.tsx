@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from '@/redux/store/hooks';
 import { useFormik } from 'formik';
 import { zodFormikValidate } from '@/utilities/zodFormikValidate';
 import { createSubscriptionPlanSchema } from '@/utilities/schema';
-import { createSubscriptionPlanThunk, getAllSubscriptionPlansAdminThunk, updateSubscriptionPlanThunk } from '@/redux/thunk/subscriptionPlanThunk';
+import { createSubscriptionPlanThunk, getAllSubscriptionPlansAdminThunk, toggleSubscriptionPlanStatusThunk, updateSubscriptionPlanThunk } from '@/redux/thunk/subscriptionPlanThunk';
 import { toast } from 'react-toastify';
 import { Popup } from '../ui/Popup';
 import { Input } from '../ui/Input';
@@ -15,6 +15,8 @@ import PricingCardSkeleton from '../PricingCardSkeleton';
 import { Dropdown, DropdownContent, DropdownItem, DropdownTrigger } from '../ui/Dropdown';
 import { cn } from '@/lib/utils';
 import { togglePlanActiveStatus } from '@/redux/slice/subscriptionPlanSlice';
+import { motion } from "framer-motion";
+
 
 interface Feature {
     id?: string;
@@ -24,12 +26,15 @@ interface Feature {
 export interface SubscriptionPlan {
     id?: string | number;
     name: string
-    price: number
-    duration: number
+    price?: number
+    duration?: number
     description: string
     isRecommended: boolean
     isActive: boolean
     features: Feature[]
+    isTrial?: boolean;
+    trialDays?: number;
+    discountPercent?: number;
 }
 
 export const SubscriptionPlansWrapper = () => {
@@ -42,17 +47,23 @@ export const SubscriptionPlansWrapper = () => {
     const dispatch = useAppDispatch()
     const { error, isLoading, plans: subscriptionPlan } = useAppSelector((state) => state.subscriptionPlan)
 
+    console.log('selectedPlan', selectedPlan)
+    console.log('subscriptionPlan', subscriptionPlan)
 
 
-    const initialValues: SubscriptionPlan = {
+
+    const initialValues: SubscriptionPlan & { isTrial: boolean } = {
         name: selectedPlan?.name || "",
         description: selectedPlan?.description || "",
-        price: selectedPlan?.price || 0.0,
-        duration: selectedPlan?.duration || 1,
+        price: selectedPlan?.trialDays ? undefined : selectedPlan?.price || undefined,
+        duration: selectedPlan?.trialDays ? undefined : selectedPlan?.duration || 1,
+        isTrial: selectedPlan?.trialDays ? true : false,
+        trialDays: selectedPlan?.trialDays ?? 0,
         features:
             selectedPlan?.features?.map(f => ({ name: f.name })) ?? [{ name: "" }],
         isActive: selectedPlan?.isActive ?? true,
         isRecommended: selectedPlan?.isRecommended ?? false,
+        discountPercent: selectedPlan?.discountPercent ?? 0
     }
 
     const formik = useFormik({
@@ -65,11 +76,14 @@ export const SubscriptionPlansWrapper = () => {
             try {
                 const payload = {
                     ...values,
-                    duration: values.duration,
+                    price: values.isTrial ? undefined : values.price,
+                    duration: values.isTrial ? undefined : values.duration,
+                    trialDays: values.isTrial ? 14 : undefined,
                     features: values?.features?.map((f) => ({
                         name: f.name,
                     })),
                 };
+                console.log('payload', payload)
 
                 if (selectedPlan?.id) {
                     // EDIT 
@@ -107,19 +121,34 @@ export const SubscriptionPlansWrapper = () => {
         setDialogOpen(true);
     };
 
-    const handleIsActivePlan = (plan: SubscriptionPlan) => {
-        try {
-            const payload = {
-                ...plan,
-                isActive: !plan.isActive
-            }
-            dispatch(updateSubscriptionPlanThunk({ id: plan.id!, payload })).unwrap();
-            toast.success(`Plan is ${!plan.isActive ? 'Activated' : 'Deactivated'}`)
-        } catch (error: any) {
-            toast.error(error.message || "Something went wrong...")
+    // const handleIsActivePlan = (plan: SubscriptionPlan) => {
+    //     try {
+    //         const payload = {
+    //             ...plan,
+    //             isActive: !plan.isActive
+    //         }
+    //         dispatch(updateSubscriptionPlanThunk({ id: plan.id!, payload })).unwrap();
+    //         toast.success(`Plan is ${!plan.isActive ? 'Activated' : 'Deactivated'}`)
+    //     } catch (error: any) {
+    //         toast.error(error.message || "Something went wrong...")
 
+    //     }
+    // }
+
+    const handleIsActivePlan = async (plan: SubscriptionPlan) => {
+        try {
+            await dispatch(
+                toggleSubscriptionPlanStatusThunk(Number(plan.id!))
+            ).unwrap();
+
+            toast.success(
+                `Plan ${plan.isActive ? 'Deactivated' : 'Activated'} successfully`
+            );
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to update plan status');
         }
-    }
+    };
+
 
 
     // const handleDeletePlan = async () => {
@@ -166,14 +195,7 @@ export const SubscriptionPlansWrapper = () => {
         resetForm,
         isSubmitting, } = formik
 
-    if (error) {
-        return (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-400" />
-                <p className="text-sm text-red-400">{error}</p>
-            </div>
-        );
-    }
+    console.log('errors', errors)
 
     if (!isLoading && (!subscriptionPlan || subscriptionPlan.length === 0)) {
         return (
@@ -221,6 +243,9 @@ export const SubscriptionPlansWrapper = () => {
                                     Most Popular
                                 </span>
                             )}
+
+
+
                             <div className="absolute right-3 top-3">
                                 <Dropdown>
                                     <DropdownTrigger className="!w-fit !px-2 border-none bg-transparent">
@@ -272,14 +297,67 @@ export const SubscriptionPlansWrapper = () => {
                                 </div>
                             </div>
 
-                            <div className="mb-4">
-                                <p className="text-3xl font-bold text-accent-primary leading-tight">
-                                    ${plan.price.toFixed(2)}
-                                    <span className="text-sm font-normal text-text-tertiary ml-1">
-                                        {plan.duration === 12 ? "/yr (billed annually)" : "/mo"}
-                                    </span>
-                                </p>
+                            {/* <div className="mb-4">
+                                {plan.trialDays ? (
+                                    // Trial plan UI
+                                    <p className="text-3xl font-bold text-accent-primary leading-tight">
+                                        {plan.trialDays}-day Free Trial
+                                    </p>
+                                ) : (
+                                    // Regular paid plan UI
+                                    <p className="text-3xl font-bold text-accent-primary leading-tight">
+                                        ${plan.price?.toFixed(2)}
+                                        <span className="text-sm font-normal text-text-tertiary ml-1">
+                                            {plan.duration === 12 ? "/yr (billed annually)" : "/mo"}
+                                        </span>
+                                    </p>
+                                )}
+                            </div> */}
+
+                            <div className="mb-6">
+                                {plan.trialDays ? (
+                                    <p className="text-3xl font-bold text-accent-primary leading-tight">
+                                        {plan.trialDays}-day Free Trial
+                                    </p>
+                                ) : (
+                                    <div className="flex items-center gap-3">
+                                        {/* Price Section */}
+                                        <div className="flex items-baseline gap-2">
+                                            {/* Main Price */}
+                                            {plan.price && <p className="text-3xl font-bold text-accent-primary leading-tight">
+                                                ${(
+                                                    plan.duration === 12
+                                                        ? plan.price * (1 - (plan.discountPercent ?? 0) / 100)
+                                                        : plan.price
+                                                ).toFixed(2)}
+                                            </p>
+                                            }
+                                            {/* Monthly / Yearly Label */}
+                                            <span className="text-sm font-normal text-text-tertiary">
+                                                {plan.duration === 12 ? "/yr" : "/mo"}
+                                            </span>
+
+                                            {/* Original Price if Discounted */}
+                                            {plan.price && (plan.discountPercent ?? 0) > 0 && (
+                                                <span className="text-lg text-text-tertiary line-through ">
+                                                    ${plan.price.toFixed(2)}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Clean Discount Badge */}
+                                        {(plan.discountPercent ?? 0) > 0 && (
+                                            <span className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30   px-3 py-1 rounded-full text-xs font-semibold">
+                                                {plan.discountPercent}% Off
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
                             </div>
+
+
+
+
 
                             <div className="space-y-3">
                                 {plan.features.map((feature, idx) => (
@@ -389,7 +467,7 @@ export const SubscriptionPlansWrapper = () => {
                     </div>
 
                     {/* Price and Billing Cycle */}
-                    <div className="flex flex-col md:flex-row gap-4 w-full">
+                    {!values.isTrial && <div className="flex flex-col md:flex-row gap-4 w-full">
                         <div className="space-y-2 w-full">
                             <label htmlFor="price" className="block text-sm font-medium text-gray-300">
                                 Price ($)
@@ -443,7 +521,68 @@ export const SubscriptionPlansWrapper = () => {
                                 </SelectContent>
                             </Select>
                         </div>
-                    </div>
+
+
+                    </div>}
+
+                    {/* Discount (Yearly only) */}
+                    {!values.isTrial && values.duration === 12 && (
+                        <div className="space-y-2 w-full">
+                            <label
+                                htmlFor="discountPercent"
+                                className="block text-sm font-medium text-gray-300"
+                            >
+                                Discount (%)
+                            </label>
+
+                            <div className="relative">
+                                <Input
+                                    id="discountPercent"
+                                    name="discountPercent"
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    step={1}
+                                    placeholder="0"
+                                    value={values.discountPercent ?? ""}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setFieldValue(
+                                            "discountPercent",
+                                            val === "" ? "" : Math.min(100, Math.max(0, Number(val)))
+                                        );
+                                    }}
+                                    onBlur={handleBlur}
+                                    className="pr-10"
+                                />
+
+                                {/* % suffix */}
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-text-muted">
+                                    %
+                                </span>
+                            </div>
+
+                            {/* Helper text */}
+                            <p className="text-xs text-text-muted">
+                                Applied only to yearly subscriptions
+                            </p>
+
+                            {/* Error */}
+                            {touched.discountPercent && errors.discountPercent && (
+                                <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path
+                                            fillRule="evenodd"
+                                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                            clipRule="evenodd"
+                                        />
+                                    </svg>
+                                    {errors.discountPercent}
+                                </p>
+                            )}
+                        </div>
+                    )}
+
 
                     {/* Description */}
                     <div className="space-y-2 w-full">
@@ -578,6 +717,29 @@ export const SubscriptionPlansWrapper = () => {
                                 Mark as Most Popular
                             </label>
                         </div>
+                        <div className="flex items-center gap-3">
+                            <Switch
+                                checked={!!values.isTrial}
+                                onCheckedChange={(checked) => {
+                                    setFieldValue("isTrial", checked);
+
+                                    if (checked) {
+                                        setFieldValue("trialDays", 14); // API expects this
+                                        setFieldValue("duration", undefined);
+                                        setFieldValue("price", undefined);
+                                    } else {
+                                        setFieldValue("trialDays", 0);
+                                        setFieldValue("price", undefined);
+                                        setFieldValue("duration", 1); // default monthly
+                                    }
+                                }}
+                            />
+                            <label className="text-sm font-medium text-gray-300 cursor-pointer">
+                                14-day Free Trial
+                            </label>
+                        </div>
+
+
                     </div>
                 </form>
             </Popup>

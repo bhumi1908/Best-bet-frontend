@@ -86,26 +86,40 @@ export const resetPasswordSchema = z
     path: ['confirmPassword'],
   });
 
-// Create subscription plan schema
-export const createSubscriptionPlanSchema = z
-  .object({
-    name: z.string().min(1, "Plan name is required"),
-    description: z.string().min(1, "Description is required"),
-    price: z
-      .number({ invalid_type_error: "Price is required" })
-      .refine((val) => val > 0, "Price must be greater than 0"),
-    features: z.array(
-      z.object({
-        name: z.string().min(1, "Feature is required"),
-      })
-    ),
-    isActive: z.boolean(),
-    isRecommended: z.boolean(),
+
+export const createSubscriptionPlanSchema = z.object({
+  name: z.string().min(1, "Plan name is required"),
+  description: z.string().min(1, "Description is required"),
+  isTrial: z.boolean(),
+  price: z.number().optional(),
+  duration: z.number().optional(),
+  trialDays: z.number().nullable().optional(),
+  features: z.array(z.object({ name: z.string().min(1) })).min(1),
+  isActive: z.boolean(),
+  isRecommended: z.boolean(),
+}) .superRefine((data, ctx) => {
+
+  console.log('data-------->', data)
+    // If not a trial, price and duration are required
+    if (!data.isTrial) {
+      if (data.price === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Price is required",
+          path: ["price"],
+        });
+      }
+      if (data.duration === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Duration is required",
+          path: ["duration"],
+        });
+      }
+    }
   })
-  .refine((data) => data.features.length > 0, {
-    path: ["features"],
-    message: "At least one feature is required",
-  });
+
+
 
 export const changePasswordSchema = z
   .object({

@@ -8,9 +8,12 @@ import {
     SubscriptionDashboardResponse,
 } from "@/types/subscription";
 import {
+    changeUserSubscriptionPlanAdminThunk,
     getAllUserSubscriptionsAdminThunk,
     getSubscriptionDashboardAdminThunk,
     getSubscriptionDetailsAdminThunk,
+    refundSubscriptionPaymentAdminThunk,
+    revokeUserSubscriptionAdminThunk,
 } from "../thunk/subscriptionThunk";
 
 const initialState: AdminSubscriptionState = {
@@ -35,6 +38,8 @@ const initialState: AdminSubscriptionState = {
     },
     stats: null,
     charts: null,
+    refundResult: null,
+    lastChangedSubscription: null
 };
 
 const adminSubscriptionSlice = createSlice({
@@ -143,7 +148,80 @@ const adminSubscriptionSlice = createSlice({
                 state.error =
                     action.payload?.message ||
                     "Failed to load subscription dashboard";
+            })
+
+            //Revoke subscriptions
+            .addCase(revokeUserSubscriptionAdminThunk.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(
+                revokeUserSubscriptionAdminThunk.fulfilled,
+                (state, action) => {
+                    state.isLoading = false;
+                    state.error = null;
+
+                    if (state.subscriptions.length) {
+                        state.subscriptions = state.subscriptions.map((sub) =>
+                            sub.status === "ACTIVE"
+                                && sub.user.id === action.meta.arg
+                                ? { ...sub, status: "CANCELED" }
+                                : sub
+                        );
+                    }
+                }
+            )
+            .addCase(revokeUserSubscriptionAdminThunk.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload?.message || "Failed to revoke subscription";
+            })
+
+            // Refund the subscription
+            .addCase(refundSubscriptionPaymentAdminThunk
+                .pending, (state) => {
+                    state.isLoading = true;
+                    state.error = null;
+                    state.refundResult = null;
+                })
+            .addCase(refundSubscriptionPaymentAdminThunk.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.error = null;
+                state.refundResult = action.payload;
+            })
+            .addCase(refundSubscriptionPaymentAdminThunk.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload?.message || "Failed to process refund";
+                state.refundResult = null;
+            })
+
+            // Change user subscription plan
+            .addCase(changeUserSubscriptionPlanAdminThunk.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+                state.lastChangedSubscription = null;
+            })
+            .addCase(changeUserSubscriptionPlanAdminThunk.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.error = null;
+                state.lastChangedSubscription = action.payload;
+
+                // Update subscription in subscriptions list if exists
+                state.subscriptions = state.subscriptions.map((sub) =>
+                    sub.user.id === action.payload.user.id ? action.payload : sub
+                );
+
+                // Update selected subscription if currently selected
+                if (state.selectedSubscription?.user.id === action.payload.user.id) {
+                    state.selectedSubscription = action.payload;
+                }
+            })
+            .addCase(changeUserSubscriptionPlanAdminThunk.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error =
+                    action.payload?.message || "Failed to change subscription plan";
+                state.lastChangedSubscription = null;
             });
+
     },
 });
 

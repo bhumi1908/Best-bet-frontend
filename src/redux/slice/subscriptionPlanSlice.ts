@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { createSubscriptionPlanThunk, deleteSubscriptionPlanThunk, getAllSubscriptionPlansAdminThunk, getAllSubscriptionPlansThunk, getSubscriptionPlansByIdAdminThunk, RejectPayload, updateSubscriptionPlanThunk } from '../thunk/subscriptionPlanThunk';
+import { createSubscriptionPlanThunk, deleteSubscriptionPlanThunk, getAllSubscriptionPlansAdminThunk, getAllSubscriptionPlansThunk, getSubscriptionPlansByIdAdminThunk, RejectPayload, toggleSubscriptionPlanStatusThunk, updateSubscriptionPlanThunk } from '../thunk/subscriptionPlanThunk';
 import { SubscriptionPlan, SubscriptionPlanState } from '@/types/subscriptionPlan';
 
 const initialState: SubscriptionPlanState = {
@@ -130,6 +130,38 @@ const subscriptionPlanSlice = createSlice({
                     state.error = action.payload?.message || 'Failed to update subscription plan';
                 }
             )
+
+            // TOGGLE PLAN STATUS
+            .addCase(toggleSubscriptionPlanStatusThunk.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(
+                toggleSubscriptionPlanStatusThunk.fulfilled,
+                (
+                    state,
+                    action: PayloadAction<{ id: number; isActive: boolean }>
+                ) => {
+                    state.isLoading = false;
+
+                    const plan = state.plans.find(
+                        (p) => p.id === action.payload.id
+                    );
+
+                    if (plan) {
+                        plan.isActive = action.payload.isActive;
+                    }
+                }
+            )
+            .addCase(
+                toggleSubscriptionPlanStatusThunk.rejected,
+                (state, action: PayloadAction<RejectPayload | any>) => {
+                    state.isLoading = false;
+                    state.error =
+                        action.payload?.message || 'Failed to update plan status';
+                }
+            )
+
 
             //DELETE PLAN
             .addCase(deleteSubscriptionPlanThunk.pending, (state) => {
