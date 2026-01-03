@@ -87,7 +87,6 @@ const adminSubscriptionSlice = createSlice({
             .addCase(
                 getAllUserSubscriptionsAdminThunk.fulfilled,
                 (state, action: PayloadAction<GetAllSubscriptionsResponse>) => {
-                    console.log('action.payload', action.payload)
                     state.isLoading = false;
                     state.subscriptions = action.payload.subscriptions;
                     state.pagination = action.payload.pagination;

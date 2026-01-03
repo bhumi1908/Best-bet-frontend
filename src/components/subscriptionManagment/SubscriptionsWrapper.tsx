@@ -36,13 +36,8 @@ export const SubscriptionsWrapper = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [planFilter, setPlanFilter] = useState<string>("all");
 
-  console.log('statusFilter', statusFilter)
-  console.log('endDateFilter', endDateFilter)
-
   const { subscriptions, isLoading, filters, pagination } = useAppSelector((state) => state.subscription);
   const { plans } = useAppSelector((state) => state.subscriptionPlan);
-  console.log('plans', plans)
-  console.log('subscriptions', subscriptions)
 
   const fetchSubscriptions = async () => {
     try {
@@ -76,9 +71,6 @@ export const SubscriptionsWrapper = () => {
 
   // Sorting
   const handleSort = (column: string) => {
-    console.log('filters.sortBy', filters.sortBy)
-    console.log('filters.sortOrder', filters.sortOrder)
-    console.log('column', column)
     dispatch(
       setFilters({
         sortBy: column,
@@ -339,7 +331,7 @@ export const SubscriptionsWrapper = () => {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableSkeleton columns={8} />
+                <TableSkeleton columns={7} />
               ) : subscriptions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-text-tertiary">

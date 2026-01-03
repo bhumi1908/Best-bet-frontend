@@ -117,7 +117,6 @@ const subscriptionPlanSlice = createSlice({
             .addCase(
                 updateSubscriptionPlanThunk.fulfilled,
                 (state, action: PayloadAction<SubscriptionPlan>) => {
-                    console.log('action.payload', action.payload)
                     state.isLoading = false;
                     const index = state.plans.findIndex((plan) => plan.id === action.payload.id);
                     if (index !== -1) state.plans[index] = action.payload;

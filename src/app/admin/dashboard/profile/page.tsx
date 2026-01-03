@@ -21,8 +21,6 @@ export default function ProfilePage() {
   const { data: session, update } = useSession();
   const user = session?.user
 
-  console.log('session', session)
-
   const firstNameRef = useRef<HTMLInputElement>(null);
   const lastNameRef = useRef<HTMLInputElement>(null);
   const phoneNoRef = useRef<HTMLInputElement>(null);

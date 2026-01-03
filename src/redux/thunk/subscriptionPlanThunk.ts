@@ -54,7 +54,6 @@ export const getAllSubscriptionPlansAdminThunk = createAsyncThunk<
       if (response.data && response.data.data?.plans) {
         return response.data.data.plans;
       }
-console.log('response', response)
       throw new Error('Invalid response format');
     } catch (error: any) {
       const message =
@@ -81,10 +80,8 @@ export const getSubscriptionPlansByIdAdminThunk = createAsyncThunk<
       }>(routes.api.subscriptionPlan.admin.getByPlanId(id));
 
       if (response.data && response.data.data.plan) {
-        console.log('Fire-1');
         return response.data.data.plan;
       }
-      console.log('Fire-2');
 
 
       throw new Error('Invalid response format');
@@ -137,13 +134,10 @@ export const updateSubscriptionPlanThunk = createAsyncThunk<
   'subscriptionPlan/admin/update',
   async ({ id, payload }, { rejectWithValue }) => {
     try {
-      console.log('Thunk--payload', payload)
       const response = await apiClient.put<{
         data: { plan: SubscriptionPlan };
         message: string;
       }>(routes.api.subscriptionPlan.admin.update(id), payload);
-
-      console.log('response-->', response)
 
       if (response.data && response.data.data?.plan) {
         return response.data.data.plan;

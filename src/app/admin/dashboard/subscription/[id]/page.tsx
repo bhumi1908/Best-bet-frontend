@@ -143,7 +143,6 @@ export default function SubscriptionDetailsPage() {
     // Handlers
     const handleUpgrade = async () => {
         if (!selectedUpgradePlan) return toast.error("Please select a plan to upgrade to");
-        console.log('selectedUpgradePlan', selectedUpgradePlan)
         try {
             await dispatch(
                 changeUserSubscriptionPlanAdminThunk({
@@ -266,7 +265,6 @@ export default function SubscriptionDetailsPage() {
     };
 
     const getPaymentStatusBadge = (status: string) => {
-        console.log('status', status)
         const styles = {
             SUCCESS: "bg-green-500/20 text-green-400 border-green-500/30",
             PENDING: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",

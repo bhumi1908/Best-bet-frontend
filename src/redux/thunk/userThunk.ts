@@ -66,8 +66,6 @@ export const getAllUsersThunk = createAsyncThunk<
         message: string;
       }>(routes.api.user.getAll, { params });
 
-      console.log('response.data.data', response.data.data)
-
       if (response.data && response.data.data) {
         return response.data.data;
       }

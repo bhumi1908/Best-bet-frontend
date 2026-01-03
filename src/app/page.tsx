@@ -243,9 +243,9 @@ export default function LandingPage() {
   };
 
 
-  const handlePlanClick = (plan: any) => {
-    console.log('plan', plan)
-  }
+  // const handlePlanClick = (plan: any) => {
+  //   console.log('plan', plan)
+  // }
 
   // useEffect(() => {
   //   dispatch(getAllSubscriptionPlansThunk());
