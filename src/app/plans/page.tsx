@@ -128,9 +128,6 @@ export default function PlansPage() {
     }));
   }, [mappedPlans]);
 
-
-  console.log('planFeatureMap', planFeatureMap)
-
   const staggerContainer = {
     initial: { opacity: 0 },
     animate: {
@@ -149,7 +146,6 @@ export default function PlansPage() {
 
   const handlePlanClick = (plan: Plan) => {
     // TODO: Implement subscription logic
-    console.log("Selected plan:", plan.name);
     if (isAuthenticated) {
       window.location.href = routes.home;
     } else {
@@ -470,8 +466,6 @@ export default function PlansPage() {
                                 p.tier <= plan.tier &&
                                 p.featureSet.has(feature)
                             );
-
-                            console.log('isAvailable', isAvailable)
 
                             return (
                               <td key={planIndex} className="p-6 text-center">

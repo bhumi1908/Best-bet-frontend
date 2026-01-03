@@ -47,11 +47,6 @@ export const SubscriptionPlansWrapper = () => {
     const dispatch = useAppDispatch()
     const { error, isLoading, plans: subscriptionPlan } = useAppSelector((state) => state.subscriptionPlan)
 
-    console.log('selectedPlan', selectedPlan)
-    console.log('subscriptionPlan', subscriptionPlan)
-
-
-
     const initialValues: SubscriptionPlan & { isTrial: boolean } = {
         name: selectedPlan?.name || "",
         description: selectedPlan?.description || "",
@@ -72,7 +67,6 @@ export const SubscriptionPlansWrapper = () => {
         validate: zodFormikValidate(createSubscriptionPlanSchema),
 
         onSubmit: async (values, { resetForm, setSubmitting }) => {
-            console.log('values', values)
             try {
                 const payload = {
                     ...values,
@@ -83,7 +77,6 @@ export const SubscriptionPlansWrapper = () => {
                         name: f.name,
                     })),
                 };
-                console.log('payload', payload)
 
                 if (selectedPlan?.id) {
                     // EDIT 
@@ -194,8 +187,6 @@ export const SubscriptionPlansWrapper = () => {
         setFieldValue,
         resetForm,
         isSubmitting, } = formik
-
-    console.log('errors', errors)
 
     if (!isLoading && (!subscriptionPlan || subscriptionPlan.length === 0)) {
         return (

@@ -82,7 +82,6 @@ export default function UserDetailPage() {
     validate: zodFormikValidate(updateUserSchema),
     onSubmit: async (values) => {
       if (!selectedUser) return;
-      console.log('values', values)
 
       try {
         setUpdating(true);
@@ -426,7 +425,7 @@ export default function UserDetailPage() {
                       </p>
                       <p className="text-xs text-gray-300">
                         <span className="text-text-muted">Subscription End Date: </span>
-                        {new Date(new Date(selectedUser.currentSubscription.endDate).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", {
+                        {new Date(selectedUser.currentSubscription.endDate).toLocaleDateString("en-US", {
                           year: "numeric",
                           month: "short",
                           day: "numeric",
@@ -436,7 +435,7 @@ export default function UserDetailPage() {
                       </p>
                       <p className="text-xs text-gray-300">
                         <span className="text-text-muted">Payment Method: </span>
-                        Credit Card
+                        {selectedUser.currentSubscription.paymentMethod}
                       </p>
                     </div>
                   </div>

@@ -97,27 +97,25 @@ export const createSubscriptionPlanSchema = z.object({
   features: z.array(z.object({ name: z.string().min(1) })).min(1),
   isActive: z.boolean(),
   isRecommended: z.boolean(),
-}) .superRefine((data, ctx) => {
-
-  console.log('data-------->', data)
-    // If not a trial, price and duration are required
-    if (!data.isTrial) {
-      if (data.price === undefined) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Price is required",
-          path: ["price"],
-        });
-      }
-      if (data.duration === undefined) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Duration is required",
-          path: ["duration"],
-        });
-      }
+}).superRefine((data, ctx) => {
+  // If not a trial, price and duration are required
+  if (!data.isTrial) {
+    if (data.price === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Price is required",
+        path: ["price"],
+      });
     }
-  })
+    if (data.duration === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Duration is required",
+        path: ["duration"],
+      });
+    }
+  }
+})
 
 
 

@@ -167,7 +167,7 @@ export default function SubscriptionPage() {
                       borderRadius: '8px',
                       padding: '4px 8px',
                     }}
-                     content={<CustomTooltip labelText="Total Revenue" isPositive={isPositive} />}
+                     content={<CustomTooltip labelText="Total Revenue" isPositive={isPositive} isCurrency={true} />}
                     cursor={{ stroke: '#10b981', strokeWidth: 1, strokeDasharray: '3 3' }}
                   />
                   <Area
@@ -224,7 +224,7 @@ export default function SubscriptionPage() {
                       borderRadius: '8px',
                       padding: '4px 8px',
                     }}
-                     content={<CustomTooltip labelText="Subscriptions" isPositive={isPositive} />}
+                     content={<CustomTooltip labelText="Subscriptions" isPositive={isPositive} isCurrency={false} />}
                     cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}
                   />
                   <Area
@@ -282,7 +282,7 @@ export default function SubscriptionPage() {
                       borderRadius: '8px',
                       padding: '4px 8px',
                     }}
-                     content={<CustomTooltip labelText="Monthly Revenue" isPositive={isPositive} />}
+                     content={<CustomTooltip labelText="Monthly Revenue" isPositive={isPositive} isCurrency={true} />}
                     cursor={{
                       stroke: strokeColor,
                       strokeWidth: 1, strokeDasharray: '3 3'

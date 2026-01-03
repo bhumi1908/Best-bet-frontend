@@ -233,8 +233,6 @@ export interface UserFormData {
  * Convert backend User to UIUser format
  */
 export const userToUIUser = (user: User): UIUser => {
-  console.log('user12345', user)
-  console.log('user?.subscription', user)
   return {
     id: user.id.toString(),
     email: user.email,

@@ -45,7 +45,6 @@ export default function RegisterPage() {
 
 
     onSubmit: async (registerDetails: UserRegister, { setSubmitting }) => {
-      console.log('registerDetails', registerDetails)
       try {
         const res = await apiClient.post(routes.api.auth.register, registerDetails);
         if (res.status === 201) {

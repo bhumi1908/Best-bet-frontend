@@ -392,7 +392,7 @@ export default function UserPage() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableSkeleton columns={8} />
+                  <TableSkeleton columns={9} />
                 ) : users.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-text-tertiary">

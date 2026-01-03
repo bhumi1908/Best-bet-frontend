@@ -29,7 +29,6 @@ export const getAllUserSubscriptionsAdminThunk = createAsyncThunk<
     { rejectWithValue }
   ) => {
     try {
-      console.log('filters----------1', filters)
       const params: Record<string, string> = {
         page: String(page),
         limit: String(limit),
@@ -44,8 +43,6 @@ export const getAllUserSubscriptionsAdminThunk = createAsyncThunk<
       if (filters.plan) params.plan = filters.plan;
       if (filters.startDateFrom instanceof Date) params.startDateFrom = filters.startDateFrom.toISOString();
       if (filters.startDateTo instanceof Date) params.startDateTo = filters.startDateTo.toISOString();
-
-      console.log('params', params)
 
       const response = await apiClient.get<{
         data: GetAllSubscriptionsResponse;
@@ -85,7 +82,6 @@ export const getSubscriptionDetailsAdminThunk = createAsyncThunk<
       }>(
         `${routes.api.subscription.admin.getSubscriptionDetails(subscriptionId)}`
       );
-      console.log(' response.data ', response.data)
 
       if (
         response.data &&
