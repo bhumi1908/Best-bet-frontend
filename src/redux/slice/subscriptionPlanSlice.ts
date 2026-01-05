@@ -3,6 +3,7 @@ import { createSubscriptionPlanThunk, deleteSubscriptionPlanThunk, getAllSubscri
 import { SubscriptionPlan, SubscriptionPlanState } from '@/types/subscriptionPlan';
 
 const initialState: SubscriptionPlanState = {
+    userPlans: [],
     plans: [],
     planById: null,
     isLoading: false,
@@ -36,7 +37,7 @@ const subscriptionPlanSlice = createSlice({
                 getAllSubscriptionPlansThunk.fulfilled,
                 (state, action: PayloadAction<SubscriptionPlan[]>) => {
                     state.isLoading = false;
-                    state.plans = action.payload;
+                    state.userPlans = action.payload;
                     state.error = null;
                 }
             )

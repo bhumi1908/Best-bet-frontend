@@ -23,6 +23,7 @@ const statusOptions: { value: string; label: string }[] = [
   { value: "CANCELED", label: "Cancelled" },
   { value: "EXPIRED", label: "Expired" },
   { value: "REFUNDED", label: "Refunded" },
+  { value: "TRIAL", label: "Trial" },
 ];
 
 export const SubscriptionsWrapper = () => {
@@ -91,6 +92,8 @@ export const SubscriptionsWrapper = () => {
       CANCELED: "bg-red-500/20 text-red-400 border-red-500/30",
       EXPIRED: "bg-gray-500/20 text-gray-400 border-gray-500/30",
       REFUNDED: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+      TRIAL: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+
     };
     return (
       <span
@@ -334,7 +337,7 @@ export const SubscriptionsWrapper = () => {
                 <TableSkeleton columns={7} />
               ) : subscriptions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-text-tertiary">
+                  <TableCell colSpan={7} className="text-center py-8 text-text-tertiary">
                     No subscriptions found
                   </TableCell>
                 </TableRow>
@@ -350,7 +353,10 @@ export const SubscriptionsWrapper = () => {
                     <TableCell className="text-text-primary">{subscription.plan.name}</TableCell>
                     <TableCell>{getStatusBadge(subscription.status)}</TableCell>
                     <TableCell className="text-accent-primary font-medium">
-                      ${subscription.plan.price.toFixed(2)}
+                      {subscription.status === "TRIAL"
+                        ? "FREE"
+                        : `$${subscription.plan.price.toFixed(2)}`}
+
                     </TableCell>
                     <TableCell className="text-text-primary">
 
@@ -363,7 +369,7 @@ export const SubscriptionsWrapper = () => {
                       })}</div>
                       <div className="text-xs text-text-tertiary">One Month Subscription</div>
                     </TableCell>
-                    <TableCell className="text-text-tertiary">{subscription.payment?.paymentMethod}</TableCell>
+                    <TableCell className="text-text-tertiary">{subscription.payment?.paymentMethod || "N/A"}</TableCell>
                     <TableCell className="text-center">
                       <Button
                         type="text"

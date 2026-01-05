@@ -31,6 +31,7 @@ export interface SubscriptionPlan {
 
 export interface SubscriptionPlanState {
   plans: SubscriptionPlan[];
+  userPlans: SubscriptionPlan[];
   planById: SubscriptionPlan | null;
   isLoading: boolean;
   error: string | null;

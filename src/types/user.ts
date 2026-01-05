@@ -4,6 +4,7 @@
  */
 
 import { UserRole } from './auth';
+import { Feature } from './subscriptionPlan';
 
 // ============================================================================
 // Base User Types
@@ -286,11 +287,14 @@ export interface ApiUserSubscription {
 export interface ApiCurrentSubscription {
   id: number;
   planName: string;
+  description?: string;
   price: number;
   startDate: string;
   endDate: string;
   status: string;
+  duration?: number;
   paymentMethod: string;
+  features?: Feature[]
 }
 
 export interface ApiUserDetail {

@@ -9,6 +9,7 @@ import {
 } from "@/types/subscription";
 import {
     changeUserSubscriptionPlanAdminThunk,
+    createCheckoutSessionThunk,
     getAllUserSubscriptionsAdminThunk,
     getSubscriptionDashboardAdminThunk,
     getSubscriptionDetailsAdminThunk,
@@ -39,7 +40,6 @@ const initialState: AdminSubscriptionState = {
     stats: null,
     charts: null,
     refundResult: null,
-    lastChangedSubscription: null
 };
 
 const adminSubscriptionSlice = createSlice({
@@ -160,13 +160,23 @@ const adminSubscriptionSlice = createSlice({
                     state.isLoading = false;
                     state.error = null;
 
-                    if (state.subscriptions.length) {
-                        state.subscriptions = state.subscriptions.map((sub) =>
-                            sub.status === "ACTIVE"
-                                && sub.user.id === action.meta.arg
-                                ? { ...sub, status: "CANCELED" }
-                                : sub
-                        );
+                    const userId = action.meta.arg;
+
+                    state.subscriptions = state.subscriptions.map((sub) =>
+                        sub.user.id === userId && sub.status === "ACTIVE"
+                            ? { ...sub, status: "CANCELED" }
+                            : sub
+                    );
+
+                    if (
+                        state.selectedSubscription &&
+                        state.selectedSubscription.user.id === userId &&
+                        state.selectedSubscription.status === "ACTIVE"
+                    ) {
+                        state.selectedSubscription = {
+                            ...state.selectedSubscription,
+                            status: "CANCELED",
+                        };
                     }
                 }
             )
@@ -183,9 +193,30 @@ const adminSubscriptionSlice = createSlice({
                     state.refundResult = null;
                 })
             .addCase(refundSubscriptionPaymentAdminThunk.fulfilled, (state, action) => {
+
+                const refundData = action.payload;
+                const userId = refundData.userId;
+
                 state.isLoading = false;
                 state.error = null;
-                state.refundResult = action.payload;
+                state.refundResult = refundData;
+
+                state.subscriptions = state.subscriptions.map((sub) =>
+                    sub.user.id === userId && sub.status === "ACTIVE"
+                        ? { ...sub, status: "REFUNDED" }
+                        : sub
+                );
+
+                if (
+                    state.selectedSubscription &&
+                    state.selectedSubscription.user.id === userId &&
+                    state.selectedSubscription.status === "ACTIVE"
+                ) {
+                    state.selectedSubscription = {
+                        ...state.selectedSubscription,
+                        status: "REFUNDED",
+                    };
+                }
             })
             .addCase(refundSubscriptionPaymentAdminThunk.rejected, (state, action) => {
                 state.isLoading = false;
@@ -197,28 +228,79 @@ const adminSubscriptionSlice = createSlice({
             .addCase(changeUserSubscriptionPlanAdminThunk.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
-                state.lastChangedSubscription = null;
             })
             .addCase(changeUserSubscriptionPlanAdminThunk.fulfilled, (state, action) => {
+
+                // The backend should now return the Subscription object directly
+                const updated: Subscription = action.payload;
+                const userId = action.meta.arg.userId;
+
                 state.isLoading = false;
                 state.error = null;
-                state.lastChangedSubscription = action.payload;
 
-                // Update subscription in subscriptions list if exists
-                state.subscriptions = state.subscriptions.map((sub) =>
-                    sub.user.id === action.payload.user.id ? action.payload : sub
-                );
+                // Update subscriptions list
+                state.subscriptions = state.subscriptions.map((sub) => {
+                    if (sub.user.id !== userId) return sub;
 
-                // Update selected subscription if currently selected
-                if (state.selectedSubscription?.user.id === action.payload.user.id) {
-                    state.selectedSubscription = action.payload;
+                    return {
+                        ...sub,
+                        subscriptionId: updated.subscriptionId,
+                        status: updated.status,
+                        startDate: updated.startDate,
+                        endDate: updated.endDate,
+                        plan: {
+                            ...sub.plan,
+                            id: updated.plan.id,
+                            name: updated.plan.name,
+                            isActive: updated.plan.isActive,
+                            price: updated.plan.price,
+                            duration: updated.plan.duration,
+                            description: updated.plan.description,
+                            features: updated.plan.features,
+                        },
+                        payment: updated.payment,
+                    };
+                });
+
+                if (state.selectedSubscription?.user.id === userId) {
+                    state.selectedSubscription = {
+                        ...state.selectedSubscription,
+                        subscriptionId: updated.subscriptionId,
+                        status: updated.status,
+                        startDate: updated.startDate,
+                        endDate: updated.endDate,
+                        plan: {
+                            ...state.selectedSubscription.plan,
+                            id: updated.plan.id,
+                            name: updated.plan.name,
+                            isActive: updated.plan.isActive,
+                            price: updated.plan.price,
+                            duration: updated.plan.duration,
+                            description: updated.plan.description,
+                            features: updated.plan.features,
+                        },
+                        payment: updated.payment,
+                    };
                 }
             })
             .addCase(changeUserSubscriptionPlanAdminThunk.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error =
                     action.payload?.message || "Failed to change subscription plan";
-                state.lastChangedSubscription = null;
+            })
+
+            //Checkout
+            .addCase(createCheckoutSessionThunk.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(createCheckoutSessionThunk.fulfilled, (state) => {
+                state.isLoading = false;
+            })
+            .addCase(createCheckoutSessionThunk.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error =
+                    action.payload?.message || "Failed to create checkout session";
             });
 
     },

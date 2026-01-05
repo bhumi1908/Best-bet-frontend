@@ -23,6 +23,8 @@ import {
     Package,
     Activity,
     MoreVertical,
+    RotateCcw,
+    Hourglass,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -48,53 +50,20 @@ import { changeUserSubscriptionPlanAdminThunk, getSubscriptionDetailsAdminThunk,
 import SubscriptionDetailsSkeleton from "@/components/SubscritionDetailSkeleton";
 import { Dropdown, DropdownContent, DropdownItem, DropdownTrigger } from "@/components/ui/Dropdown";
 import { getAllSubscriptionPlansAdminThunk } from "@/redux/thunk/subscriptionPlanThunk";
+import { Plan } from "@/types/subscription";
+import { Feature } from "@/types/subscriptionPlan";
 
 // Types
 interface SubscriptionPlan {
-    id: string;
+    id: number;
     name: string;
-    description: string;
-    price: number;
-    billingCycle: "monthly" | "yearly";
-    features: string[];
     isActive: boolean;
-    annualPrice?: number;
+    price?: number | null;
+    duration?: number;
+    description: string;
+    features: Feature[];
 }
 
-interface Subscription {
-    id: string;
-    userId: string;
-    userName: string;
-    userEmail: string;
-    userPhone?: string;
-    userJoinDate: string;
-    planId: string;
-    planName: string;
-    status: "active" | "cancelled" | "expired" | "past_due";
-    amount: number;
-    billingCycle: "monthly" | "yearly";
-    startDate: string;
-    endDate: string;
-    nextBillingDate?: string;
-    paymentMethod: string;
-    stripeSubscriptionId?: string;
-    stripeCustomerId?: string;
-    createdAt: string;
-    autoRenewal: boolean;
-    totalPaid: number;
-}
-
-interface Payment {
-    id: string;
-    subscriptionId: string;
-    amount: number;
-    status: "succeeded" | "pending" | "failed" | "refunded";
-    paymentMethod: string;
-    transactionId: string;
-    date: string;
-    refundedAmount?: number;
-    description?: string;
-}
 
 const formatDate = (date?: string | Date) =>
     date
@@ -144,16 +113,19 @@ export default function SubscriptionDetailsPage() {
     const handleUpgrade = async () => {
         if (!selectedUpgradePlan) return toast.error("Please select a plan to upgrade to");
         try {
-            await dispatch(
-                changeUserSubscriptionPlanAdminThunk({
-                    userId: selectedSubscription!.user.id,
-                    newPlanId: Number(selectedUpgradePlan),
-                })
-            ).unwrap();
 
-            toast.success("Subscription upgraded successfully");
-            setUpgradeDialogOpen(false);
-            setSelectedUpgradePlan("");
+            if (selectedSubscription?.user?.id) {
+                await dispatch(
+                    changeUserSubscriptionPlanAdminThunk({
+                        userId: selectedSubscription.user.id,
+                        newPlanId: Number(selectedUpgradePlan),
+                    })
+                ).unwrap();
+
+                toast.success("Subscription upgraded successfully");
+                setUpgradeDialogOpen(false);
+                setSelectedUpgradePlan("");
+            }
         } catch (err: any) {
             toast.error(err?.message || "Failed to upgrade subscription");
         }
@@ -163,16 +135,18 @@ export default function SubscriptionDetailsPage() {
         if (!selectedDowngradePlan) return toast.error("Please select a plan to downgrade to");
 
         try {
-            await dispatch(
-                changeUserSubscriptionPlanAdminThunk({
-                    userId: selectedSubscription!.user.id,
-                    newPlanId: Number(selectedDowngradePlan),
-                })
-            ).unwrap();
+            if (selectedSubscription?.user?.id) {
+                await dispatch(
+                    changeUserSubscriptionPlanAdminThunk({
+                        userId: selectedSubscription.user.id,
+                        newPlanId: Number(selectedDowngradePlan),
+                    })
+                ).unwrap();
 
-            toast.success("Subscription downgrade scheduled at billing cycle end");
-            setDowngradeDialogOpen(false);
-            setSelectedDowngradePlan("");
+                toast.success("Subscription downgrade scheduled at billing cycle end");
+                setDowngradeDialogOpen(false);
+                setSelectedDowngradePlan("");
+            }
         } catch (err: any) {
             toast.error(err?.message || "Failed to downgrade subscription");
         }
@@ -221,32 +195,38 @@ export default function SubscriptionDetailsPage() {
 
     const getStatusBadge = (status: string) => {
         const styles = {
-            active: {
+            ACTIVE: {
                 bg: "bg-green-500/20",
                 text: "text-green-400",
                 border: "border-green-500/30",
                 icon: CheckCircle,
             },
-            cancelled: {
+            CANCELED: {
                 bg: "bg-red-500/20",
                 text: "text-red-400",
                 border: "border-red-500/30",
                 icon: XCircle,
             },
-            expired: {
+            EXPIRED: {
                 bg: "bg-gray-500/20",
                 text: "text-gray-400",
                 border: "border-gray-500/30",
                 icon: Clock,
             },
-            past_due: {
+            REFUNDED: {
                 bg: "bg-yellow-500/20",
                 text: "text-yellow-400",
                 border: "border-yellow-500/30",
-                icon: AlertCircle,
+                icon: RotateCcw,
+            },
+            TRIAL: {
+                bg: "bg-blue-500/20",
+                text: "text-blue-400",
+                border: "border-blue-500/30",
+                icon: Hourglass,
             },
         };
-        const style = styles[status as keyof typeof styles] || styles.active;
+        const style = styles[status as keyof typeof styles] || styles.ACTIVE;
         const Icon = style.icon;
 
         return (
@@ -270,6 +250,7 @@ export default function SubscriptionDetailsPage() {
             PENDING: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
             FAILED: "bg-red-500/20 text-red-400 border-red-500/30",
             REFUNDED: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+            TRIAL: "bg-blue-500/20 text-blue-400 border-blue-500/30",
         };
         return (
             <span
@@ -308,6 +289,35 @@ export default function SubscriptionDetailsPage() {
         );
     }
 
+    const hasUpgradePlans = availablePlans.some(
+        (plan) => plan.isActive && plan.price !== undefined && plan.price > (selectedSubscription.plan.price ?? 0)
+    );
+
+    const isValidDowngradePlan = (plan: SubscriptionPlan) => {
+        const currentPrice = selectedSubscription.plan.price ?? 0;
+        const planPrice = plan.price ?? 0;
+        if (!plan.isActive) return false;
+        if (plan.id === selectedSubscription.plan.id) return false;
+        if (planPrice >= currentPrice) return false;
+        if (plan.price === null && selectedSubscription.user.isTrial) return false;
+
+        return true;
+    };
+
+    const downgradePlans = availablePlans.filter((plan: SubscriptionPlan) => {
+        const currentPrice = selectedSubscription.plan.price ?? 0;
+        const planPrice = plan.price ?? 0;
+
+        if (!plan.isActive) return false;
+        if (plan.id === selectedSubscription.plan.id) return false;
+        if (planPrice >= currentPrice) return false;
+        if (plan.price === null && selectedSubscription.user.isTrial) return false;
+
+        return true;
+    })
+
+    const hasDowngradePlans = downgradePlans.length > 0;
+
     return (
         <div className="space-y-6 pb-8">
             {/* Page Header */}
@@ -328,7 +338,7 @@ export default function SubscriptionDetailsPage() {
                     danger
                     icon={<Ban className="w-4 h-4" />}
                     onClick={() => setRevokeDialogOpen(true)}
-                    disabled={selectedSubscription.status !== "ACTIVE"}
+                    disabled={selectedSubscription.status !== "ACTIVE" && selectedSubscription.status !== "TRIAL"}
                     className="!w-fit border border-border-error"
                 >
                     Revoke Access
@@ -464,7 +474,7 @@ export default function SubscriptionDetailsPage() {
                                 <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
                                     Billing Cycle
                                 </label>
-                                <p className="text-base text-text-primary capitalize">{selectedSubscription.plan.duration === 1 ? 'monthly' : 'yearly'}</p>
+                                <p className="text-base text-text-primary capitalize">{selectedSubscription.status === "TRIAL" ? "Trial" : selectedSubscription.plan.duration === 1 ? 'monthly' : 'yearly'}</p>
                             </div>
 
                             <div>
@@ -473,7 +483,7 @@ export default function SubscriptionDetailsPage() {
                                 </label>
                                 <p className="text-base text-text-primary flex items-center gap-2">
                                     <CreditCard className="w-4 h-4 text-text-tertiary" />
-                                    {selectedSubscription.payment?.paymentMethod}
+                                    {selectedSubscription.status !== "TRIAL" ? selectedSubscription.payment?.paymentMethod : "N/A"}
                                 </p>
                             </div>
                             {selectedSubscription.payment?.stripePaymentId && (
@@ -563,7 +573,11 @@ export default function SubscriptionDetailsPage() {
                                     <DropdownItem
                                         icon={<ArrowUp className="w-4 h-4" />}
                                         onClick={() => setUpgradeDialogOpen(true)}
-                                        disabled={selectedSubscription.status !== "ACTIVE"}
+                                        disabled={!hasUpgradePlans || (selectedSubscription.status !== "ACTIVE" && selectedSubscription.status !== "TRIAL")}
+                                        className={`${!hasUpgradePlans || (selectedSubscription.status !== "ACTIVE" && selectedSubscription.status !== "TRIAL")
+                                            ? "text-gray-400 cursor-not-allowed opacity-50"
+                                            : "text-text cursor-pointer hover:bg-gray-100"
+                                            }`}
                                     >
                                         Upgrade Plan
                                     </DropdownItem>
@@ -571,7 +585,11 @@ export default function SubscriptionDetailsPage() {
                                     <DropdownItem
                                         icon={<ArrowDown className="w-4 h-4" />}
                                         onClick={() => setDowngradeDialogOpen(true)}
-                                        disabled={selectedSubscription.status !== "ACTIVE"}
+                                        disabled={!hasDowngradePlans || (selectedSubscription.status !== "ACTIVE" && selectedSubscription.status !== "TRIAL")}
+                                        className={`${!hasDowngradePlans ||  (selectedSubscription.status !== "ACTIVE" && selectedSubscription.status !== "TRIAL")
+                                            ? "text-gray-400 cursor-not-allowed opacity-50"
+                                            : "text-text cursor-pointer hover:bg-gray-100"
+                                            }`}
                                         danger
                                     >
                                         Downgrade Plan
@@ -583,16 +601,16 @@ export default function SubscriptionDetailsPage() {
                             <h3 className="text-2xl font-bold text-accent-primary mb-1">{selectedSubscription.plan.name}</h3>
                             <p className="text-sm text-text-tertiary">{selectedSubscription.plan.description}</p>
                         </div>
-                        <div className="mb-6">
+                        {selectedSubscription.status !== "TRIAL" && <div className="mb-6">
                             <div className="flex items-baseline gap-1">
                                 <span className="text-4xl font-bold text-text-primary">
-                                    ${selectedSubscription.plan.price.toFixed(2)}
+                                    ${selectedSubscription.plan.price ? selectedSubscription.plan.price.toFixed(2) : "FREE"}
                                 </span>
                                 <span className="text-text-tertiary">
                                     /{selectedSubscription.plan.duration === 1 ? "month" : "year"}
                                 </span>
                             </div>
-                        </div>
+                        </div>}
                         <div className="space-y-3 mb-6">
                             <p className="text-xs font-semibold text-text-muted tracking-wide uppercase">
                                 Included Features
@@ -657,7 +675,7 @@ export default function SubscriptionDetailsPage() {
                                         .filter((plan) => plan.isActive && plan.price !== undefined && plan.price > (selectedSubscription.plan.price ?? 0))
                                         .map((plan) => (
                                             <SelectItem key={plan.id} value={plan.id.toString()}>
-                                                {plan.name} - {plan.price !== undefined ? `$${plan.price.toFixed(2)}/mo` : "Free Trial"}
+                                                {plan.name} - {plan.price !== undefined ? `$${plan.price.toFixed(2)}${plan.duration === 1 ? '/mo' : '/yr'}` : "Free Trial"}
                                             </SelectItem>
                                         ))}
 
@@ -705,10 +723,10 @@ export default function SubscriptionDetailsPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {availablePlans
-                                        .filter((plan) => plan.isActive && plan.price !== undefined && plan.price < (selectedSubscription.plan.price ?? 0))
+                                        .filter(isValidDowngradePlan)
                                         .map((plan) => (
                                             <SelectItem key={plan.id} value={plan.id.toString()}>
-                                                {plan.name} - {plan.price !== undefined ? `$${plan.price.toFixed(2)}/mo` : "Free Trial"}
+                                                {plan.name} - {plan.price ? `$${plan.price.toFixed(2)}${plan.duration === 1 ? '/mo' : '/yr'}` : "Free Trial"}
                                             </SelectItem>
                                         ))}
                                 </SelectContent>

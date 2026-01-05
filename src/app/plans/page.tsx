@@ -18,6 +18,9 @@ import { useAppDispatch, useAppSelector } from "@/redux/store/hooks";
 import { getAllSubscriptionPlansThunk } from "@/redux/thunk/subscriptionPlanThunk";
 import PricingCardSkeleton from "@/components/PricingCardSkeleton";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { createCheckoutSessionThunk } from "@/redux/thunk/subscriptionThunk";
+import { toast } from "react-toastify";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type PlanTier = 1 | 2 | 3;
 
@@ -64,12 +67,25 @@ const PLAN_UI_CONFIG: Record<string, { icon: JSX.Element; cta: string }> = {
 export default function PlansPage() {
   const { data: session } = useSession();
   const isAuthenticated = !!session;
+
   const [hoveredPlan, setHoveredPlan] = useState<number | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
+
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const currentPath =
+    searchParams.toString().length > 0
+      ? `${pathname}?${searchParams.toString()}`
+      : pathname;
+
   const dispatch = useAppDispatch();
-  const { plans, isLoading } = useAppSelector(
+  const { userPlans: plans, isLoading } = useAppSelector(
     (state) => state.subscriptionPlan
   );
+  const { isLoading: subscriptionLoading } = useAppSelector((state) => state.subscription)
 
   const mappedPlans: Plan[] = useMemo(() => {
     return plans.map((plan, index) => {
@@ -144,19 +160,44 @@ export default function PlansPage() {
     animate: { opacity: 1, y: 0 },
   };
 
-  const handlePlanClick = (plan: Plan) => {
-    // TODO: Implement subscription logic
-    if (isAuthenticated) {
-      window.location.href = routes.home;
-    } else {
-      window.location.href = routes.auth.register;
+  const handleSubscribe = async (plan: Plan, index: number) => {
+    setLoadingIndex(index)
+    if (!isAuthenticated) {
+      router.push(
+        `${routes.auth.login}?from=${encodeURIComponent(currentPath)}`
+      );
+      return;
+    }
+
+    try {
+      const payload = await dispatch(
+        createCheckoutSessionThunk(plan.id)
+      ).unwrap();
+      if (payload.message && !payload.trialActivated && !payload.url) {
+        toast.error(payload.message);
+        return;
+      }
+
+      if (payload.trialActivated) {
+        toast.success(payload.message ?? "Trial plan activated successfully!");
+        router.push(routes.home);
+        return;
+      }
+      if (payload.url) {
+        toast.info("Redirecting to Stripe for payment...");
+        window.location.href = payload.url;
+        return;
+      }
+
+    } catch (error: any) {
+      router.push(routes.profile)
+    } finally {
+      setLoadingIndex(null)
     }
   };
 
   useEffect(() => {
-    if (!plans.length) {
-      dispatch(getAllSubscriptionPlansThunk());
-    }
+    dispatch(getAllSubscriptionPlansThunk());
   }, []);
 
 
@@ -362,7 +403,8 @@ export default function PlansPage() {
                         <Button
                           type="primary"
                           size="large"
-                          onClick={() => handlePlanClick(plan)}
+                          loading={loadingIndex === index}
+                          onClick={() => handleSubscribe(plan, index)}
                           className={`w-full py-4 rounded-lg font-semibold text-lg ${plan.popular
                             ? "bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400 text-black shadow-lg shadow-yellow-400/30"
                             : ""

@@ -4,7 +4,7 @@
    Core domain types
 ========================= */
 
-export type SubscriptionStatus = "ACTIVE" | "EXPIRED" | "CANCELED" | "REFUNDED";
+export type SubscriptionStatus = "ACTIVE" | "EXPIRED" | "CANCELED" | "REFUNDED" | "TRIAL";
 
 export interface User {
   id: number;
@@ -13,6 +13,7 @@ export interface User {
   phoneNo: string;
   createdAt: string;
   stripeCustomerId: string;
+  isTrial: boolean;
 }
 
 export interface Feature {
@@ -24,6 +25,7 @@ export interface Feature {
 export interface Plan {
   id: number;
   name: string;
+  isActive: string;
   price: number;
   duration: number;
   description: string;
@@ -48,6 +50,7 @@ export interface Subscription {
   endDate: string;       // ISO string
   createdAt: string;     // ISO string
 }
+
 
 /* =========================
    Filters (API-level)
@@ -109,7 +112,6 @@ export interface AdminSubscriptionState {
   stats: SubscriptionDashboardResponse["stats"] | null;
   charts: SubscriptionDashboardResponse["charts"] | null;
   refundResult: RefundResponse | null;
-  lastChangedSubscription: Subscription | null;
 
 }
 
@@ -160,4 +162,10 @@ export interface RefundResponse {
 export interface ChangePlanPayload {
   userId: number;
   newPlanId: number;
+}
+
+export interface CheckoutSessionPayload {
+  url?: string;
+  trialActivated?: boolean;
+  message?: string;
 }

@@ -58,8 +58,8 @@ export const routes = {
       create: '/support/create'
     },
     profile: {
-      editAdmin: (id: number | string) => `/admin/profile/${id}`,
-      changePasswordAdmin: '/admin/profile/change-password'
+      editAdmin: (id: number | string) => `/profile/${id}`,
+      changePasswordAdmin: '/profile/change-password'
     },
     subscriptionPlan: {
       getAll: '/subscription-plan',
@@ -73,6 +73,7 @@ export const routes = {
       },
     },
     subscription: {
+      checkout: '/subscription/checkout',
       admin: {
         dashboard: '/subscription/dashboard',
         getAll: '/subscription/users',
