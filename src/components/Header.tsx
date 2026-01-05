@@ -116,7 +116,7 @@ export default function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-white/10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 xl:px-0">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
 
@@ -130,7 +130,7 @@ export default function Header() {
             </button>
             {/* Logo */}
             <Link href={routes.home} className="flex items-center space-x-2">
-              <span className="text-2xl font-extrabold text-yellow-400">
+              <span className="text-2xl font-extrabold bg-clip-text text-transparent [background-image:linear-gradient(90deg,#ffd34d,#ad7aff)]">
                 Best Bet
               </span>
             </Link>

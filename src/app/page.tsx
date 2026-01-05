@@ -408,7 +408,7 @@ export default function LandingPage() {
             </motion.div> */}
 
             {/* CTA Buttons */}
-            <motion.div
+            {/* <motion.div
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -422,14 +422,14 @@ export default function LandingPage() {
               >
                 {isAuthenticated ? "Go to Dashboard" : "Start Winning Now"}
               </Button>
-              {/* 
+              
               <Link
                 href="#how-it-works"
                 className="px-4 py-3 md:px-6 md:py-3 2xl:px-8 bg-white/5 backdrop-blur-md border border-white/20 text-white font-semibold text-lg rounded-lg hover:bg-white/10 hover:border-yellow-400/50 transition-all duration-300"
               >
                 See How It Works
-              </Link> */}
-            </motion.div>
+              </Link> 
+            </motion.div> */}
           </motion.div>
         </section>
 
@@ -451,11 +451,16 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                <span className="text-yellow-400 text-sm font-semibold">FEATURES</span>
+                <span className="text-yellow-400 text-sm font-semibold capitalize">FEATURES</span>
               </motion.div>
-              <h2 className="text-4xl md:text-6xl font-black mb-6">
-                Everything You Need to <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">Win Consistently</span>
-              </h2>
+              <motion.h2
+                className="text-4xl md:text-6xl font-black mb-6 capitalize leading-tight"
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+              >
+                Everything You Need to <br /> <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">Win Consistently</span>
+              </motion.h2>
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">
                 Unlock real-time predictions, comprehensive draw history, and live performance tracking, all in one powerful platform.
               </p>
@@ -463,8 +468,8 @@ export default function LandingPage() {
 
             {/* Features Grid */}
             <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-              variants={staggerContainer}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16"
+             variants={staggerContainer}
               initial="initial"
               whileInView="animate"
               viewport={{ once: true, margin: "-50px" }}
@@ -529,8 +534,8 @@ export default function LandingPage() {
                     <BarChart3 className="w-7 h-7 text-black" />
                   </motion.div>
                   <h3 className="text-xl font-bold mb-3 text-white">Performance Tracking</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">
-                    Track your hits, analyz and monitor your success with detailed performance metrics.
+                   <p className="text-gray-400 text-sm leading-relaxed">
+                    Track your hits, analyze and monitor your success with detailed performance metrics.
                   </p>
                 </div>
               </motion.div>
@@ -557,6 +562,22 @@ export default function LandingPage() {
                 </div>
               </motion.div>
             </motion.div>
+             {/* CTA Buttons */}
+            <motion.div
+              className="flex flex-col sm:flex-row items-center justify-center gap-4"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 1.2 }}
+            >
+              <Button
+                type="primary"
+                size="large"
+                onClick={() => window.location.href = isAuthenticated ? routes.home : routes.auth.register}
+                className="px-4 py-3 md:px-6 md:py-3 2xl:px-8 !w-fit h-fit rounded-lg font-semibold !text-lg"
+              >
+                {isAuthenticated ? "Go to Dashboard" : "Start Winning Now"}
+              </Button>
+            </motion.div>
           </div>
         </section>
 
@@ -578,19 +599,24 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                <span className="text-yellow-500 text-sm font-semibold">LET US PROVE IT!</span>
+               <span className="text-yellow-500 text-sm font-semibold capitalize">LET US PROVE IT!</span>
               </motion.div>
-              <h2 className="text-4xl md:text-6xl font-black mb-6">
-                Start Winning in <span className="bg-gradient-to-r from-yellow-500 to-yellow-400 bg-clip-text text-transparent">4 Easy Steps</span>
-              </h2>
-              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                Join thousands of winners who have transformed their lottery game with our proven system.
+              <motion.h2
+                className="text-4xl md:text-6xl font-black mb-6 capitalize leading-tight"
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+              >
+                Start Winning  <br /> <span className="bg-gradient-to-r from-yellow-500 to-yellow-400 bg-clip-text text-transparent">For Only $9.99 Per Month!</span>
+              </motion.h2>
+              <p className="text-green-400 text-xl max-w-2xl mx-auto">
+                14 Day Free Trial (No Credit Card & with full access)
               </p>
             </motion.div>
 
             {/* Steps Grid */}
             <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
               variants={staggerContainer}
               initial="initial"
               whileInView="animate"
@@ -639,9 +665,9 @@ export default function LandingPage() {
                   >
                     2
                   </motion.div>
-                  <h3 className="text-xl font-bold mb-3 text-white">Choose Your Plan</h3>
+                   <h3 className="text-xl font-bold mb-3 text-white">Access Predictions</h3>
                   <p className="text-gray-400 text-sm leading-relaxed">
-                    Select from Basic, Premium, or VIP plans based on your needs and budget.
+                    Get instant access to daily predictions and comprehensive draw history.
                   </p>
                 </motion.div>
               </motion.div>
@@ -664,15 +690,15 @@ export default function LandingPage() {
                   >
                     3
                   </motion.div>
-                  <h3 className="text-xl font-bold mb-3 text-white">Access Predictions</h3>
+                 <h3 className="text-xl font-bold mb-3 text-white">Track & Win</h3>
                   <p className="text-gray-400 text-sm leading-relaxed">
-                    Get instant access to daily predictions and comprehensive draw history.
+                    Monitor your performance and watch your winnings grow over time.
                   </p>
                 </motion.div>
               </motion.div>
 
               {/* Step 4 */}
-              <motion.div
+              {/* <motion.div
                 className="relative h-full"
                 variants={staggerItem}
                 whileHover={{ y: -10 }}
@@ -694,7 +720,7 @@ export default function LandingPage() {
                     Monitor your performance and watch your winnings grow over time.
                   </p>
                 </motion.div>
-              </motion.div>
+              </motion.div> */}
             </motion.div>
 
             {/* CTA */}
@@ -1689,9 +1715,9 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                <span className="text-yellow-400 text-sm font-semibold">TRUST & SECURITY</span>
+                               <span className="text-yellow-400 text-sm font-semibold capitalize">TRUST & SECURITY</span>
               </motion.div>
-              <h2 className="text-4xl md:text-6xl font-black mb-6">
+              <h2 className="text-4xl md:text-6xl font-black mb-6 capitalize">
                 Your <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">Security</span> is Our Priority
               </h2>
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">
@@ -1781,7 +1807,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Money-Back Guarantee Banner */}
-            <motion.div
+            {/* <motion.div
               className="bg-gradient-to-r from-yellow-400/10 to-yellow-500/10 backdrop-blur-md rounded-2xl p-8 border border-yellow-400/30 text-center"
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
@@ -1795,7 +1821,7 @@ export default function LandingPage() {
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">
                 If (your State) does not get at least 15 Hits (Exact or Box / Any) within 30 days, we will refund your $9.99 for that month or give you the next month free, (your choice).
               </p>
-            </motion.div>
+            </motion.div> */}
           </div>
         </section>
 

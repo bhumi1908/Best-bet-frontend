@@ -3,7 +3,7 @@
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/Dialog";
-import { Pencil, Save, Lock, Shield, CreditCard, Mail, User, Activity, X, Package, Check } from "lucide-react";
+import { Pencil, Save, Lock, Shield, CreditCard, Mail, User, Activity, X, Package, Check, MoreVertical, Target, Star, Award, CheckCircle2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
@@ -13,34 +13,62 @@ import { changeAdminPasswordThunk, editAdminProfileThunk } from "@/redux/thunk/p
 import { toast } from "react-toastify";
 import { useFormik } from "formik";
 import { clearError, clearSuccessMessage } from "@/redux/slice/profileSlice";
-import { changePasswordSchema } from "@/utilities/schema";
+import { changePasswordSchema, updateUserSchema } from "@/utilities/schema";
 import { zodFormikValidate } from "@/utilities/zodFormikValidate";
 import { motion } from "framer-motion";
+import { Dropdown, DropdownContent, DropdownItem, DropdownTrigger } from "@/components/ui/Dropdown";
+import { Popup } from "@/components/ui/Popup";
+import { getAllSubscriptionPlansThunk } from "@/redux/thunk/subscriptionPlanThunk";
+import { createCheckoutSessionThunk } from "@/redux/thunk/subscriptionThunk";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
+import { ApiCurrentSubscription } from "@/types/user";
+import { getUserByIdThunk } from "@/redux/thunk/userThunk";
 
 export default function ProfilePage() {
   const { data: session, update } = useSession();
   const user = session?.user
 
-  const firstNameRef = useRef<HTMLInputElement>(null);
-  const lastNameRef = useRef<HTMLInputElement>(null);
   const [isEditProfile, setIsEditProfile] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [loading, setLoading] = useState(true);
+
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
-  // 2FA state
-  const [profile, setProfile] = useState({
-    firstName: "",
-    lastName: "",
-  });
-  const [formValues, setFormValues] = useState({
-    firstName: "",
-    lastName: "",
-  });
+  const [billing, setBilling] = useState(false)
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const [changingPlan, setChangingPlan] = useState(false);
+
 
   const dispatch = useAppDispatch();
   const { isLoading, error, successConfirmPassMessage } = useAppSelector(
     (state) => state.profile
   );
+  const { userPlans: plans, isLoading: plansLoading } = useAppSelector(
+    (state) => state.subscriptionPlan
+  );
+  const { selectedUser, isLoading: userLoading } = useAppSelector((state) => state.user);
+
+  const getSubscriptionStatusBadge = (status: string) => {
+    const styles = {
+      ACTIVE: "bg-green-500/20 text-green-400 border-green-500/30",
+      CANCELED: "bg-red-500/20 text-red-400 border-red-500/30",
+      EXPIRED: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+      REFUNDED: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+      TRIAL: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+
+    };
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
+          styles[status as keyof typeof styles] || styles.ACTIVE
+        )}
+      >
+        {status.charAt(0).toUpperCase() + status.slice(1).replace("_", " ")}
+      </span>
+    );
+  };
+
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -67,6 +95,48 @@ export default function ProfilePage() {
     },
   });
 
+  const profileFormik = useFormik({
+    enableReinitialize: true,
+    initialValues: {
+      firstName: user?.firstName || "",
+      lastName: user?.lastName || "",
+      phoneNo: user?.phoneNo || "",
+    },
+    validate: zodFormikValidate(updateUserSchema),
+    onSubmit: async (values) => {
+      if (!user) return;
+      try {
+        setUpdating(true);
+
+        const updatedUser = await dispatch(
+          editAdminProfileThunk({
+            id: user.id,
+            firstName: values.firstName.trim(),
+            lastName: values.lastName.trim(),
+            phoneNo: values.phoneNo.trim(),
+          })
+        ).unwrap();
+
+        // Update NextAuth session
+        await update({
+          user: {
+            ...session.user,
+            firstName: updatedUser.firstName,
+            lastName: updatedUser.lastName,
+            phoneNo: updatedUser.phoneNo,
+          },
+        });
+
+        toast.success("Profile updated successfully");
+        setIsEditProfile(false);
+      } catch (err: any) {
+        console.error(err);
+        toast.error(err?.message || "Failed to update profile");
+      } finally {
+        setUpdating(false);
+      }
+    },
+  });
 
   const getUserName = () => {
     if (user?.firstName && user?.lastName) {
@@ -82,71 +152,6 @@ export default function ProfilePage() {
     return user?.email?.[0]?.toUpperCase() || "U";
   };
 
-  const handleCancel = () => {
-    setFormValues(profile);
-    setIsEditProfile(false);
-  };
-
-
-  const handleEditProfile = async () => {
-    setIsEditProfile(!isEditProfile)
-    if (isEditProfile) {
-
-      const isDirty =
-        formValues.firstName.trim() !== profile.firstName.trim() ||
-        formValues.lastName.trim() !== profile.lastName.trim();
-
-      if (!isDirty) {
-        setIsEditProfile(false);
-        toast.info("No changes to save");
-        return;
-      }
-
-      try {
-        const updatedUser = await dispatch(
-          editAdminProfileThunk({
-            id: session!.user.id,
-            firstName: formValues.firstName.trim(),
-            lastName: formValues.lastName.trim(),
-          })
-        ).unwrap();
-
-        setProfile({
-          firstName: updatedUser.firstName,
-          lastName: updatedUser.lastName,
-        });
-
-        update({
-          user: {
-            ...session?.user,
-            firstName: updatedUser.firstName,
-            lastName: updatedUser.lastName,
-          },
-        });
-
-        setIsEditProfile(false);
-        toast.success("Profile updated successfully", {
-          theme: "dark",
-        });
-      } catch (err: any) {
-        console.error("Failed to update profile:", err);
-        toast.error(err?.message || "Failed to update profile", {
-          theme: "dark",
-        });
-      }
-    } else {
-      setIsEditProfile(true);
-    }
-  };
-
-  const handleChange =
-    (field: keyof typeof formValues) =>
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormValues(prev => ({
-          ...prev,
-          [field]: e.target.value,
-        }));
-      };
 
   const recentActivity = [
     { action: "Password changed", time: "2 hours ago", type: "security" },
@@ -155,17 +160,59 @@ export default function ProfilePage() {
     { action: "Email verified", time: "1 week ago", type: "profile" },
   ];
 
-  useEffect(() => {
-    if (session?.user) {
-      const data = {
-        firstName: session.user.firstName,
-        lastName: session.user.lastName,
-      };
 
-      setProfile(data);
-      setFormValues(data);
-    }
-  }, [session]);
+  // Plan mapping configuration
+  const PLAN_TIER_MAP: Record<string, 1 | 2 | 3> = {
+    'Free Plan': 1,
+    'Yearly Plan': 2,
+    'Monthly Plan': 3,
+  };
+
+  const PLAN_UI_CONFIG: Record<string, { icon: React.ReactElement }> = {
+    'Basic Plan': {
+      icon: <Target className="w-6 h-6" />,
+    },
+    'Premium Plan': {
+      icon: <Star className="w-6 h-6" />,
+    },
+    'VIP Plan': {
+      icon: <Award className="w-6 h-6" />,
+    },
+  };
+
+  // Map plans for display
+  const mappedPlans = plans.map((plan) => {
+    const uiConfig = PLAN_UI_CONFIG[plan.name];
+    const period = plan.duration === 12 ? 'per year' : 'per month';
+    const basePrice = Number(plan.price) ?? 0;
+    const discountPercent = Number(plan.discountPercent) ?? 0;
+    const discountedPrice =
+      discountPercent > 0
+        ? Number((basePrice * (1 - discountPercent / 100)).toFixed(2))
+        : basePrice;
+
+    return {
+      id: plan.id,
+      name: plan.name,
+      description: plan.description ?? '',
+      price: discountedPrice,
+      originalPrice: plan.price,
+      period,
+      trialDays: plan.trialDays,
+      popular: plan.isRecommended ?? false,
+      discountPercent: plan.discountPercent,
+      tier: PLAN_TIER_MAP[plan.name] || 1,
+      icon: uiConfig?.icon ?? <Target className="w-6 h-6" />,
+      features: plan.features.map((feature) => feature.name),
+    };
+  });
+
+  // Get current plan ID - match by plan name from the displayed plan name
+  // You may need to get this from user session or API in the future
+  // For now, matching by the plan name shown in the UI ("Premium Plan")
+  const currentPlanName = "Premium Plan"; // This should come from user's subscription data
+  const currentPlanId = mappedPlans.find(p => p.name === currentPlanName)?.id || null;
+
 
   useEffect(() => {
     if (successConfirmPassMessage) {
@@ -194,6 +241,78 @@ export default function ProfilePage() {
     initial: { opacity: 0, y: 30 },
     animate: { opacity: 1, y: 0 },
   };
+
+  const handleSaveClick = () => {
+    profileFormik.setTouched({
+      firstName: true,
+      lastName: true,
+      phoneNo: true,
+    });
+    profileFormik.handleSubmit();
+  };
+
+  // Fetch plans when subscription popup opens
+  useEffect(() => {
+    if (subscriptionOpen) {
+      dispatch(getAllSubscriptionPlansThunk());
+      // Set current plan as selected initially (assuming user has a plan)
+      // You may need to get this from user session or API
+      setSelectedPlanId(null);
+    }
+  }, [subscriptionOpen, dispatch]);
+
+  // Handle plan change
+  const handleChangePlan = async () => {
+    if (!selectedPlanId) {
+      toast.error("Please select a plan", { theme: "dark" });
+      return;
+    }
+
+    setChangingPlan(true);
+    try {
+      const payload = await dispatch(
+        createCheckoutSessionThunk(selectedPlanId)
+      ).unwrap();
+
+      if (payload.message && !payload.trialActivated && !payload.url) {
+        toast.error(payload.message, { theme: "dark" });
+        return;
+      }
+
+      if (payload.trialActivated) {
+        toast.success(payload.message ?? "Plan changed successfully!", { theme: "dark" });
+        setSubscriptionOpen(false);
+        setSelectedPlanId(null);
+        // Refresh session or redirect
+        return;
+      }
+
+      if (payload.url) {
+        toast.info("Redirecting to Stripe for payment...", { theme: "dark" });
+        window.location.href = payload.url;
+        return;
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to change plan. Please try again.", { theme: "dark" });
+    } finally {
+      setChangingPlan(false);
+    }
+  };
+
+  const fetchUserDetail = async () => {
+    try {
+      await dispatch(getUserByIdThunk(Number(user.id)));
+
+    } catch (err: any) {
+      console.error(err.message || "Failed to fetch user details")
+    }
+  }
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserDetail();
+    }
+  }, [user?.id, dispatch]);
 
   return (
     <motion.div
@@ -285,95 +404,143 @@ export default function ProfilePage() {
                 <div className="lg:col-span-2 space-y-6">
                   {/* Profile Information Card */}
                   <motion.div
-                    className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-yellow-400/50 transition-all duration-300"
                     variants={staggerItem}
-                    whileHover={{ scale: 1.01, y: -2 }}
+                    className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-yellow-400/50 transition-all duration-300"
                   >
-                    <div className="flex items-start justify-between mb-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 border border-yellow-400/30 flex items-center justify-center shadow-lg shadow-yellow-400/20">
-                          <span className="text-xl font-bold text-black">
-                            {getUserInitials()}
+                    <form noValidate>
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+                            <span className="text-xl font-bold text-black">{getUserInitials()}</span>
+                          </div>
+                          <div>
+                            <h2 className="text-xl font-semibold text-white mb-1">{getUserName()}</h2>
+                            <p className="text-sm text-gray-400">{user?.email}</p>
+                          </div>
+                        </div>
+
+                        {/* Edit / Save */}
+
+                        <div className="flex gap-2">
+                          {isEditProfile && (
+                            <div className="flex justify-end">
+                              <Button
+                                type="default"
+                                onClick={() => {
+                                  profileFormik.resetForm();
+                                  setIsEditProfile(false);
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          )}
+
+                          {isEditProfile ? (
+                            <Button
+                              onClick={handleSaveClick} loading={updating}
+                            >
+                              Save Changes
+                            </Button>
+                          ) : (
+                            <Button
+                              type="primary"
+                              onClick={() => setIsEditProfile(true)}
+                            >
+                              Edit Profile
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Form Fields */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* First Name */}
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1.5 block font-medium">First Name</label>
+                          {isEditProfile ? (
+                            <>
+                              <Input
+                                name="firstName"
+                                value={profileFormik.values.firstName}
+                                onChange={profileFormik.handleChange}
+                                onBlur={profileFormik.handleBlur}
+                              />
+                              {profileFormik.touched.firstName && profileFormik.errors.firstName && (
+                                <p className="text-xs text-red-400 mt-1">{profileFormik.errors.firstName}</p>
+                              )}
+                            </>
+                          ) : (
+                            <p className="text-sm text-white">{user?.firstName || "N/A"}</p>
+                          )}
+                        </div>
+
+                        {/* Last Name */}
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1.5 block font-medium">Last Name</label>
+                          {isEditProfile ? (
+                            <>
+                              <Input
+                                name="lastName"
+                                value={profileFormik.values.lastName}
+                                onChange={profileFormik.handleChange}
+                                onBlur={profileFormik.handleBlur}
+                              />
+                              {profileFormik.touched.lastName && profileFormik.errors.lastName && (
+                                <p className="text-xs text-red-400 mt-1">{profileFormik.errors.lastName}</p>
+                              )}
+                            </>
+                          ) : (
+                            <p className="text-sm text-white">{user?.lastName || "N/A"}</p>
+                          )}
+                        </div>
+
+                        {/* Phone Number */}
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1.5 block font-medium">Phone Number</label>
+                          {isEditProfile ? (
+                            <>
+                              <Input
+                                name="phoneNo"
+                                value={profileFormik.values.phoneNo}
+                                onChange={profileFormik.handleChange}
+                                onBlur={profileFormik.handleBlur}
+                              />
+                              {profileFormik.touched.phoneNo && profileFormik.errors.phoneNo && (
+                                <p className="text-xs text-red-400 mt-1">{profileFormik.errors.phoneNo}</p>
+                              )}
+                            </>
+                          ) : (
+                            <p className="text-sm text-white">{user?.phoneNo || "N/A"}</p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1.5 block font-medium">Email</label>
+                          <p className="text-sm text-white">{user?.email || "N/A"}</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1.5 block font-medium">Role</label>
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-yellow-400/10 text-yellow-400 border border-yellow-400/20">
+                            {user?.role || "USER"}
                           </span>
                         </div>
                         <div>
-                          <h2 className="text-xl font-semibold text-white mb-1">{getUserName()}</h2>
-                          <p className="text-sm text-gray-400">{user?.email}</p>
+                          <label className="text-xs text-gray-400 mb-1.5 block font-medium">Subscription Plan</label>
+                          <p className="text-sm text-white">Pro Plan</p>
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-400 mb-1.5 block font-medium">Subscribed On</label>
+                          <p className="text-sm text-white">Dec 12, 2025</p>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        {isEditProfile && (
-                          <Button
-                            type="text"
-                            size="small"
-                            danger
-                            icon={<X className="w-4 h-4" />}
-                            onClick={handleCancel}
-                            className="!w-9 !h-9 border border-error"
-                          />
-                        )}
 
-                        <Button
-                          type="primary"
-                          size="small"
-                          icon={isEditProfile ? <Save className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
-                          onClick={handleEditProfile}
-                          className="!w-9 !h-9"
-                        />
-                      </div>
-                    </div>
 
-                    {/* User Details Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs text-gray-400 mb-1.5 block font-medium">First Name</label>
-                        {isEditProfile ? (
-                          <Input
-                            defaultValue={user?.firstName}
-                            ref={firstNameRef}
-                            size="middle"
-                            onChange={handleChange("firstName")}
-                          />
-                        ) : (
-                          <p className="text-sm text-white">{user?.firstName || "N/A"}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-400 mb-1.5 block font-medium">Last Name</label>
-                        {isEditProfile ? (
-                          <Input
-                            defaultValue={user?.lastName}
-                            ref={lastNameRef}
-                            size="middle"
-                            onChange={handleChange("lastName")}
-                          />
-                        ) : (
-                          <p className="text-sm text-white">{user?.lastName || "N/A"}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-400 mb-1.5 block font-medium">Email</label>
-                        <p className="text-sm text-white">{user?.email || "N/A"}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-400 mb-1.5 block font-medium">Role</label>
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-yellow-400/10 text-yellow-400 border border-yellow-400/20">
-                          {user?.role || "USER"}
-                        </span>
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-400 mb-1.5 block font-medium">Subscription Plan</label>
-                        <p className="text-sm text-white">Pro Plan</p>
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-400 mb-1.5 block font-medium">Subscribed On</label>
-                        <p className="text-sm text-white">Dec 12, 2025</p>
-                      </div>
-                    </div>
+                    </form>
                   </motion.div>
 
+
                   {/* Recent Activity */}
-                  <motion.div
+                  {/* <motion.div
                     className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-yellow-400/50 transition-all duration-300"
                     variants={staggerItem}
                     whileHover={{ scale: 1.01, y: -2 }}
@@ -409,28 +576,122 @@ export default function ProfilePage() {
                         </div>
                       ))}
                     </div>
-                  </motion.div>
+                  </motion.div> */}
+
+                  {/* Recent Activity */}
+                  {!userLoading && selectedUser && <motion.div
+                    className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-yellow-400/50 transition-all duration-300"
+                    variants={staggerItem}
+                    whileHover={{ scale: 1.01, y: -2 }}
+                  >
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-semibold text-white">Subscriptions</h3>
+
+                    </div>
+                    <div className="space-y-3">
+                      <div className="overflow-x-auto">
+                        <Table className="w-full rounded-lg overflow-hidden bg-white/2 border border-white/10">
+                          <TableHeader>
+                            <TableRow className="bg-white/5">
+                              <TableHead className="min-w-[120px] bg-white/5">Plan</TableHead>
+                              <TableHead className="min-w-[100px] bg-white/5">Status</TableHead>
+                              <TableHead className="min-w-[120px] bg-white/5">Start Date</TableHead>
+                              <TableHead className="min-w-[120px] bg-white/5">End Date</TableHead>
+                              <TableHead className="min-w-[100px] bg-white/5">Amount</TableHead>
+                              <TableHead className="min-w-[100px] bg-white/5">Payment Method</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {selectedUser.allSubscriptions.map((subscription: ApiCurrentSubscription) => (
+                              <TableRow key={subscription.id}>
+                                <TableCell className="text-text-primary font-medium bg-white/5 ">
+                                  {subscription.planName}
+                                </TableCell>
+                                <TableCell className="text-text-primary font-medium bg-white/5 ">
+                                  <span
+                                    className={cn(
+                                      "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium "
+                                    )}
+                                  >
+                                    {getSubscriptionStatusBadge(subscription.status)}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-text-primary font-medium bg-white/5">
+                                  {new Date(subscription.startDate).toLocaleDateString("en-US", {
+                                    year: "numeric",
+                                    month: "short",
+                                    day: "numeric",
+                                  })}
+                                </TableCell>
+                                <TableCell className="text-text-primary font-medium bg-white/5">
+                                  {new Date(subscription.endDate).toLocaleDateString("en-US", {
+                                    year: "numeric",
+                                    month: "short",
+                                    day: "numeric",
+                                  })}
+                                </TableCell>
+                                <TableCell className="text-accent-primary font-medium bg-white/5 font-medium">
+                                  {subscription.status === "TRIAL"
+                                    ? "FREE"
+                                    : `$${subscription.price.toFixed(2)}`}
+                                </TableCell>
+                                <TableCell className="text-text-tertiary font-medium bg-white/5">
+                                  {subscription.paymentMethod}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </motion.div>}
                 </div>
 
                 {/* Right Column - Sidebar */}
-                <div className="space-y-6">
+                {!userLoading && selectedUser &&<div className="space-y-6">
                   {/* Current Plan */}
                   <motion.div
                     className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-yellow-400/30 hover:border-yellow-400/50 transition-all duration-300"
                     variants={staggerItem}
                     whileHover={{ scale: 1.02, y: -3 }}
                   >
-                    <div className="flex items-center gap-2 mb-4">
-                      <Package className="w-4 h-4 text-yellow-400" />
-                      <span className="text-sm font-medium text-white">Current Plan</span>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Package className="w-4 h-4 text-yellow-400" />
+                        <span className="text-sm font-medium text-white">Current Plan</span>
+                      </div>
+                      <Dropdown>
+                        <DropdownTrigger
+                          className="!w-8 !h-8 !p-0 !bg-transparent !border-white/10 hover:!bg-white/10 hover:!border-yellow-400/30"
+                          icon={<MoreVertical className="w-4 h-4 text-gray-400" />}
+                        />
+                        <DropdownContent className="!bg-white/10 !backdrop-blur-md !border-white/20">
+                          <DropdownItem
+                            onClick={() => {
+                              setSubscriptionOpen(true);
+                            }}
+                          >
+                            Change plan
+                          </DropdownItem>
+                          <DropdownItem
+                            danger
+                            onClick={() => {
+                              // Handle cancel plan action
+                              console.log("Cancel plan clicked");
+                            }}
+                          >
+                            Cancel plan
+                          </DropdownItem>
+                        </DropdownContent>
+                      </Dropdown>
                     </div>
 
-                    <h3 className="text-2xl font-bold text-yellow-300 mb-2">Premium Plan</h3>
-                    <p className="text-sm text-gray-400 mb-4">Best value for serious players</p>
+                    <h3 className="text-2xl font-bold text-yellow-300 mb-2">{selectedUser.currentSubscription?.planName}</h3>
+                    <p className="text-sm text-gray-400 mb-4">{selectedUser.currentSubscription?.description}</p>
 
                     <div className="mb-6">
-                      <span className="text-3xl font-bold text-yellow-400">$19.99</span>
-                      <span className="text-sm text-gray-400 ml-1">/month</span>
+                      <span className="text-3xl font-bold text-yellow-400">${selectedUser.currentSubscription?.price ? selectedUser.currentSubscription?.price.toFixed(2) : "FREE"}</span>
+                      <span className="text-sm text-gray-400 ml-1">${selectedUser.currentSubscription?.duration === 1 ? '/month' : '/year'}</span>
                     </div>
 
                     <div className="pt-4 border-t border-white/10">
@@ -483,7 +744,7 @@ export default function ProfilePage() {
                       </button>
 
                       <button
-                        onClick={() => setSubscriptionOpen(true)}
+                        onClick={() => setBilling(true)}
                         className="w-full flex items-center gap-3 p-3 text-left rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors group"
                       >
                         <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
@@ -498,7 +759,7 @@ export default function ProfilePage() {
                   </motion.div>
 
                   {/* Quick Info */}
-                  <motion.div
+                  {/* <motion.div
                     className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-yellow-400/50 transition-all duration-300"
                     variants={staggerItem}
                     whileHover={{ scale: 1.01, y: -2 }}
@@ -529,8 +790,8 @@ export default function ProfilePage() {
                         </span>
                       </div>
                     </div>
-                  </motion.div>
-                </div>
+                  </motion.div> */}
+                </div>}
               </motion.div>
             )}
           </div>
@@ -652,8 +913,151 @@ export default function ProfilePage() {
           </DialogContent>
         </Dialog>
 
+        {/* Change Plan Popup */}
+        <Popup
+          open={subscriptionOpen}
+          contentClassName="!max-h-[80vh] !w-[90vw] lg:!w-5xl"
+          onOpenChange={(open) => {
+            setSubscriptionOpen(open);
+            if (!open) {
+              setSelectedPlanId(null);
+            }
+          }}
+          title="Manage Subscription"
+          description="Manage your subscription and billing information."
+          footer={
+            <div className="flex flex-col-reverse sm:flex-row justify-end items-center gap-3 w-full">
+              <Button
+                className="!w-full sm:!w-fit"
+                onClick={() => {
+                  setSubscriptionOpen(false);
+                  setSelectedPlanId(null);
+                }}
+                disabled={changingPlan}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                className="!w-full sm:!w-fit"
+                onClick={handleChangePlan}
+                loading={changingPlan}
+                disabled={!selectedPlanId || selectedPlanId === currentPlanId}
+              >
+                Proceed
+              </Button>
+            </div>
+          }
+        >
+          {plansLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-gray-400">Loading plans...</div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {mappedPlans.map((plan) => {
+                const isCurrentPlan = plan.id === currentPlanId;
+                const isSelected = selectedPlanId === plan.id;
+                const isDisabled = isCurrentPlan;
+
+                return (
+                  <div
+                    key={plan.id}
+                    onClick={() => {
+                      if (!isDisabled) {
+                        setSelectedPlanId(plan.id);
+                      }
+                    }}
+                    className={cn(
+                      "relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-300",
+                      isCurrentPlan
+                        ? "bg-yellow-400/10 border-yellow-400/50"
+                        : isSelected
+                          ? "bg-yellow-400/20 border-yellow-400 shadow-lg shadow-yellow-400/20"
+                          : "bg-white/5 border-white/10 hover:border-yellow-400/30 hover:bg-white/10",
+                      isDisabled && "cursor-not-allowed opacity-75"
+                    )}
+                  >
+                    {/* Current Plan Badge */}
+                    {isCurrentPlan && (
+                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                        <span className="bg-yellow-400 text-black px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                          Current Plan
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Selected Indicator */}
+                    {isSelected && !isCurrentPlan && (
+                      <div className="absolute top-3 right-3">
+                        <div className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center">
+                          <Check className="w-4 h-4 text-black" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Current Plan Check Icon */}
+                    {isCurrentPlan && (
+                      <div className="absolute top-3 right-3">
+                        <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                          <Check className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Discount Badge */}
+                    {(plan.discountPercent ?? 0) > 0 && (
+                      <div className="absolute -top-2 -right-2 z-10">
+                        <span className="bg-gradient-to-r from-green-500 to-green-600 text-black px-2 py-1 rounded-lg text-xs font-bold">
+                          {plan.discountPercent}% OFF
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Plan Icon */}
+                    <div className="mb-4">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-black mb-3">
+                        {plan.icon}
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-1">{plan.name}</h3>
+                      {plan.description && (
+                        <p className="text-gray-400 text-sm">{plan.description}</p>
+                      )}
+                    </div>
+
+                    {/* Price */}
+                    <div className="mb-4">
+                      {plan.trialDays ? (
+                        <p className="text-2xl font-extrabold text-yellow-400">
+                          {plan.trialDays}-day Free Trial
+                        </p>
+                      ) : (
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-3xl font-extrabold text-yellow-400">
+                            ${plan.price}
+                          </span>
+                          <span className="text-gray-400 text-sm">{plan.period}</span>
+                        </div>
+                      )}
+                      {(plan.discountPercent ?? 0) > 0 && (
+                        <div className="flex items-baseline gap-1 mt-1">
+                          <span className="text-gray-500 text-lg line-through">
+                            ${plan.originalPrice?.toFixed(2)}
+                          </span>
+                          <span className="text-gray-400 text-sm">{plan.period}</span>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Popup>
+
         {/* Subscription Details Dialog */}
-        <Dialog open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
+        <Dialog open={billing} onOpenChange={setBilling}>
           <DialogContent showCloseButton className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>Subscription Details</DialogTitle>
@@ -713,7 +1117,7 @@ export default function ProfilePage() {
               </div>
 
               <div className="pt-4 border-t border-border-primary">
-                <Button type="primary" className="w-full">
+                <Button type="primary" className="w-full" onClick={() => { setBilling(false), setSubscriptionOpen(true) }} >
                   Manage Subscription
                 </Button>
               </div>

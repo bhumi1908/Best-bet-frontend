@@ -30,7 +30,7 @@ import { getUserByIdThunk, updateUserThunk } from "@/redux/thunk/userThunk";
 import { toast } from "react-toastify";
 import { UserRole } from "@/types/auth";
 import { useFormik } from "formik";
-import { updateUserSchema } from "@/utilities/schema";
+import { updateAdminSchema } from "@/utilities/schema";
 import { zodFormikValidate } from "@/utilities/zodFormikValidate";
 import UserDetailSkeleton from "@/components/userDetailsSkeleton";
 
@@ -79,7 +79,7 @@ export default function UserDetailPage() {
       phoneNo: selectedUser?.phoneNo ?? "",
       role: selectedUser?.role ?? "USER",
     },
-    validate: zodFormikValidate(updateUserSchema),
+    validate: zodFormikValidate(updateAdminSchema),
     onSubmit: async (values) => {
       if (!selectedUser) return;
 
@@ -202,6 +202,8 @@ export default function UserDetailPage() {
       CANCELED: "bg-red-500/20 text-red-400 border-red-500/30",
       EXPIRED: "bg-gray-500/20 text-gray-400 border-gray-500/30",
       REFUNDED: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+      TRIAL: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+
     };
     return (
       <span
@@ -399,17 +401,17 @@ export default function UserDetailPage() {
               </div>
             </form>
             {/* Subscriptions */}
-            {selectedUser.allSubscriptions && selectedUser.currentSubscription && selectedUser.allSubscriptions.length > 0 && (
+            {selectedUser.allSubscriptions && selectedUser.allSubscriptions.length > 0 && (
               <div className="bg-bg-card border border-border-primary rounded-lg p-6">
                 <h2 className="text-lg font-semibold text-text-primary mb-4">Subscriptions</h2>
                 <div className="space-y-3">
-                  <div
+                  {selectedUser.currentSubscription && <div
                     className="flex flex-col gap-2 p-3 bg-bg-secondary rounded-lg border-2 border-border-accent"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-md font-medium text-accent-primary">{selectedUser.currentSubscription?.planName}</p>
                       <p className="text-sm font-medium text-accent-primary">
-                        ${selectedUser.currentSubscription?.price.toFixed(2)}
+                        ${selectedUser.currentSubscription.price ? selectedUser.currentSubscription?.price.toFixed(2) : '0.00'}
                       </p>
                     </div>
                     <div className="flex items-center justify-between gap-2">
@@ -438,7 +440,7 @@ export default function UserDetailPage() {
                         {selectedUser.currentSubscription.paymentMethod}
                       </p>
                     </div>
-                  </div>
+                  </div>}
                   {/* Subscription Statistics Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     {/* Total Payments Card */}
@@ -484,7 +486,7 @@ export default function UserDetailPage() {
                         </div>
                         <p className="text-xs text-text-muted mb-1 uppercase tracking-wide font-medium">Current Amount</p>
                         <p className="text-2xl font-bold text-text-primary">
-                          ${selectedUser.currentSubscription.price.toFixed(2)}
+                          ${selectedUser.currentSubscription?.price ? selectedUser.currentSubscription.price.toFixed(2) : "0.00"}
                         </p>
                         <p className="text-xs text-text-tertiary mt-1">Monthly recurring</p>
                       </div>
@@ -553,7 +555,9 @@ export default function UserDetailPage() {
                               })}
                             </TableCell>
                             <TableCell className="text-accent-primary font-medium">
-                              ${subscription.price.toFixed(2)}
+                              {subscription.status === "TRIAL"
+                                ? "FREE"
+                                : `$${subscription.price.toFixed(2)}`}
                             </TableCell>
                             <TableCell className="text-text-tertiary">
                               {subscription.paymentMethod}

@@ -1,6 +1,6 @@
 // subscription.thunk.ts
 
-import { ChangePlanPayload, GetAllSubscriptionsResponse, RefundResponse, Subscription, SubscriptionDashboardResponse, SubscriptionFilters } from "@/types/subscription";
+import { ChangePlanPayload, CheckoutSessionPayload, GetAllSubscriptionsResponse, RefundResponse, Subscription, SubscriptionDashboardResponse, SubscriptionFilters } from "@/types/subscription";
 import apiClient from "@/utilities/axios/instance";
 import { routes } from "@/utilities/routes";
 import { createAsyncThunk } from "@reduxjs/toolkit";
@@ -180,7 +180,7 @@ export const refundSubscriptionPaymentAdminThunk = createAsyncThunk<
         throw new Error("Invalid refund response from server");
       }
 
-      return response.data;
+      return response.data.data;
     } catch (error: any) {
       const message =
         typeof error.response?.data?.message === "string"
@@ -201,7 +201,8 @@ export const changeUserSubscriptionPlanAdminThunk = createAsyncThunk<
   "admin/changeUserSubscriptionPlan",
   async ({ userId, newPlanId }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post<Subscription>(
+
+      const response = await apiClient.post(
         routes.api.subscription.admin.changePlanSubscription(userId),
         { newPlanId }
       );
@@ -209,8 +210,7 @@ export const changeUserSubscriptionPlanAdminThunk = createAsyncThunk<
       if (!response.data) {
         throw new Error("Invalid response from server");
       }
-
-      return response.data;
+      return response.data.data;
     } catch (error: any) {
       const message =
         typeof error.response?.data?.message === "string"
@@ -221,3 +221,33 @@ export const changeUserSubscriptionPlanAdminThunk = createAsyncThunk<
     }
   }
 );
+
+//Checkout
+export const createCheckoutSessionThunk = createAsyncThunk<
+  CheckoutSessionPayload,
+  number,
+  { rejectValue: CheckoutSessionPayload }
+>(
+  "subscription/createCheckoutSession",
+  async (planId, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post<{
+        data: { url?: string; trialActivated?: boolean; message?: string };
+        message: string;
+      }>(
+        routes.api.subscription.checkout,
+        { planId }
+      );
+
+      return response.data.data;
+    } catch (error: any) {
+      const message =
+        typeof error.response?.data?.message === "string"
+          ? error.response.data.message
+          : error.message || "Failed to create checkout session";
+
+      return rejectWithValue({ message });
+    }
+  }
+);
+

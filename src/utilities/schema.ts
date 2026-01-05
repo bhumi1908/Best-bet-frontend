@@ -94,11 +94,12 @@ export const createSubscriptionPlanSchema = z.object({
   price: z.number().optional(),
   duration: z.number().optional(),
   trialDays: z.number().nullable().optional(),
-  features: z.array(z.object({ name: z.string().min(1) })).min(1),
+  features: z.array(z.object({ name: z.string().min(1, "Feature name is required") }))
+    .min(1, "Features are required"),
+
   isActive: z.boolean(),
   isRecommended: z.boolean(),
 }).superRefine((data, ctx) => {
-  // If not a trial, price and duration are required
   if (!data.isTrial) {
     if (data.price === undefined) {
       ctx.addIssue({
@@ -144,7 +145,7 @@ export const changePasswordSchema = z
   });
 
 
-export const updateUserSchema = z.object({
+export const updateAdminSchema = z.object({
   firstName: z
     .string()
     .nonempty("First name is required")
@@ -167,4 +168,15 @@ export const updateUserSchema = z.object({
     .enum(["USER", "ADMIN"], {
       errorMap: () => ({ message: "Role is required" }),
     }),
+});
+
+
+// User profile
+export const updateUserSchema = z.object({
+  firstName: z.string().min(1, "First Name is required"),
+  lastName: z.string().min(1, "Last Name is required"),
+  phoneNo: z
+    .string()
+    .min(1, "Phone Number is required")
+    .regex(/^[0-9]+$/, "Phone Number must be numeric"),
 });

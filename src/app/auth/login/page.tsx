@@ -14,7 +14,7 @@ import { loginSchema } from '@/utilities/schema';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { LoginCredentials } from '@/types/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
 import { toast } from 'react-toastify';
 import { zodFormikValidate } from '@/utilities/zodFormikValidate';
@@ -29,6 +29,10 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams();
+
+  const from = searchParams.get("from");
+
 
   // Formik form configuration
   const formik = useFormik<LoginFormValues>({
@@ -47,10 +51,6 @@ export default function LoginPage() {
           toast.error(res?.error ?? 'Invalid credentials', { theme: 'dark' });
           return;
         }
-        toast.success('You have logged in successfully', {
-          theme: 'dark',
-        });
-        router.replace(routes.home);
 
       } catch (err: any) {
         const errorMessage = err.response?.data?.message || 'Login Failed!'

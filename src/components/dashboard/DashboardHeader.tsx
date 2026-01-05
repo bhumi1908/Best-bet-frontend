@@ -85,7 +85,7 @@ export default function DashboardHeader({ onMenuToggle, isMenuOpen }: DashboardH
             )}
           </button>
           <Link href={routes.home} className="flex items-center">
-            <span className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 bg-clip-text text-transparent">
+            <span className="text-2xl font-extrabold bg-clip-text text-transparent [background-image:linear-gradient(90deg,#ffd34d,#ad7aff)]">
               Best Bet
             </span>
           </Link>

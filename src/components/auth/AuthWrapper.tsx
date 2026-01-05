@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { UserRole } from '@/types/auth';
 import { routes } from '@/utilities/routes';
@@ -17,14 +17,21 @@ export default function AuthWrapper({
 }: AuthWrapperProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
 
   const isAuthRoute = pathname.startsWith('/auth');
   const isLoading = status === 'loading';
   const isAuthenticated = status === 'authenticated';
+  const from = searchParams.get("from");
 
   useEffect(() => {
     if (isLoading) return;
+
+    if (isAuthenticated &&from && from.startsWith("/")) {      
+      router.push(from);
+       return;
+    }
 
     // Logged-in user visiting auth pages
     if (isAuthenticated && isAuthRoute) {
