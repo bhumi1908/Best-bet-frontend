@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/Dialog";
 import { Pencil, Save, Lock, Shield, CreditCard, Mail, User, Activity, X, Package, Check, MoreVertical, Target, Star, Award, CheckCircle2 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, ReactElement } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
@@ -21,8 +21,9 @@ import { Popup } from "@/components/ui/Popup";
 import { getAllSubscriptionPlansThunk } from "@/redux/thunk/subscriptionPlanThunk";
 import { createCheckoutSessionThunk } from "@/redux/thunk/subscriptionThunk";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
-import { ApiCurrentSubscription } from "@/types/user";
+import { ApiCurrentSubscription, ApiCurrentSubscriptionTable } from "@/types/user";
 import { getUserByIdThunk } from "@/redux/thunk/userThunk";
+import { NoSubscription, SubscriptionTableSkeleton, ProfileInfoSkeleton, CurrentPlanSkeleton } from "@/components/ProfileInfoSkeleton";
 
 export default function ProfilePage() {
   const { data: session, update } = useSession();
@@ -30,11 +31,13 @@ export default function ProfilePage() {
 
   const [isEditProfile, setIsEditProfile] = useState(false);
   const [updating, setUpdating] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   const [billing, setBilling] = useState(false)
+  const [subscriptionError, setSubscriptionError] = useState<string | null>(null)
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
+  const [pendingCancellation, setPendingCancellation] = useState(false)
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [changingPlan, setChangingPlan] = useState(false);
 
@@ -46,7 +49,7 @@ export default function ProfilePage() {
   const { userPlans: plans, isLoading: plansLoading } = useAppSelector(
     (state) => state.subscriptionPlan
   );
-  const { selectedUser, isLoading: userLoading } = useAppSelector((state) => state.user);
+  const { selectedUser, isLoading: userLoading, error: userError } = useAppSelector((state) => state.user);
 
   const getSubscriptionStatusBadge = (status: string) => {
     const styles = {
@@ -68,14 +71,6 @@ export default function ProfilePage() {
       </span>
     );
   };
-
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
 
   const formik = useFormik({
     initialValues: {
@@ -168,7 +163,7 @@ export default function ProfilePage() {
     'Monthly Plan': 3,
   };
 
-  const PLAN_UI_CONFIG: Record<string, { icon: React.ReactElement }> = {
+  const PLAN_UI_CONFIG: Record<string, { icon: ReactElement }> = {
     'Basic Plan': {
       icon: <Target className="w-6 h-6" />,
     },
@@ -207,12 +202,6 @@ export default function ProfilePage() {
     };
   });
 
-  // Get current plan ID - match by plan name from the displayed plan name
-  // You may need to get this from user session or API in the future
-  // For now, matching by the plan name shown in the UI ("Premium Plan")
-  const currentPlanName = "Premium Plan"; // This should come from user's subscription data
-  const currentPlanId = mappedPlans.find(p => p.name === currentPlanName)?.id || null;
-
 
   useEffect(() => {
     if (successConfirmPassMessage) {
@@ -224,6 +213,12 @@ export default function ProfilePage() {
       dispatch(clearError());
     }
   }, [successConfirmPassMessage, error, dispatch]);
+
+  useEffect(() => {
+    if (userError) {
+      toast.error(userError, { theme: "dark" });
+    }
+  }, [userError]);
 
   // Animation variants
   const staggerContainer = {
@@ -255,49 +250,11 @@ export default function ProfilePage() {
   useEffect(() => {
     if (subscriptionOpen) {
       dispatch(getAllSubscriptionPlansThunk());
-      // Set current plan as selected initially (assuming user has a plan)
-      // You may need to get this from user session or API
       setSelectedPlanId(null);
+      setSubscriptionError(null);
     }
   }, [subscriptionOpen, dispatch]);
 
-  // Handle plan change
-  const handleChangePlan = async () => {
-    if (!selectedPlanId) {
-      toast.error("Please select a plan", { theme: "dark" });
-      return;
-    }
-
-    setChangingPlan(true);
-    try {
-      const payload = await dispatch(
-        createCheckoutSessionThunk(selectedPlanId)
-      ).unwrap();
-
-      if (payload.message && !payload.trialActivated && !payload.url) {
-        toast.error(payload.message, { theme: "dark" });
-        return;
-      }
-
-      if (payload.trialActivated) {
-        toast.success(payload.message ?? "Plan changed successfully!", { theme: "dark" });
-        setSubscriptionOpen(false);
-        setSelectedPlanId(null);
-        // Refresh session or redirect
-        return;
-      }
-
-      if (payload.url) {
-        toast.info("Redirecting to Stripe for payment...", { theme: "dark" });
-        window.location.href = payload.url;
-        return;
-      }
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to change plan. Please try again.", { theme: "dark" });
-    } finally {
-      setChangingPlan(false);
-    }
-  };
 
   const fetchUserDetail = async () => {
     try {
@@ -313,6 +270,50 @@ export default function ProfilePage() {
       fetchUserDetail();
     }
   }, [user?.id, dispatch]);
+
+  const isPageLoading =
+    isLoading || plansLoading || userLoading;
+
+  const currentSubscription = selectedUser?.currentSubscription;
+
+  const hasActiveSubscription = Boolean(currentSubscription);
+
+  const showSubscriptionSkeleton =
+    isPageLoading || (selectedUser && !currentSubscription);
+
+
+  const currentPlanName = currentSubscription?.planName ?? null;
+
+  const currentPlanId = currentPlanName
+    ? mappedPlans.find((p) => p.name === currentPlanName)?.id ?? null
+    : null;
+
+  const isPaidUser =
+    currentSubscription?.status === "ACTIVE" &&
+    selectedUser?.isTrial === false;
+
+  // const hasUsedFreePlan =
+  //   selectedUser?.allSubscriptions?.some(
+  //     (subscription: ApiCurrentSubscriptionTable) =>
+  //       subscription.planName?.toLowerCase().includes('free') ||
+  //       subscription.status === 'TRIAL'
+  //   ) || false;
+
+  const hasUsedTrial = selectedUser;
+  const isFreePlanDisabled = isPaidUser || hasUsedTrial;
+
+  const isFreePlan = (plan: any) =>
+    plan.trialDays > 0 ||
+    plan.name.toLowerCase().includes("free");
+
+  const isPlanDisabled = (plan: any) => {
+    const isCurrentPlan = plan.id === currentPlanId;
+    const freePlan = isFreePlan(plan);
+    if (isCurrentPlan) return true;
+    if (freePlan && isFreePlanDisabled) return true;
+
+    return false;
+  };
 
   return (
     <motion.div
@@ -382,27 +383,24 @@ export default function ProfilePage() {
         <section className="relative px-4 py-4 pb-24">
           <div className="max-w-7xl mx-auto">
 
-            {loading ? (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                  <Skeleton className="h-48 w-full rounded-lg" />
-                  <Skeleton className="h-64 w-full rounded-lg" />
-                </div>
-                <div className="space-y-6">
-                  <Skeleton className="h-64 w-full rounded-lg" />
-                  <Skeleton className="h-48 w-full rounded-lg" />
-                </div>
-              </div>
-            ) : (
-              <motion.div
-                className="grid grid-cols-1 lg:grid-cols-3 gap-6"
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-              >
-                {/* Left Column - Main Content */}
-                <div className="lg:col-span-2 space-y-6">
-                  {/* Profile Information Card */}
+            <motion.div
+              className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+              variants={staggerContainer}
+              initial="initial"
+              animate="animate"
+            >
+              {/* Left Column - Main Content */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Profile Information Card */}
+                {/* Profile Info Loading/Error State */}
+                {userLoading ? (
+                  <ProfileInfoSkeleton />
+                ) : userError ? (
+                  <div className="bg-white/5 rounded-2xl p-8 border border-white/10 text-center text-red-400">
+                    Failed to load profile details. Please try again.
+                  </div>
+                ) : (
+
                   <motion.div
                     variants={staggerItem}
                     className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-yellow-400/50 transition-all duration-300"
@@ -537,10 +535,11 @@ export default function ProfilePage() {
 
                     </form>
                   </motion.div>
+                )}
 
 
-                  {/* Recent Activity */}
-                  {/* <motion.div
+                {/* Recent Activity */}
+                {/* <motion.div
                     className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-yellow-400/50 transition-all duration-300"
                     variants={staggerItem}
                     whileHover={{ scale: 1.01, y: -2 }}
@@ -578,8 +577,15 @@ export default function ProfilePage() {
                     </div>
                   </motion.div> */}
 
-                  {/* Recent Activity */}
-                  {!userLoading && selectedUser && <motion.div
+                {/* Recent Activity (Subscription Table) */}
+                {userLoading ? (
+                  <SubscriptionTableSkeleton />
+                ) : userError ? (
+                  <div className="bg-white/5 rounded-2xl p-8 border border-white/10 text-center text-red-400">
+                    Failed to load subscriptions. Please try again.
+                  </div>
+                ) : selectedUser && selectedUser.allSubscriptions && selectedUser.allSubscriptions.length > 0 ? (
+                  <motion.div
                     className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-yellow-400/50 transition-all duration-300"
                     variants={staggerItem}
                     whileHover={{ scale: 1.01, y: -2 }}
@@ -602,7 +608,7 @@ export default function ProfilePage() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {selectedUser.allSubscriptions.map((subscription: ApiCurrentSubscription) => (
+                            {selectedUser.allSubscriptions.map((subscription: ApiCurrentSubscriptionTable) => (
                               <TableRow key={subscription.id}>
                                 <TableCell className="text-text-primary font-medium bg-white/5 ">
                                   {subscription.planName}
@@ -633,7 +639,9 @@ export default function ProfilePage() {
                                 <TableCell className="text-accent-primary font-medium bg-white/5 font-medium">
                                   {subscription.status === "TRIAL"
                                     ? "FREE"
-                                    : `$${subscription.price.toFixed(2)}`}
+                                    : subscription.price != null
+                                      ? `$${subscription.price.toFixed(2)}`
+                                      : "N/A"}
                                 </TableCell>
                                 <TableCell className="text-text-tertiary font-medium bg-white/5">
                                   {subscription.paymentMethod}
@@ -644,122 +652,144 @@ export default function ProfilePage() {
                         </Table>
                       </div>
                     </div>
-                  </motion.div>}
-                </div>
+                  </motion.div>
+                ) : (
+                  <NoSubscription />
+                )}
+              </div>
 
-                {/* Right Column - Sidebar */}
-                {!userLoading && selectedUser &&<div className="space-y-6">
-                  {/* Current Plan */}
-                  <motion.div
-                    className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-yellow-400/30 hover:border-yellow-400/50 transition-all duration-300"
-                    variants={staggerItem}
-                    whileHover={{ scale: 1.02, y: -3 }}
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <Package className="w-4 h-4 text-yellow-400" />
-                        <span className="text-sm font-medium text-white">Current Plan</span>
+              {/* Right Column - Sidebar */}
+              {!userLoading && selectedUser && <div className="space-y-6">
+                {/* Current Plan */}
+                <motion.div
+                  className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-yellow-400/30 hover:border-yellow-400/50 transition-all duration-300"
+                  variants={staggerItem}
+                  whileHover={{ scale: 1.02, y: -3 }}
+                >
+                  {/* Loading/Error/Empty State for Current Plan */}
+                  {userLoading || plansLoading ? (
+                    <CurrentPlanSkeleton />
+                  ) : userError ? (
+                    <div className="text-center text-red-400">Failed to load current plan. Please try again.</div>
+                  ) : !selectedUser?.currentSubscription ? (
+                    <NoSubscription />
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <Package className="w-4 h-4 text-yellow-400" />
+                          <span className="text-sm font-medium text-white">Current Plan</span>
+                        </div>
+                        <Dropdown>
+                          <DropdownTrigger
+                            className="!w-8 !h-8 !p-0 !bg-transparent !border-white/10 hover:!bg-white/10 hover:!border-yellow-400/30"
+                            icon={<MoreVertical className="w-4 h-4 text-gray-400" />}
+                          />
+                          <DropdownContent className="!bg-white/10 !backdrop-blur-md !border-white/20">
+                            <DropdownItem
+                              onClick={() => {
+                                setSubscriptionOpen(true);
+                              }}
+                            >
+                              Change plan
+                            </DropdownItem>
+                            <DropdownItem
+                              danger
+                              onClick={() => {
+                                setCancelConfirmOpen(true);
+                              }}
+                            >
+                              Cancel plan
+                            </DropdownItem>
+                          </DropdownContent>
+                        </Dropdown>
                       </div>
-                      <Dropdown>
-                        <DropdownTrigger
-                          className="!w-8 !h-8 !p-0 !bg-transparent !border-white/10 hover:!bg-white/10 hover:!border-yellow-400/30"
-                          icon={<MoreVertical className="w-4 h-4 text-gray-400" />}
-                        />
-                        <DropdownContent className="!bg-white/10 !backdrop-blur-md !border-white/20">
-                          <DropdownItem
-                            onClick={() => {
-                              setSubscriptionOpen(true);
-                            }}
-                          >
-                            Change plan
-                          </DropdownItem>
-                          <DropdownItem
-                            danger
-                            onClick={() => {
-                              // Handle cancel plan action
-                              console.log("Cancel plan clicked");
-                            }}
-                          >
-                            Cancel plan
-                          </DropdownItem>
-                        </DropdownContent>
-                      </Dropdown>
-                    </div>
 
-                    <h3 className="text-2xl font-bold text-yellow-300 mb-2">{selectedUser.currentSubscription?.planName}</h3>
-                    <p className="text-sm text-gray-400 mb-4">{selectedUser.currentSubscription?.description}</p>
+                      <h3 className="text-2xl font-bold text-yellow-300 mb-2">{selectedUser.currentSubscription?.planName}</h3>
+                      <p className="text-sm text-gray-400 mb-4">{selectedUser.currentSubscription?.description}</p>
 
-                    <div className="mb-6">
-                      <span className="text-3xl font-bold text-yellow-400">${selectedUser.currentSubscription?.price ? selectedUser.currentSubscription?.price.toFixed(2) : "FREE"}</span>
-                      <span className="text-sm text-gray-400 ml-1">${selectedUser.currentSubscription?.duration === 1 ? '/month' : '/year'}</span>
-                    </div>
+                      <div className="mb-6">
+                        <span className="text-3xl font-bold text-yellow-400">${selectedUser.currentSubscription?.price ? selectedUser.currentSubscription?.price.toFixed(2) : "FREE"}</span>
+                        <span className="text-sm text-gray-400 ml-1">${selectedUser.currentSubscription?.duration === 1 ? '/month' : '/year'}</span>
+                      </div>
 
-                    <div className="pt-4 border-t border-white/10">
-                      <h4 className="text-xs font-semibold text-white uppercase tracking-wider mb-4">Included Features</h4>
-                      <div className="space-y-3">
-                        {[
-                          "Daily Pick 3 Predictions",
-                          "Access to All States",
-                          "Full Draw History",
-                          "Priority Email Support",
-                          "Advanced Hit Tracker",
-                          "Weekly Performance Reports",
-                          "Early Access to New Features",
-                        ].map((feature, index) => (
-                          <div key={index} className="flex items-center gap-3">
-                            <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">
-                              <Check className="w-3 h-3 text-yellow-400" />
+                      {pendingCancellation && (
+                        <p className="text-xs text-red-300 mb-4">
+                          Cancellation scheduled at period end. Billing stops after expiration.
+                        </p>
+                      )}
+
+                      <div className="pt-4 border-t border-white/10">
+                        <h4 className="text-xs font-semibold text-white uppercase tracking-wider mb-4">Included Features</h4>
+                        <div className="space-y-3">
+                          {selectedUser.currentSubscription?.features.map((feature, index) => (
+                            <div key={index} className="flex items-center gap-3">
+                              <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">
+                                <Check className="w-3 h-3 text-yellow-400" />
+                              </div>
+                              <span className="text-sm text-white">{feature.name}</span>
                             </div>
-                            <span className="text-sm text-white">{feature}</span>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
+                    </>
+                  )
+                  }
 
-                  {/* Account Actions */}
-                  <motion.div
-                    className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-yellow-400/50 transition-all duration-300"
-                    variants={staggerItem}
-                    whileHover={{ scale: 1.01, y: -2 }}
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-white">Account Actions</h3>
-                      <div className="flex items-center gap-2 py-1 px-3 rounded-lg bg-white/5 border border-yellow-400/30">
-                        <span className="text-xs font-medium text-yellow-400">Coming Soon...</span>
+                </motion.div>
+
+                {/* Account Actions */}
+                <motion.div
+                  className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-yellow-400/50 transition-all duration-300"
+                  variants={staggerItem}
+                  whileHover={{ scale: 1.01, y: -2 }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white">Account Actions</h3>
+                  </div>
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => setChangePasswordOpen(true)}
+                      className="w-full flex items-center gap-3 p-3 text-left rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors group"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-yellow-400/10 flex items-center justify-center group-hover:bg-yellow-400/20 transition-colors">
+                        <Lock className="w-5 h-5 text-yellow-400" />
                       </div>
-                    </div>
-                    <div className="space-y-3">
-                      <button
-                        onClick={() => setChangePasswordOpen(true)}
-                        className="w-full flex items-center gap-3 p-3 text-left rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors group"
-                      >
-                        <div className="w-10 h-10 rounded-lg bg-yellow-400/10 flex items-center justify-center group-hover:bg-yellow-400/20 transition-colors">
-                          <Lock className="w-5 h-5 text-yellow-400" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-white">Change Password</p>
-                          <p className="text-xs text-gray-400">Update your account password</p>
-                        </div>
-                      </button>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-white">Change Password</p>
+                        <p className="text-xs text-gray-400">Update your account password</p>
+                      </div>
+                    </button>
 
-                      <button
-                        onClick={() => setBilling(true)}
-                        className="w-full flex items-center gap-3 p-3 text-left rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors group"
-                      >
-                        <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
-                          <CreditCard className="w-5 h-5 text-purple-400" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-white">Billing & Subscription</p>
-                          <p className="text-xs text-gray-400">Manage your subscription</p>
-                        </div>
-                      </button>
-                    </div>
-                  </motion.div>
+                    <button
+                      disabled={!hasActiveSubscription}
 
-                  {/* Quick Info */}
-                  {/* <motion.div
+                      onClick={() => setBilling(true)}
+                      className={cn(
+                        "w-full flex items-center gap-3 p-3 text-left rounded-lg border transition-colors",
+                        hasActiveSubscription
+                          ? "border-white/10 bg-white/5 hover:bg-white/10"
+                          : "border-white/5 bg-white/3 opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
+                        <CreditCard className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-white">Billing & Subscription</p>
+                        <p className="text-xs text-gray-400">
+                          {hasActiveSubscription
+                            ? "Manage your subscription"
+                            : "No active subscription"}
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+
+                </motion.div>
+
+                {/* Quick Info */}
+                {/* <motion.div
                     className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:border-yellow-400/50 transition-all duration-300"
                     variants={staggerItem}
                     whileHover={{ scale: 1.01, y: -2 }}
@@ -791,9 +821,8 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   </motion.div> */}
-                </div>}
-              </motion.div>
-            )}
+              </div>}
+            </motion.div>
           </div>
         </section>
 
@@ -940,7 +969,6 @@ export default function ProfilePage() {
               <Button
                 type="primary"
                 className="!w-full sm:!w-fit"
-                onClick={handleChangePlan}
                 loading={changingPlan}
                 disabled={!selectedPlanId || selectedPlanId === currentPlanId}
               >
@@ -954,107 +982,156 @@ export default function ProfilePage() {
               <div className="text-gray-400">Loading plans...</div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {mappedPlans.map((plan) => {
-                const isCurrentPlan = plan.id === currentPlanId;
-                const isSelected = selectedPlanId === plan.id;
-                const isDisabled = isCurrentPlan;
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {mappedPlans.map((plan) => {
+                  const isCurrentPlan = plan.id === currentPlanId;
+                  const isSelected = selectedPlanId === plan.id;
+                  const freePlan = isFreePlan(plan);
+                  const isDisabled = isPlanDisabled(plan)
 
-                return (
-                  <div
-                    key={plan.id}
-                    onClick={() => {
-                      if (!isDisabled) {
-                        setSelectedPlanId(plan.id);
-                      }
-                    }}
-                    className={cn(
-                      "relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-300",
-                      isCurrentPlan
-                        ? "bg-yellow-400/10 border-yellow-400/50"
-                        : isSelected
-                          ? "bg-yellow-400/20 border-yellow-400 shadow-lg shadow-yellow-400/20"
-                          : "bg-white/5 border-white/10 hover:border-yellow-400/30 hover:bg-white/10",
-                      isDisabled && "cursor-not-allowed opacity-75"
-                    )}
-                  >
-                    {/* Current Plan Badge */}
-                    {isCurrentPlan && (
-                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
-                        <span className="bg-yellow-400 text-black px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                          Current Plan
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Selected Indicator */}
-                    {isSelected && !isCurrentPlan && (
-                      <div className="absolute top-3 right-3">
-                        <div className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center">
-                          <Check className="w-4 h-4 text-black" />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Current Plan Check Icon */}
-                    {isCurrentPlan && (
-                      <div className="absolute top-3 right-3">
-                        <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                          <Check className="w-4 h-4 text-white" />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Discount Badge */}
-                    {(plan.discountPercent ?? 0) > 0 && (
-                      <div className="absolute -top-2 -right-2 z-10">
-                        <span className="bg-gradient-to-r from-green-500 to-green-600 text-black px-2 py-1 rounded-lg text-xs font-bold">
-                          {plan.discountPercent}% OFF
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Plan Icon */}
-                    <div className="mb-4">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-black mb-3">
-                        {plan.icon}
-                      </div>
-                      <h3 className="text-xl font-bold text-white mb-1">{plan.name}</h3>
-                      {plan.description && (
-                        <p className="text-gray-400 text-sm">{plan.description}</p>
+                  return (
+                    <div
+                      key={plan.id}
+                      onClick={() => {
+                        if (!isDisabled) {
+                          setSelectedPlanId(plan.id);
+                        }
+                      }}
+                      className={cn(
+                        "relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-300",
+                        isCurrentPlan
+                          ? "bg-yellow-400/10 border-yellow-400/50"
+                          : isSelected
+                            ? "bg-yellow-400/20 border-yellow-400 shadow-lg shadow-yellow-400/20"
+                            : "bg-white/5 border-white/10 hover:border-yellow-400/30 hover:bg-white/10",
+                        isDisabled && "cursor-not-allowed opacity-75"
                       )}
-                    </div>
-
-                    {/* Price */}
-                    <div className="mb-4">
-                      {plan.trialDays ? (
-                        <p className="text-2xl font-extrabold text-yellow-400">
-                          {plan.trialDays}-day Free Trial
-                        </p>
-                      ) : (
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-3xl font-extrabold text-yellow-400">
-                            ${plan.price}
+                    >
+                      {/* Current Plan Badge */}
+                      {isCurrentPlan && (
+                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                          <span className="bg-yellow-400 text-black px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                            Current Plan
                           </span>
-                          <span className="text-gray-400 text-sm">{plan.period}</span>
                         </div>
                       )}
+
+                      {hasUsedTrial && freePlan && !isCurrentPlan && (
+                        <div className="absolute -top-3 right-3 z-10">
+                          <span className="bg-gray-700 text-gray-200 px-3 py-1 rounded-full text-xs font-semibold">
+                            Trial already used
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Selected Indicator */}
+                      {isSelected && !isCurrentPlan && (
+                        <div className="absolute top-3 right-3">
+                          <div className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center">
+                            <Check className="w-4 h-4 text-black" />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Current Plan Check Icon */}
+                      {isCurrentPlan && (
+                        <div className="absolute top-3 right-3">
+                          <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                            <Check className="w-4 h-4 text-white" />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Discount Badge */}
                       {(plan.discountPercent ?? 0) > 0 && (
-                        <div className="flex items-baseline gap-1 mt-1">
-                          <span className="text-gray-500 text-lg line-through">
-                            ${plan.originalPrice?.toFixed(2)}
+                        <div className="absolute -top-2 -right-2 z-10">
+                          <span className="bg-gradient-to-r from-green-500 to-green-600 text-black px-2 py-1 rounded-lg text-xs font-bold">
+                            {plan.discountPercent}% OFF
                           </span>
-                          <span className="text-gray-400 text-sm">{plan.period}</span>
                         </div>
                       )}
-                    </div>
 
-                  </div>
-                );
-              })}
+                      {/* Plan Icon */}
+                      <div className="mb-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-black mb-3">
+                          {plan.icon}
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-1">{plan.name}</h3>
+                        {plan.description && (
+                          <p className="text-gray-400 text-sm">{plan.description}</p>
+                        )}
+                      </div>
+
+                      {/* Price */}
+                      <div className="mb-4">
+                        {plan.trialDays ? (
+                          <p className="text-2xl font-extrabold text-yellow-400">
+                            {plan.trialDays}-day Free Trial
+                          </p>
+                        ) : (
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-3xl font-extrabold text-yellow-400">
+                              ${plan.price}
+                            </span>
+                            <span className="text-gray-400 text-sm">{plan.period}</span>
+                          </div>
+                        )}
+                        {(plan.discountPercent ?? 0) > 0 && (
+                          <div className="flex items-baseline gap-1 mt-1">
+                            <span className="text-gray-500 text-lg line-through">
+                              ${plan.originalPrice?.toFixed(2) ?? 'N/A'}
+                            </span>
+                            <span className="text-gray-400 text-sm">{plan.period}</span>
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </Popup>
+
+        <Dialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
+          <DialogContent showCloseButton className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Cancel current plan?</DialogTitle>
+              <DialogDescription>
+                Your plan will stay active until it expires. No further billing will occur. Downgrade will be handled automatically on expiration.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-300">
+                {selectedUser?.currentSubscription?.endDate
+                  ? `Active until ${new Date(selectedUser.currentSubscription.endDate).toLocaleDateString()}.`
+                  : "Active until the end of the current billing period."}
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button onClick={() => setCancelConfirmOpen(false)} disabled={pendingCancellation}>
+                  Keep Plan
+                </Button>
+                <Button
+                  type="primary"
+                  danger
+                  loading={pendingCancellation}
+                  onClick={() => {
+                    setPendingCancellation(true);
+                    toast.success("Cancellation scheduled for the period end.", { theme: "dark" });
+                    setTimeout(() => {
+                      setPendingCancellation(false);
+                      setCancelConfirmOpen(false);
+                    }, 400);
+                  }}
+                >
+                  Confirm Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Subscription Details Dialog */}
         <Dialog open={billing} onOpenChange={setBilling}>
@@ -1065,63 +1142,93 @@ export default function ProfilePage() {
                 View your current subscription plan and billing information.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-6">
-              <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">Pro Plan</h3>
-                    <p className="text-sm text-gray-400">Active Subscription</p>
-                  </div>
-                  <span className="px-3 py-1 rounded-md text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
-                    Active
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">Plan Price</span>
-                    <span className="text-lg font-semibold text-yellow-400">$29.99/month</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">Billing Cycle</span>
-                    <span className="text-sm text-white">Monthly</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">Next Billing Date</span>
-                    <span className="text-sm text-white">Jan 12, 2026</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">Payment Method</span>
-                    <span className="text-sm text-white">•••• •••• •••• 4242</span>
-                  </div>
-                </div>
-              </div>
+            {userLoading || plansLoading ? (
+              <CurrentPlanSkeleton />
+            ) : userError ? (
+              <div className="text-center text-red-400">Failed to load subscription details. Please try again.</div>
+            ) : !selectedUser?.currentSubscription ? (
+              <NoSubscription />
+            ) : (
+              <div className="space-y-6">
+                <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">{selectedUser.currentSubscription.planName}</h3>
+                      <p className="text-sm text-gray-400">
+                        {selectedUser.currentSubscription.status.charAt(0).toUpperCase() +
+                          selectedUser.currentSubscription.status.slice(1).toLowerCase()}{" "}
+                        Subscription
+                      </p>
 
-              <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-white">Plan Features</h4>
-                <div className="space-y-2">
-                  {[
-                    "Unlimited game predictions",
-                    "Advanced analytics dashboard",
-                    "Priority customer support",
-                    "Email notifications",
-                    "API access",
-                  ].map((feature, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full  flex items-center justify-center">
-                        <Check className="w-4 h-4 text-accent-primary" />
-                      </div>
-                      <span className="text-sm text-gray-300">{feature}</span>
                     </div>
-                  ))}
+                    <span>
+                      {getSubscriptionStatusBadge(selectedUser.currentSubscription.status)}
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-400">Plan Price</span>
+                      <span className="text-lg font-semibold text-yellow-400">
+                        {selectedUser.currentSubscription.status === "TRIAL"
+                          ? "FREE"
+                          : `$${selectedUser.currentSubscription.price?.toFixed(2) ?? "0.00"}`}
+                        {selectedUser.currentSubscription.duration === 1 ? "/month" : "/year"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-400">Billing Cycle</span>
+                      <span className="text-sm text-white">
+                        {selectedUser.currentSubscription.duration === 12 ? "Yearly" : "Monthly"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-400">Next Billing Date</span>
+                      <span className="text-sm text-white">
+                        {selectedUser.currentSubscription.endDate
+                          ? new Date(selectedUser.currentSubscription.endDate).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          })
+
+                          : "—"}
+
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-400">Payment Method</span>
+                      <span className="text-sm text-white">
+                        {selectedUser.currentSubscription.paymentMethod || "—"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-white">Plan Features</h4>
+                  <div className="space-y-2">
+                    {selectedUser.currentSubscription.features?.length ? (
+                      selectedUser.currentSubscription.features.map((feature, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <div className="w-5 h-5 rounded-full  flex items-center justify-center">
+                            <Check className="w-4 h-4 text-accent-primary" />
+                          </div>
+                          <span className="text-sm text-gray-300">{feature.name}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-400">No features listed.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-border-primary">
+                  <Button type="primary" className="w-full" onClick={() => { setBilling(false), setSubscriptionOpen(true) }} >
+                    Manage Subscription
+                  </Button>
                 </div>
               </div>
-
-              <div className="pt-4 border-t border-border-primary">
-                <Button type="primary" className="w-full" onClick={() => { setBilling(false), setSubscriptionOpen(true) }} >
-                  Manage Subscription
-                </Button>
-              </div>
-            </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>

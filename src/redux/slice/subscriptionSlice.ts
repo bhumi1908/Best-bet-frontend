@@ -163,7 +163,7 @@ const adminSubscriptionSlice = createSlice({
                     const userId = action.meta.arg;
 
                     state.subscriptions = state.subscriptions.map((sub) =>
-                        sub.user.id === userId && sub.status === "ACTIVE"
+                        sub.user.id === userId && (sub.status === "ACTIVE" || sub.status === "TRIAL")
                             ? { ...sub, status: "CANCELED" }
                             : sub
                     );
@@ -171,7 +171,7 @@ const adminSubscriptionSlice = createSlice({
                     if (
                         state.selectedSubscription &&
                         state.selectedSubscription.user.id === userId &&
-                        state.selectedSubscription.status === "ACTIVE"
+                        (state.selectedSubscription.status === "ACTIVE" || state.selectedSubscription.status === "TRIAL")
                     ) {
                         state.selectedSubscription = {
                             ...state.selectedSubscription,

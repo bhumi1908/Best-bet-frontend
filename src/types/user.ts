@@ -294,7 +294,17 @@ export interface ApiCurrentSubscription {
   status: string;
   duration?: number;
   paymentMethod: string;
-  features?: Feature[]
+  features: Feature[]
+}
+export interface ApiCurrentSubscriptionTable {
+  id: number;
+  planName: string;
+  price: number;
+  startDate: string;
+  endDate: string;
+  status: string;
+  duration?: number;
+  paymentMethod: string;
 }
 
 export interface ApiUserDetail {
@@ -303,6 +313,7 @@ export interface ApiUserDetail {
   firstName: string | null;
   lastName: string | null;
   phoneNo: string | null;
+  isTrial: boolean,
   role: UserRole;
   isInactive: boolean;
   createdAt: string;
