@@ -563,7 +563,7 @@ export default function LandingPage() {
               </motion.div>
             </motion.div>
              {/* CTA Buttons */}
-            <motion.div
+            {/* <motion.div
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -576,6 +576,151 @@ export default function LandingPage() {
                 className="px-4 py-3 md:px-6 md:py-3 2xl:px-8 !w-fit h-fit rounded-lg font-semibold !text-lg"
               >
                 {isAuthenticated ? "Go to Dashboard" : "Start Winning Now"}
+              </Button>
+            </motion.div> */}
+          </div>
+        </section>
+
+          {/* ==================== TRUST & SECURITY SECTION ==================== */}
+        <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/15 via-gray-900/10 to-gray-900/5">
+          <div className="max-w-7xl mx-auto">
+            {/* Section Header */}
+            <motion.div
+              className="text-center mb-20"
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.6 }}
+            >
+              <motion.div
+                className="inline-block px-4 py-2 mb-6 rounded-full bg-yellow-400/10 border border-yellow-400/30"
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                               <span className="text-yellow-400 text-sm font-semibold capitalize">TRUST & SECURITY</span>
+              </motion.div>
+              <h2 className="text-4xl md:text-6xl font-black mb-6 capitalize">
+                Your <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">Security</span> is Our Priority
+              </h2>
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+                We use industry-leading security measures to protect your data and ensure safe transactions.
+              </p>
+            </motion.div>
+
+            {/* Security Features Grid */}
+            <motion.div
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16"
+              variants={staggerContainer}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true, margin: "-50px" }}
+            >
+              <motion.div
+                className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 text-center"
+                variants={staggerItem}
+                whileHover={{ scale: 1.05, y: -5 }}
+              >
+                <motion.div
+                  className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center"
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.6 }}
+                >
+                  <Lock className="w-8 h-8 text-black" />
+                </motion.div>
+                <h3 className="text-xl font-bold mb-3">SSL Encryption</h3>
+                <p className="text-gray-400 text-sm">
+                  256-bit SSL encryption protects all data transmission.
+                </p>
+              </motion.div>
+
+              <motion.div
+                className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 text-center"
+                variants={staggerItem}
+                whileHover={{ scale: 1.05, y: -5 }}
+              >
+                <motion.div
+                  className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center"
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.6 }}
+                >
+                  <CreditCard className="w-8 h-8 text-black" />
+                </motion.div>
+                <h3 className="text-xl font-bold mb-3">Secure Payments</h3>
+                <p className="text-gray-400 text-sm">
+                  All payments processed through Stripe's secure platform.
+                </p>
+              </motion.div>
+
+              <motion.div
+                className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 text-center"
+                variants={staggerItem}
+                whileHover={{ scale: 1.05, y: -5 }}
+              >
+                <motion.div
+                  className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center"
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.6 }}
+                >
+                  <Shield className="w-8 h-8 text-black" />
+                </motion.div>
+                <h3 className="text-xl font-bold mb-3">Privacy Protected</h3>
+                <p className="text-gray-400 text-sm">
+                  We never share your personal information with third parties.
+                </p>
+              </motion.div>
+
+              <motion.div
+                className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 text-center"
+                variants={staggerItem}
+                whileHover={{ scale: 1.05, y: -5 }}
+              >
+                <motion.div
+                  className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center"
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.6 }}
+                >
+                  <Award className="w-8 h-8 text-black" />
+                </motion.div>
+                <h3 className="text-xl font-bold mb-3">GDPR Compliant</h3>
+                <p className="text-gray-400 text-sm">
+                  Full compliance with international data protection standards.
+                </p>
+              </motion.div>
+            </motion.div>
+
+            {/* Money-Back Guarantee Banner */}
+            <motion.div
+              className="bg-gradient-to-r from-yellow-400/10 to-yellow-500/10 backdrop-blur-md rounded-2xl p-8 border border-yellow-400/30 text-center"
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="flex items-center gap-2 justify-center mb-4">
+                <Shield className="w-8 h-8 text-yellow-400" />
+                <h3 className="text-3xl font-bold">Best Bet's Guarantee to You!</h3>
+              </div>
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+                If (your State) does not get at least 15 Hits (Exact or Box / Any) within 30 days, we will refund your $9.99 for that month or give you the next month free, (your choice).
+              </p>
+            </motion.div>
+
+             <motion.div
+              className="text-center mt-16"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <Button
+                type="primary"
+                size="large"
+                onClick={() => window.location.href = isAuthenticated ? routes.home : routes.auth.register}
+                className="px-8 py-4 text-lg !w-fit h-fit rounded-lg"
+              >
+                Start Winning Today
               </Button>
             </motion.div>
           </div>
@@ -1697,138 +1842,11 @@ export default function LandingPage() {
           </div>
         </section> */}
 
-        {/* ==================== TRUST & SECURITY SECTION ==================== */}
-        <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/15 via-gray-900/10 to-gray-900/5">
-          <div className="max-w-7xl mx-auto">
-            {/* Section Header */}
-            <motion.div
-              className="text-center mb-20"
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.6 }}
-            >
-              <motion.div
-                className="inline-block px-4 py-2 mb-6 rounded-full bg-yellow-400/10 border border-yellow-400/30"
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
-                               <span className="text-yellow-400 text-sm font-semibold capitalize">TRUST & SECURITY</span>
-              </motion.div>
-              <h2 className="text-4xl md:text-6xl font-black mb-6 capitalize">
-                Your <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">Security</span> is Our Priority
-              </h2>
-              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                We use industry-leading security measures to protect your data and ensure safe transactions.
-              </p>
-            </motion.div>
-
-            {/* Security Features Grid */}
-            <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16"
-              variants={staggerContainer}
-              initial="initial"
-              whileInView="animate"
-              viewport={{ once: true, margin: "-50px" }}
-            >
-              <motion.div
-                className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 text-center"
-                variants={staggerItem}
-                whileHover={{ scale: 1.05, y: -5 }}
-              >
-                <motion.div
-                  className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center"
-                  whileHover={{ rotate: 360 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  <Lock className="w-8 h-8 text-black" />
-                </motion.div>
-                <h3 className="text-xl font-bold mb-3">SSL Encryption</h3>
-                <p className="text-gray-400 text-sm">
-                  256-bit SSL encryption protects all data transmission.
-                </p>
-              </motion.div>
-
-              <motion.div
-                className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 text-center"
-                variants={staggerItem}
-                whileHover={{ scale: 1.05, y: -5 }}
-              >
-                <motion.div
-                  className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center"
-                  whileHover={{ rotate: 360 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  <CreditCard className="w-8 h-8 text-black" />
-                </motion.div>
-                <h3 className="text-xl font-bold mb-3">Secure Payments</h3>
-                <p className="text-gray-400 text-sm">
-                  All payments processed through Stripe's secure platform.
-                </p>
-              </motion.div>
-
-              <motion.div
-                className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 text-center"
-                variants={staggerItem}
-                whileHover={{ scale: 1.05, y: -5 }}
-              >
-                <motion.div
-                  className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center"
-                  whileHover={{ rotate: 360 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  <Shield className="w-8 h-8 text-black" />
-                </motion.div>
-                <h3 className="text-xl font-bold mb-3">Privacy Protected</h3>
-                <p className="text-gray-400 text-sm">
-                  We never share your personal information with third parties.
-                </p>
-              </motion.div>
-
-              <motion.div
-                className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 text-center"
-                variants={staggerItem}
-                whileHover={{ scale: 1.05, y: -5 }}
-              >
-                <motion.div
-                  className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center"
-                  whileHover={{ rotate: 360 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  <Award className="w-8 h-8 text-black" />
-                </motion.div>
-                <h3 className="text-xl font-bold mb-3">GDPR Compliant</h3>
-                <p className="text-gray-400 text-sm">
-                  Full compliance with international data protection standards.
-                </p>
-              </motion.div>
-            </motion.div>
-
-            {/* Money-Back Guarantee Banner */}
-            {/* <motion.div
-              className="bg-gradient-to-r from-yellow-400/10 to-yellow-500/10 backdrop-blur-md rounded-2xl p-8 border border-yellow-400/30 text-center"
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-            >
-              <div className="flex items-center gap-2 justify-center mb-4">
-                <Shield className="w-8 h-8 text-yellow-400" />
-                <h3 className="text-3xl font-bold">Best Bet's Guarantee to You!</h3>
-              </div>
-              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                If (your State) does not get at least 15 Hits (Exact or Box / Any) within 30 days, we will refund your $9.99 for that month or give you the next month free, (your choice).
-              </p>
-            </motion.div> */}
-          </div>
-        </section>
+      
 
         {/* ==================== FINAL CTA SECTION ==================== */}
-        <section className="relative py-24 px-4">
+        {/* <section className="relative py-24 px-4">
           <div className="max-w-5xl mx-auto text-center">
-            {/* Floating Background Elements */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
               <motion.div
                 className="absolute top-10 left-10 w-72 h-72 bg-yellow-500/10 rounded-full blur-3xl"
@@ -1849,7 +1867,6 @@ export default function LandingPage() {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              {/* Announcement */}
               <motion.div
                 className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full bg-yellow-500/10 border border-yellow-500/30"
                 initial={{ opacity: 0, y: -20 }}
@@ -1863,7 +1880,6 @@ export default function LandingPage() {
                 </span>
               </motion.div>
 
-              {/* Headline */}
               <motion.h2
                 className="text-5xl md:text-7xl font-black mb-6 leading-tight"
                 initial={{ opacity: 0, y: 30 }}
@@ -1877,7 +1893,6 @@ export default function LandingPage() {
                 </span>
               </motion.h2>
 
-              {/* Subtext */}
               <motion.p
                 className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto leading-relaxed"
                 initial={{ opacity: 0, y: 20 }}
@@ -1888,7 +1903,6 @@ export default function LandingPage() {
                 Join 10,000+ members who are already winning with the most accurate Pick 3 predictions on the planet.
               </motion.p>
 
-              {/* CTA Buttons */}
               <motion.div
                 className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12"
                 initial={{ opacity: 0, y: 30 }}
@@ -1913,7 +1927,6 @@ export default function LandingPage() {
                 </Link>
               </motion.div>
 
-              {/* Trust Indicators */}
               <motion.div
                 className="flex flex-wrap items-center justify-center gap-8 text-sm text-gray-500"
                 initial={{ opacity: 0 }}
@@ -1936,7 +1949,7 @@ export default function LandingPage() {
               </motion.div>
             </motion.div>
           </div>
-        </section>
+        </section> */}
       </motion.div>
 
       {/* Custom Styles for Animations */}
