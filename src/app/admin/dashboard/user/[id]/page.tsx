@@ -469,7 +469,7 @@ export default function UserDetailPage() {
                         </div>
                         <p className="text-xs text-text-muted mb-1 uppercase tracking-wide font-medium">Total Paid</p>
                         <p className="text-2xl font-bold text-accent-primary">
-                          ${selectedUser.totalPayments.toFixed(2)}
+                          ${selectedUser.totalPayments.toFixed(2) ?? '0.00'}
                         </p>
                         <p className="text-xs text-text-tertiary mt-1">Lifetime value</p>
                       </div>
@@ -555,7 +555,7 @@ export default function UserDetailPage() {
                               })}
                             </TableCell>
                             <TableCell className="text-accent-primary font-medium">
-                              {subscription.status === "TRIAL"
+                              {subscription.status === "TRIAL" || subscription.price == null
                                 ? "FREE"
                                 : `$${subscription.price.toFixed(2)}`}
                             </TableCell>

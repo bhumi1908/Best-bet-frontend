@@ -3,7 +3,7 @@
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/Dialog";
-import { Pencil, Save, Lock, Shield, CreditCard, Mail, User, Activity, X, Package, Check, MoreVertical, Target, Star, Award, CheckCircle2 } from "lucide-react";
+import { Pencil, Save, Lock, Shield, CreditCard, Mail, User, Activity, X, Package, Check, MoreVertical, Target, Star, Award, CheckCircle2, AlertCircle, Calendar, Loader2, Clock } from "lucide-react";
 import { useState, useEffect, useRef, ReactElement } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
@@ -19,15 +19,19 @@ import { motion } from "framer-motion";
 import { Dropdown, DropdownContent, DropdownItem, DropdownTrigger } from "@/components/ui/Dropdown";
 import { Popup } from "@/components/ui/Popup";
 import { getAllSubscriptionPlansThunk } from "@/redux/thunk/subscriptionPlanThunk";
-import { createCheckoutSessionThunk } from "@/redux/thunk/subscriptionThunk";
+import { cancelScheduledPlanChangeThunk, changeUserSubscriptionPlanSelfThunk, createCheckoutSessionThunk, getUserSubscriptionSelfThunk, revokeUserSubscriptionSelfThunk } from "@/redux/thunk/subscriptionThunk";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
 import { ApiCurrentSubscription, ApiCurrentSubscriptionTable } from "@/types/user";
 import { getUserByIdThunk } from "@/redux/thunk/userThunk";
-import { NoSubscription, SubscriptionTableSkeleton, ProfileInfoSkeleton, CurrentPlanSkeleton } from "@/components/ProfileInfoSkeleton";
+import ProfilePageSkeleton, { NoSubscription, SubscriptionTableSkeleton, ProfileInfoSkeleton, CurrentPlanSkeleton } from "@/components/ProfileInfoSkeleton";
+import { clearSubscriptionSuccess } from "@/redux/slice/subscriptionSlice";
+import { useRouter } from "next/navigation";
+import { format } from "date-fns";
 
 export default function ProfilePage() {
   const { data: session, update } = useSession();
   const user = session?.user
+  const router = useRouter();
 
   const [isEditProfile, setIsEditProfile] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -35,12 +39,12 @@ export default function ProfilePage() {
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   const [billing, setBilling] = useState(false)
-  const [subscriptionError, setSubscriptionError] = useState<string | null>(null)
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
   const [pendingCancellation, setPendingCancellation] = useState(false)
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
-  const [changingPlan, setChangingPlan] = useState(false);
-
+  const [processingCheckout, setProcessingCheckout] = useState(false);
+  const [cancellingSchedule, setCancellingSchedule] = useState(false);
+  const [scheduleCancelConfirmOpen, setScheduleCancelConfirmOpen] = useState(false)
 
   const dispatch = useAppDispatch();
   const { isLoading, error, successConfirmPassMessage } = useAppSelector(
@@ -50,6 +54,13 @@ export default function ProfilePage() {
     (state) => state.subscriptionPlan
   );
   const { selectedUser, isLoading: userLoading, error: userError } = useAppSelector((state) => state.user);
+  const {
+    currentSubscription,
+    isLoading: subscriptionLoading,
+    error: subscriptionError,
+    successMessage,
+    checkoutUrl
+  } = useAppSelector((state) => state.subscription);
 
   const getSubscriptionStatusBadge = (status: string) => {
     const styles = {
@@ -58,6 +69,7 @@ export default function ProfilePage() {
       EXPIRED: "bg-gray-500/20 text-gray-400 border-gray-500/30",
       REFUNDED: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
       TRIAL: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      PAST_DUE: "bg-orange-500/20 text-orange-400 border-orange-500/30",
 
     };
     return (
@@ -147,15 +159,6 @@ export default function ProfilePage() {
     return user?.email?.[0]?.toUpperCase() || "U";
   };
 
-
-  const recentActivity = [
-    { action: "Password changed", time: "2 hours ago", type: "security" },
-    { action: "Profile updated", time: "1 day ago", type: "profile" },
-    { action: "Login from new device", time: "3 days ago", type: "security" },
-    { action: "Email verified", time: "1 week ago", type: "profile" },
-  ];
-
-
   // Plan mapping configuration
   const PLAN_TIER_MAP: Record<string, 1 | 2 | 3> = {
     'Free Plan': 1,
@@ -164,13 +167,13 @@ export default function ProfilePage() {
   };
 
   const PLAN_UI_CONFIG: Record<string, { icon: ReactElement }> = {
-    'Basic Plan': {
+    'Free Plan': {
       icon: <Target className="w-6 h-6" />,
     },
-    'Premium Plan': {
+    'Monthly Plan': {
       icon: <Star className="w-6 h-6" />,
     },
-    'VIP Plan': {
+    'Yearly Plan': {
       icon: <Award className="w-6 h-6" />,
     },
   };
@@ -193,32 +196,16 @@ export default function ProfilePage() {
       price: discountedPrice,
       originalPrice: plan.price,
       period,
+      isTrial: plan.isTrial,
       trialDays: plan.trialDays,
       popular: plan.isRecommended ?? false,
       discountPercent: plan.discountPercent,
       tier: PLAN_TIER_MAP[plan.name] || 1,
       icon: uiConfig?.icon ?? <Target className="w-6 h-6" />,
       features: plan.features.map((feature) => feature.name),
+      stripePriceId: plan.stripePriceId,
     };
   });
-
-
-  useEffect(() => {
-    if (successConfirmPassMessage) {
-      toast.success(successConfirmPassMessage, { theme: "dark" });
-      dispatch(clearSuccessMessage());
-    }
-    if (error) {
-      toast.error(error, { theme: "dark" });
-      dispatch(clearError());
-    }
-  }, [successConfirmPassMessage, error, dispatch]);
-
-  useEffect(() => {
-    if (userError) {
-      toast.error(userError, { theme: "dark" });
-    }
-  }, [userError]);
 
   // Animation variants
   const staggerContainer = {
@@ -246,24 +233,78 @@ export default function ProfilePage() {
     profileFormik.handleSubmit();
   };
 
+  const handleCancelPlan = async () => {
+    try {
+      await dispatch(revokeUserSubscriptionSelfThunk()).unwrap();
+      setCancelConfirmOpen(false);
+      setPendingCancellation(true);
+    } catch (err) {
+      console.error("Failed to cancel subscription:", err);
+    }
+  };
+
+  const handleChangePlan = async () => {
+    if (!selectedPlanId) return;
+
+    try {
+      const result = await dispatch(changeUserSubscriptionPlanSelfThunk({ newPlanId: selectedPlanId })).unwrap();
+
+      if (selectedPlanId === currentPlanId) {
+        toast.success(result.message || "Scheduled change cancelled successfully");
+      } else {
+        toast.success(result.message || "Plan change scheduled successfully");
+      }
+      setSubscriptionOpen(false);
+      setSelectedPlanId(null);
+    } catch (err: any) {
+      console.error("Failed to change plan:", err);
+    }
+  };
+
+  const handleCancelScheduledChange = async () => {
+    try {
+      setCancellingSchedule(true);
+      await dispatch(cancelScheduledPlanChangeThunk()).unwrap();
+      setScheduleCancelConfirmOpen(false)
+      toast.success("Scheduled plan change cancelled");
+    } catch (err: any) {
+      console.error("Failed to cancel scheduled change:", err);
+      toast.error(err.message || "Failed to cancel scheduled change");
+    } finally {
+      setCancellingSchedule(false);
+    }
+  };
+
+  const handleUpgradePlan = async (planId: number) => {
+    try {
+      setProcessingCheckout(true);
+      await dispatch(createCheckoutSessionThunk(planId)).unwrap();
+    } catch (err: any) {
+      setProcessingCheckout(false);
+      console.error("Failed to create checkout session:", err);
+      toast.error(err.message || "Failed to start checkout. Try again.");
+    }
+  };
+
+  const fetchUserDetail = async () => {
+    try {
+      await Promise.allSettled([
+        dispatch(getUserByIdThunk(Number(user?.id))),
+        dispatch(getUserSubscriptionSelfThunk()),
+      ]);
+    } catch (err: any) {
+      console.error(err.message || "Failed to fetch user details")
+    }
+  }
+
   // Fetch plans when subscription popup opens
   useEffect(() => {
     if (subscriptionOpen) {
       dispatch(getAllSubscriptionPlansThunk());
       setSelectedPlanId(null);
-      setSubscriptionError(null);
     }
   }, [subscriptionOpen, dispatch]);
 
-
-  const fetchUserDetail = async () => {
-    try {
-      await dispatch(getUserByIdThunk(Number(user.id)));
-
-    } catch (err: any) {
-      console.error(err.message || "Failed to fetch user details")
-    }
-  }
 
   useEffect(() => {
     if (user?.id) {
@@ -271,50 +312,82 @@ export default function ProfilePage() {
     }
   }, [user?.id, dispatch]);
 
-  const isPageLoading =
-    isLoading || plansLoading || userLoading;
 
-  const currentSubscription = selectedUser?.currentSubscription;
+  // Handle subscription success/error messages
+  useEffect(() => {
+    if (successMessage) {
+      toast.success(successMessage, { theme: "dark" });
+      dispatch(clearSubscriptionSuccess());
 
-  const hasActiveSubscription = Boolean(currentSubscription);
+      // Refresh subscription data
+      if (user?.id) {
+        dispatch(getUserSubscriptionSelfThunk());
+        dispatch(getUserByIdThunk(Number(user.id)));
+      }
+    }
 
-  const showSubscriptionSkeleton =
-    isPageLoading || (selectedUser && !currentSubscription);
+    if (subscriptionError) {
+      toast.error(subscriptionError, { theme: "dark" });
+      dispatch(clearError());
+    }
+  }, [successMessage, subscriptionError, dispatch, user?.id]);
 
+  // Handle checkout URL redirect
+  useEffect(() => {
+    if (checkoutUrl) {
+      window.location.href = checkoutUrl;
+      setProcessingCheckout(false);
+    }
+  }, [checkoutUrl]);
 
-  const currentPlanName = currentSubscription?.planName ?? null;
+  const isPageLoading = isLoading || plansLoading || userLoading || subscriptionLoading;
 
+  const hasActiveSubscription = Boolean(currentSubscription &&
+    (currentSubscription.status === 'ACTIVE' || currentSubscription.status === 'TRIAL'));
+
+  const currentPlanName = currentSubscription?.plan?.name ?? null;
   const currentPlanId = currentPlanName
     ? mappedPlans.find((p) => p.name === currentPlanName)?.id ?? null
     : null;
 
-  const isPaidUser =
-    currentSubscription?.status === "ACTIVE" &&
-    selectedUser?.isTrial === false;
+  const nextPlan = currentSubscription?.nextPlan;
+  const hasScheduledChange = Boolean(currentSubscription?.nextPlanId && currentSubscription?.scheduledChangeAt);
 
-  // const hasUsedFreePlan =
-  //   selectedUser?.allSubscriptions?.some(
-  //     (subscription: ApiCurrentSubscriptionTable) =>
-  //       subscription.planName?.toLowerCase().includes('free') ||
-  //       subscription.status === 'TRIAL'
-  //   ) || false;
+  const isPaidUser = currentSubscription?.status === "ACTIVE";
 
-  const hasUsedTrial = selectedUser;
-  const isFreePlanDisabled = isPaidUser || hasUsedTrial;
+  const hasUsedTrial = selectedUser?.isTrial || isPaidUser
 
-  const isFreePlan = (plan: any) =>
-    plan.trialDays > 0 ||
-    plan.name.toLowerCase().includes("free");
+  const isFreePlan = (plan: any) => {
+    if (plan.trialDays > 0) return true;
+    if (plan.price === 0) return true;
+    const planName = plan.name?.toLowerCase() || '';
+    if (planName.includes('free')) return true;
+    return false;
+  }
 
   const isPlanDisabled = (plan: any) => {
     const isCurrentPlan = plan.id === currentPlanId;
     const freePlan = isFreePlan(plan);
-    if (isCurrentPlan) return true;
-    if (freePlan && isFreePlanDisabled) return true;
+    if (isCurrentPlan && !hasScheduledChange) return true;
+    if (freePlan && hasUsedTrial && !isCurrentPlan) return true;
 
     return false;
   };
+  const calculateDaysRemaining = (endDate: string) => {
+    const end = new Date(endDate);
+    const now = new Date();
+    const diffTime = end.getTime() - now.getTime();
+    const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return days > 0 ? days : 0;
+  };
 
+  const handleManageSubscription = () => {
+    if (!hasActiveSubscription) {
+      setSubscriptionOpen(true);
+    } else {
+      setBilling(true);
+    }
+  };
   return (
     <motion.div
       className="min-h-screen bg-black text-white overflow-hidden"
@@ -380,7 +453,7 @@ export default function ProfilePage() {
         </section>
 
         {/* ==================== PROFILE CONTENT SECTION ==================== */}
-        <section className="relative px-4 py-4 pb-24">
+        {isPageLoading ? <ProfilePageSkeleton /> : <section className="relative px-4 py-4 pb-24">
           <div className="max-w-7xl mx-auto">
 
             <motion.div
@@ -436,7 +509,8 @@ export default function ProfilePage() {
 
                           {isEditProfile ? (
                             <Button
-                              onClick={handleSaveClick} loading={updating}
+                              onClick={handleSaveClick}
+                              loading={updating}
                             >
                               Save Changes
                             </Button>
@@ -659,7 +733,7 @@ export default function ProfilePage() {
               </div>
 
               {/* Right Column - Sidebar */}
-              {!userLoading && selectedUser && <div className="space-y-6">
+              {!userLoading && <div className="space-y-6">
                 {/* Current Plan */}
                 <motion.div
                   className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-yellow-400/30 hover:border-yellow-400/50 transition-all duration-300"
@@ -667,11 +741,9 @@ export default function ProfilePage() {
                   whileHover={{ scale: 1.02, y: -3 }}
                 >
                   {/* Loading/Error/Empty State for Current Plan */}
-                  {userLoading || plansLoading ? (
+                  {subscriptionLoading ? (
                     <CurrentPlanSkeleton />
-                  ) : userError ? (
-                    <div className="text-center text-red-400">Failed to load current plan. Please try again.</div>
-                  ) : !selectedUser?.currentSubscription ? (
+                  ) : !currentSubscription ? (
                     <NoSubscription />
                   ) : (
                     <>
@@ -698,6 +770,7 @@ export default function ProfilePage() {
                               onClick={() => {
                                 setCancelConfirmOpen(true);
                               }}
+                              disabled={currentSubscription.status === 'CANCELED'}
                             >
                               Cancel plan
                             </DropdownItem>
@@ -705,24 +778,81 @@ export default function ProfilePage() {
                         </Dropdown>
                       </div>
 
-                      <h3 className="text-2xl font-bold text-yellow-300 mb-2">{selectedUser.currentSubscription?.planName}</h3>
-                      <p className="text-sm text-gray-400 mb-4">{selectedUser.currentSubscription?.description}</p>
-
-                      <div className="mb-6">
-                        <span className="text-3xl font-bold text-yellow-400">${selectedUser.currentSubscription?.price ? selectedUser.currentSubscription?.price.toFixed(2) : "FREE"}</span>
-                        <span className="text-sm text-gray-400 ml-1">${selectedUser.currentSubscription?.duration === 1 ? '/month' : '/year'}</span>
-                      </div>
-
-                      {pendingCancellation && (
-                        <p className="text-xs text-red-300 mb-4">
-                          Cancellation scheduled at period end. Billing stops after expiration.
-                        </p>
+                      {/* Scheduled Change Notice with Cancel Button */}
+                      {hasScheduledChange && nextPlan && (
+                        <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-2 flex-1">
+                              <Clock className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                              <div className="text-sm">
+                                <p className="text-blue-400 font-medium">Plan Change Scheduled</p>
+                                <p className="text-blue-300">
+                                  Changing to <span className="font-semibold">{nextPlan.name}</span> on{' '}
+                                  {format(new Date(currentSubscription.scheduledChangeAt!), 'MMM dd, yyyy')}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => setScheduleCancelConfirmOpen(true)}
+                              className="p-1 rounded-md text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 transition"
+                              aria-label="Cancel scheduled change"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
                       )}
 
+                      {/* Pending Cancellation Notice */}
+                      {currentSubscription.status === 'CANCELED' && (
+                        <div className="mb-4 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
+                            <div className="text-sm">
+                              <p className="text-orange-400 font-medium">Cancellation Scheduled</p>
+                              <p className="text-orange-300">
+                                Your subscription will end on{' '}
+                                {format(new Date(currentSubscription.endDate), 'MMM dd, yyyy')}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <h3 className="text-2xl font-bold text-yellow-300 mb-2">
+                        {currentSubscription.plan.name}
+                        {hasScheduledChange && (
+                          <span className="text-sm text-gray-400 ml-2">
+                            → {nextPlan?.name}
+                          </span>
+                        )}
+                      </h3>
+                      <p className="text-sm text-gray-400 mb-4">
+                        {currentSubscription.plan.description}
+                      </p>
+                      <div className="mb-6">
+                        <span className="text-3xl font-bold text-yellow-400">
+                          ${currentSubscription.plan.price.toFixed(2)}
+                        </span>
+                        <span className="text-sm text-gray-400 ml-1">
+                          {currentSubscription.plan.duration === 12 ? '/year' : '/month'}
+                        </span>
+
+                        {hasActiveSubscription && (
+                          <div className="mt-2 flex items-center gap-2 text-sm text-gray-400">
+                            <Calendar className="w-4 h-4" />
+                            <span>
+                              {calculateDaysRemaining(currentSubscription.endDate)} days remaining
+                            </span>
+                          </div>
+                        )}
+                      </div>
                       <div className="pt-4 border-t border-white/10">
-                        <h4 className="text-xs font-semibold text-white uppercase tracking-wider mb-4">Included Features</h4>
+                        <h4 className="text-xs font-semibold text-white uppercase tracking-wider mb-4">
+                          Included Features
+                        </h4>
                         <div className="space-y-3">
-                          {selectedUser.currentSubscription?.features.map((feature, index) => (
+                          {currentSubscription.plan.features.map((feature, index) => (
                             <div key={index} className="flex items-center gap-3">
                               <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">
                                 <Check className="w-3 h-3 text-yellow-400" />
@@ -733,9 +863,7 @@ export default function ProfilePage() {
                         </div>
                       </div>
                     </>
-                  )
-                  }
-
+                  )}
                 </motion.div>
 
                 {/* Account Actions */}
@@ -762,15 +890,8 @@ export default function ProfilePage() {
                     </button>
 
                     <button
-                      disabled={!hasActiveSubscription}
-
-                      onClick={() => setBilling(true)}
-                      className={cn(
-                        "w-full flex items-center gap-3 p-3 text-left rounded-lg border transition-colors",
-                        hasActiveSubscription
-                          ? "border-white/10 bg-white/5 hover:bg-white/10"
-                          : "border-white/5 bg-white/3 opacity-50 cursor-not-allowed"
-                      )}
+                      onClick={handleManageSubscription}
+                      className="w-full flex items-center gap-3 p-3 text-left rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors group"
                     >
                       <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
                         <CreditCard className="w-5 h-5 text-purple-400" />
@@ -824,126 +945,115 @@ export default function ProfilePage() {
               </div>}
             </motion.div>
           </div>
-        </section>
+        </section>}
 
         {/* Change Password Dialog */}
-        <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
-          <DialogContent showCloseButton className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Change Password</DialogTitle>
-              <DialogDescription>
-                Update your account password. Make sure to use a strong password.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={formik.handleSubmit} className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-white mb-2 block">
-                  Current Password
-                </label>
-                <div className="relative">
-                  <Input
-                    type="password"
-                    name="currentPassword"
-                    value={formik.values.currentPassword}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="Enter current password"
-                  />
-
-                  {formik.touched.currentPassword && formik.errors.currentPassword && (
-                    <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      {formik.errors.currentPassword}
-                    </p>
-                  )}
-
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-white mb-2 block">
-                  New Password
-                </label>
-                <div className="relative">
-                  <Input
-                    type="password"
-                    name="newPassword"
-                    value={formik.values.newPassword}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="Enter new password"
-                  />
-
-                  {formik.touched.newPassword && formik.errors.newPassword && (
-                    <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      {formik.errors.newPassword}
-                    </p>
-                  )}
-
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-white mb-2 block">
-                  Confirm New Password
-                </label>
-                <div className="relative">
-                  <Input
-                    type="password"
-                    name="confirmPassword"
-                    value={formik.values.confirmPassword}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="Confirm new password"
-                  />
-
-                  {formik.touched.confirmPassword && formik.errors.confirmPassword && (
-                    <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      {formik.errors.confirmPassword}
-                    </p>
-                  )}
-
-                </div>
-              </div>
-
-              <DialogFooter className="flex justify-end">
-                <Button type="text" className="!w-fit border border-error" danger onClick={() => { formik.resetForm(), setChangePasswordOpen(false) }}>
+        {changePasswordOpen && (
+          <Popup
+            open={changePasswordOpen}
+            onOpenChange={(open) => {
+              setChangePasswordOpen(open);
+              if (!open) {
+                formik.resetForm();
+              }
+            }}
+            title="Change Password"
+            description="Update your account password. Make sure to use a strong password."
+            contentClassName="!max-h-[80vh] !w-[60vw] lg:!w-xl sm:max-w-md"
+            footer={
+              <div className="flex justify-end gap-3 w-full">
+                <Button
+                  className="!w-fit border border-error"
+                  danger
+                  onClick={() => {
+                    formik.resetForm();
+                    setChangePasswordOpen(false);
+                  }}
+                >
                   Cancel
                 </Button>
                 <Button
+                  className="!w-fit"
                   type="primary"
                   htmlType="submit"
-                  className="!w-fit"
-
+                  form="change-password-form"
                   disabled={isLoading}
                 >
                   {isLoading ? "Updating..." : "Change Password"}
                 </Button>
-              </DialogFooter>
+              </div>
+            }
+          >
+            <form
+              id="change-password-form"
+              onSubmit={formik.handleSubmit}
+              className="space-y-4"
+            >
+              {/* Current Password */}
+              <div>
+                <label className="text-sm font-medium text-white mb-2 block">
+                  Current Password
+                </label>
+                <Input
+                  type="password"
+                  name="currentPassword"
+                  value={formik.values.currentPassword}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Enter current password"
+                />
+                {formik.touched.currentPassword && formik.errors.currentPassword && (
+                  <p className="mt-1 text-xs text-red-400">
+                    {formik.errors.currentPassword}
+                  </p>
+                )}
+              </div>
+
+              {/* New Password */}
+              <div>
+                <label className="text-sm font-medium text-white mb-2 block">
+                  New Password
+                </label>
+                <Input
+                  type="password"
+                  name="newPassword"
+                  value={formik.values.newPassword}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Enter new password"
+                />
+                {formik.touched.newPassword && formik.errors.newPassword && (
+                  <p className="mt-1 text-xs text-red-400">
+                    {formik.errors.newPassword}
+                  </p>
+                )}
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label className="text-sm font-medium text-white mb-2 block">
+                  Confirm New Password
+                </label>
+                <Input
+                  type="password"
+                  name="confirmPassword"
+                  value={formik.values.confirmPassword}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Confirm new password"
+                />
+                {formik.touched.confirmPassword && formik.errors.confirmPassword && (
+                  <p className="mt-1 text-xs text-red-400">
+                    {formik.errors.confirmPassword}
+                  </p>
+                )}
+              </div>
             </form>
-          </DialogContent>
-        </Dialog>
+          </Popup>
+        )}
 
         {/* Change Plan Popup */}
-        <Popup
+        {subscriptionOpen && <Popup
           open={subscriptionOpen}
           contentClassName="!max-h-[80vh] !w-[90vw] lg:!w-5xl"
           onOpenChange={(open) => {
@@ -953,7 +1063,10 @@ export default function ProfilePage() {
             }
           }}
           title="Manage Subscription"
-          description="Manage your subscription and billing information."
+          description={hasActiveSubscription
+            ? "Change your subscription plan. Changes take effect at the end of your current billing period."
+            : "Choose a subscription plan to get started."
+          }
           footer={
             <div className="flex flex-col-reverse sm:flex-row justify-end items-center gap-3 w-full">
               <Button
@@ -962,18 +1075,29 @@ export default function ProfilePage() {
                   setSubscriptionOpen(false);
                   setSelectedPlanId(null);
                 }}
-                disabled={changingPlan}
               >
                 Cancel
               </Button>
-              <Button
-                type="primary"
-                className="!w-full sm:!w-fit"
-                loading={changingPlan}
-                disabled={!selectedPlanId || selectedPlanId === currentPlanId}
-              >
-                Proceed
-              </Button>
+              {hasActiveSubscription ? (
+                <Button
+                  type="primary"
+                  className="!w-full sm:!w-fit"
+                  onClick={handleChangePlan}
+                  disabled={!selectedPlanId || hasScheduledChange}
+                >
+                  Schedule Change
+                </Button>
+              ) : selectedPlanId ? (
+                <Button
+                  type="primary"
+                  className="!w-full sm:!w-fit"
+                  onClick={() => handleUpgradePlan(selectedPlanId)}
+                  loading={processingCheckout}
+                  disabled={processingCheckout}
+                >
+                  Subscribe Now
+                </Button>
+              ) : null}
             </div>
           }
         >
@@ -983,12 +1107,39 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Current Plan Info */}
+              {hasActiveSubscription && currentSubscription && (
+                <div className="p-4 bg-yellow-400/10 border border-yellow-400/30 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-yellow-400">Current Plan</p>
+                      <p className="text-lg font-bold text-white">{currentSubscription.plan.name}</p>
+                      <p className="text-sm text-gray-400">
+                        Active until {format(new Date(currentSubscription.endDate), 'MMM dd, yyyy')}
+                        {hasScheduledChange && (
+                          <span className="ml-2 text-blue-400">
+                            (Change to {nextPlan?.name} scheduled)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-400">Remaining</p>
+                      <p className="text-lg font-bold text-white">
+                        {calculateDaysRemaining(currentSubscription.endDate)} days
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {mappedPlans.map((plan) => {
                   const isCurrentPlan = plan.id === currentPlanId;
                   const isSelected = selectedPlanId === plan.id;
                   const freePlan = isFreePlan(plan);
-                  const isDisabled = isPlanDisabled(plan)
+                  const isDisabled = isPlanDisabled(plan);
+                  const isScheduledNextPlan = hasScheduledChange && plan.id === currentSubscription?.nextPlanId;
 
                   return (
                     <div
@@ -998,6 +1149,7 @@ export default function ProfilePage() {
                           setSelectedPlanId(plan.id);
                         }
                       }}
+
                       className={cn(
                         "relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-300",
                         isCurrentPlan
@@ -1011,12 +1163,24 @@ export default function ProfilePage() {
                       {/* Current Plan Badge */}
                       {isCurrentPlan && (
                         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
-                          <span className="bg-yellow-400 text-black px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                          <span className={cn(
+                            "px-3 py-1 rounded-full text-xs font-bold shadow-lg bg-yellow-400 text-black"
+                          )}>
                             Current Plan
                           </span>
                         </div>
                       )}
 
+                      {/* Scheduled Next Plan Badge */}
+                      {isScheduledNextPlan && (
+                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                          <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                            Scheduled Change
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Free Trial Already Used Badge */}
                       {hasUsedTrial && freePlan && !isCurrentPlan && (
                         <div className="absolute -top-3 right-3 z-10">
                           <span className="bg-gray-700 text-gray-200 px-3 py-1 rounded-full text-xs font-semibold">
@@ -1026,7 +1190,7 @@ export default function ProfilePage() {
                       )}
 
                       {/* Selected Indicator */}
-                      {isSelected && !isCurrentPlan && (
+                      {isSelected && !isCurrentPlan && !isScheduledNextPlan && (
                         <div className="absolute top-3 right-3">
                           <div className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center">
                             <Check className="w-4 h-4 text-black" />
@@ -1035,7 +1199,7 @@ export default function ProfilePage() {
                       )}
 
                       {/* Current Plan Check Icon */}
-                      {isCurrentPlan && (
+                      {isCurrentPlan && !hasScheduledChange && (
                         <div className="absolute top-3 right-3">
                           <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
                             <Check className="w-4 h-4 text-white" />
@@ -1087,150 +1251,369 @@ export default function ProfilePage() {
                         )}
                       </div>
 
+                      {/* Features */}
+                      <div className="space-y-2 mb-4">
+                        {plan.features.slice(0, 3).map((feature, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <Check className="w-4 h-4 text-green-400" />
+                            <span className="text-sm text-gray-300">{feature}</span>
+                          </div>
+                        ))}
+                        {plan.features.length > 3 && (
+                          <p className="text-xs text-gray-500">
+                            +{plan.features.length - 3} more features
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Action Button */}
+                      {isCurrentPlan ? (
+                        <div className={cn(
+                          "text-center p-2 rounded-lg text-sm font-medium bg-green-500/20 text-green-400"
+                        )}>
+                          Current Plan
+                        </div>
+                      ) : isScheduledNextPlan ? (
+                        <div className="text-center p-2 bg-blue-500/20 text-blue-400 rounded-lg text-sm">
+                          Scheduled Change
+                        </div>
+                      ) : isDisabled ? (
+                        <div className="text-center p-2 bg-gray-500/20 text-gray-400 rounded-lg text-sm">
+                          {freePlan && hasUsedTrial ? "Trial Already Used" : "Not Available"}
+                        </div>
+                      ) : (
+                        <div className={cn(
+                          "text-center p-2 rounded-lg text-sm font-medium",
+                          isSelected
+                            ? "bg-yellow-400 text-black"
+                            : "bg-white/10 text-white hover:bg-white/20"
+                        )}>
+                          {isSelected
+                            ? "Selected"
+                            : hasActiveSubscription
+                              ? "Select to Change"
+                              : "Select to Subscribe"}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
             </div>
           )}
-        </Popup>
+        </Popup>}
 
-        <Dialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
-          <DialogContent showCloseButton className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Cancel current plan?</DialogTitle>
-              <DialogDescription>
-                Your plan will stay active until it expires. No further billing will occur. Downgrade will be handled automatically on expiration.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p className="text-sm text-gray-300">
-                {selectedUser?.currentSubscription?.endDate
-                  ? `Active until ${new Date(selectedUser.currentSubscription.endDate).toLocaleDateString()}.`
-                  : "Active until the end of the current billing period."}
-              </p>
-              <div className="flex justify-end gap-2">
-                <Button onClick={() => setCancelConfirmOpen(false)} disabled={pendingCancellation}>
+
+        {cancelConfirmOpen && (
+          <Popup
+            open={cancelConfirmOpen}
+            onOpenChange={(open) => {
+              setCancelConfirmOpen(open);
+            }}
+            title="Cancel current plan?"
+            description={
+              currentSubscription?.status === "CANCELED"
+                ? "Your subscription is already scheduled for cancellation."
+                : "Your plan will stay active until it expires. No further billing will occur."
+            }
+            contentClassName="!max-h-[80vh] !w-[60vw] lg:!w-lg sm:max-w-sm"
+
+            footer={
+              <div className="flex justify-end gap-3 w-full">
+                <Button
+                  onClick={() => setCancelConfirmOpen(false)}
+                  className="!w-fit"
+                >
                   Keep Plan
                 </Button>
-                <Button
-                  type="primary"
-                  danger
-                  loading={pendingCancellation}
-                  onClick={() => {
-                    setPendingCancellation(true);
-                    toast.success("Cancellation scheduled for the period end.", { theme: "dark" });
-                    setTimeout(() => {
-                      setPendingCancellation(false);
-                      setCancelConfirmOpen(false);
-                    }, 400);
-                  }}
-                >
-                  Confirm Cancel
-                </Button>
+
+                {currentSubscription?.status !== "CANCELED" && (
+                  <Button
+                    type="primary"
+                    danger
+                    loading={subscriptionLoading}
+                    onClick={handleCancelPlan}
+                    className="!w-fit"
+                  >
+                    Confirm Cancel
+                  </Button>
+                )}
               </div>
+            }
+          >
+            <div className="space-y-4">
+              {currentSubscription && (
+                <div className="p-3 bg-white/5 rounded-lg">
+                  <p className="text-sm text-gray-300">
+                    <strong>Current Plan:</strong> {currentSubscription.plan.name}
+                  </p>
+
+                  <p className="text-sm text-gray-300 mt-1">
+                    <strong>Active until:</strong>{" "}
+                    {format(new Date(currentSubscription.endDate), "MMM dd, yyyy")}
+                  </p>
+
+                  {hasScheduledChange && (
+                    <p className="text-sm text-blue-300 mt-2 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" />
+                      You have a scheduled change to {nextPlan?.name}. Cancelling will remove this change.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
-          </DialogContent>
-        </Dialog>
+          </Popup>
+        )}
+
+
 
         {/* Subscription Details Dialog */}
-        <Dialog open={billing} onOpenChange={setBilling}>
-          <DialogContent showCloseButton className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Subscription Details</DialogTitle>
-              <DialogDescription>
-                View your current subscription plan and billing information.
-              </DialogDescription>
-            </DialogHeader>
-            {userLoading || plansLoading ? (
+        {billing && (
+          <Popup
+            open={billing}
+            onOpenChange={(open) => {
+              setBilling(open);
+            }}
+            title="Subscription Details"
+            description={
+              hasActiveSubscription
+                ? "View your current subscription plan and billing information."
+                : "You don't have an active subscription."
+            }
+            contentClassName="!max-h-[80vh] !w-[40vw] lg:!w-lg sm:max-w-sm"
+
+          >
+            {subscriptionLoading ? (
               <CurrentPlanSkeleton />
-            ) : userError ? (
-              <div className="text-center text-red-400">Failed to load subscription details. Please try again.</div>
-            ) : !selectedUser?.currentSubscription ? (
-              <NoSubscription />
+            ) : !currentSubscription ? (
+              <div className="text-center py-8">
+                <Package className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  No Active Subscription
+                </h3>
+                <p className="text-gray-400 mb-6">
+                  Get started with a plan to unlock all features
+                </p>
+                <Button
+                  type="primary"
+                  onClick={() => {
+                    setBilling(false);
+                    setSubscriptionOpen(true);
+                  }}
+                >
+                  Browse Plans
+                </Button>
+              </div>
             ) : (
               <div className="space-y-6">
+                {/* Current Plan Card */}
                 <div className="p-4 rounded-lg bg-white/5 border border-white/10">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="text-lg font-semibold text-white">{selectedUser.currentSubscription.planName}</h3>
+                      <h3 className="text-lg font-semibold text-white">
+                        {currentSubscription.plan.name}
+                        {hasScheduledChange && (
+                          <span className="text-sm text-blue-400 ml-2">
+                            → {nextPlan?.name}
+                          </span>
+                        )}
+                      </h3>
                       <p className="text-sm text-gray-400">
-                        {selectedUser.currentSubscription.status.charAt(0).toUpperCase() +
-                          selectedUser.currentSubscription.status.slice(1).toLowerCase()}{" "}
+                        {currentSubscription.status.charAt(0).toUpperCase() +
+                          currentSubscription.status.slice(1).toLowerCase()}{" "}
                         Subscription
                       </p>
-
                     </div>
-                    <span>
-                      {getSubscriptionStatusBadge(selectedUser.currentSubscription.status)}
-                    </span>
+                    {getSubscriptionStatusBadge(currentSubscription.status)}
                   </div>
+
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-400">Plan Price</span>
                       <span className="text-lg font-semibold text-yellow-400">
-                        {selectedUser.currentSubscription.status === "TRIAL"
-                          ? "FREE"
-                          : `$${selectedUser.currentSubscription.price?.toFixed(2) ?? "0.00"}`}
-                        {selectedUser.currentSubscription.duration === 1 ? "/month" : "/year"}
+                        ${currentSubscription.plan.price.toFixed(2)}
+                        {currentSubscription.plan.duration === 12 ? "/year" : "/month"}
                       </span>
                     </div>
+
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-400">Billing Cycle</span>
                       <span className="text-sm text-white">
-                        {selectedUser.currentSubscription.duration === 12 ? "Yearly" : "Monthly"}
+                        {currentSubscription.plan.duration === 12
+                          ? "Yearly"
+                          : "Monthly"}
                       </span>
                     </div>
+
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-400">Next Billing Date</span>
+                      <span className="text-sm text-gray-400">
+                        {currentSubscription.status === "CANCELED"
+                          ? "Ends on"
+                          : "Next Billing Date"}
+                      </span>
                       <span className="text-sm text-white">
-                        {selectedUser.currentSubscription.endDate
-                          ? new Date(selectedUser.currentSubscription.endDate).toLocaleDateString("en-GB", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                          })
-
-                          : "—"}
-
+                        {format(
+                          new Date(currentSubscription.endDate),
+                          "MMM dd, yyyy"
+                        )}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-400">Payment Method</span>
-                      <span className="text-sm text-white">
-                        {selectedUser.currentSubscription.paymentMethod || "—"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-white">Plan Features</h4>
-                  <div className="space-y-2">
-                    {selectedUser.currentSubscription.features?.length ? (
-                      selectedUser.currentSubscription.features.map((feature, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full  flex items-center justify-center">
-                            <Check className="w-4 h-4 text-accent-primary" />
-                          </div>
-                          <span className="text-sm text-gray-300">{feature.name}</span>
+                    {hasScheduledChange && (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-400">
+                            Scheduled Change
+                          </span>
+                          <span className="text-sm text-blue-400">
+                            To {nextPlan?.name}
+                          </span>
                         </div>
-                      ))
-                    ) : (
-                      <p className="text-sm text-gray-400">No features listed.</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-400">
+                            Change Date
+                          </span>
+                          <span className="text-sm text-blue-400">
+                            {format(
+                              new Date(currentSubscription.scheduledChangeAt!),
+                              "MMM dd, yyyy"
+                            )}
+                          </span>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-400">Days Remaining</span>
+                      <span className="text-sm text-white">
+                        {calculateDaysRemaining(currentSubscription.endDate)} days
+                      </span>
+                    </div>
+
+                    {currentSubscription.lastPayment && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-400">Last Payment</span>
+                        <span className="text-sm text-white">
+                          ${currentSubscription.lastPayment.amount.toFixed(2)} on{" "}
+                          {format(
+                            new Date(currentSubscription.lastPayment.createdAt),
+                            "MMM dd, yyyy"
+                          )}
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-border-primary">
-                  <Button type="primary" className="w-full" onClick={() => { setBilling(false), setSubscriptionOpen(true) }} >
-                    Manage Subscription
-                  </Button>
+                {/* Features */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-white">Plan Features</h4>
+                  <div className="space-y-2">
+                    {currentSubscription.plan.features?.length ? (
+                      currentSubscription.plan.features.map((feature, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center">
+                            <Check className="w-4 h-4 text-accent-primary" />
+                          </div>
+                          <span className="text-sm text-gray-300">
+                            {feature.name}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-400">
+                        No features listed.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="pt-4 border-t border-border-primary flex flex-col sm:flex-row gap-3">
+                  {hasActiveSubscription &&
+                    currentSubscription.status !== "CANCELED" && (
+                      <>
+
+                        <Button
+                          type="default"
+                          danger
+                          className="w-full"
+                          onClick={() => {
+                            setBilling(false);
+                            setCancelConfirmOpen(true);
+                          }}
+                        >
+                          Cancel Subscription
+                        </Button>
+
+                        <Button
+                          type="primary"
+                          className="w-full"
+                          onClick={() => {
+                            setBilling(false);
+                            setSubscriptionOpen(true);
+                          }}
+                        >
+                          Change Plan
+                        </Button>
+
+                      </>
+                    )}
                 </div>
               </div>
             )}
-          </DialogContent>
-        </Dialog>
+          </Popup>
+        )}
+
+        {scheduleCancelConfirmOpen && (
+          <Popup
+            open={scheduleCancelConfirmOpen}
+            onOpenChange={setScheduleCancelConfirmOpen}
+            title="Cancel scheduled plan change?"
+            description="Your subscription will remain on the current plan. The scheduled upgrade or downgrade will be removed."
+            contentClassName="!max-h-[80vh] !w-[60vw] lg:!w-lg sm:max-w-sm"
+            footer={
+              <div className="flex justify-end gap-3 w-full">
+                <Button
+                  onClick={() => setScheduleCancelConfirmOpen(false)}
+                  className="!w-fit"
+                >
+                  Keep Change
+                </Button>
+
+                <Button
+                  type="primary"
+                  danger
+                  loading={cancellingSchedule}
+                  onClick={handleCancelScheduledChange}
+                  className="!w-fit"
+                >
+                  Confirm Cancel
+                </Button>
+              </div>
+            }
+          >
+            <div className="space-y-4">
+              <div className="p-3 bg-white/5 rounded-lg space-y-2">
+                <p className="text-sm text-gray-300">
+                  <strong>Current Plan:</strong> {currentSubscription?.plan.name}
+                </p>
+
+                <p className="text-sm text-blue-300 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  Scheduled to change to <strong>{nextPlan?.name}</strong>
+                </p>
+
+                <p className="text-sm text-gray-300">
+                  <strong>Change Date:</strong>{" "}
+                  {format(new Date(currentSubscription!.scheduledChangeAt!), "MMM dd, yyyy")}
+                </p>
+              </div>
+            </div>
+          </Popup>
+        )}
+
+
       </div>
     </motion.div>
   );

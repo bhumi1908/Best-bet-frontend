@@ -175,8 +175,11 @@ export const updateAdminSchema = z.object({
 export const updateUserSchema = z.object({
   firstName: z.string().min(1, "First Name is required"),
   lastName: z.string().min(1, "Last Name is required"),
-  phoneNo: z
+   phoneNo: z
     .string()
-    .min(1, "Phone Number is required")
-    .regex(/^[0-9]+$/, "Phone Number must be numeric"),
+    .nonempty('Phone number is required')
+    .regex(
+      /^\+?[1-9]\d{0,2}[\s.-]?\(?\d{1,4}\)?([\s.-]?\d{2,4}){2,4}$/,
+      'Please provide a valid phone number'
+    ),
 });

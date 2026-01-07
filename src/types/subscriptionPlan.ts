@@ -11,9 +11,9 @@ export interface SubscriptionPlanPayload {
   isRecommended: boolean;
   isActive: boolean;
   features: Feature[];
-   trialDays?: number; 
-   isTrial?: boolean;
-   discountPercent?: number;
+  trialDays?: number;
+  isTrial?: boolean;
+  discountPercent?: number;
 }
 export interface SubscriptionPlan {
   id: number;
@@ -23,9 +23,10 @@ export interface SubscriptionPlan {
   isActive: boolean;
   features: Feature[];
   trialDays?: number;
-  price?: number ;
+  price?: number;
   duration?: number;
   isTrial?: boolean;
+  stripePriceId: string,
   discountPercent?: number;
 }
 
