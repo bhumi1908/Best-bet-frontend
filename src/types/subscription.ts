@@ -4,7 +4,7 @@
    Core domain types
 ========================= */
 
-export type SubscriptionStatus = "ACTIVE" | "EXPIRED" | "CANCELED" | "REFUNDED" | "TRIAL";
+export type SubscriptionStatus = "ACTIVE" | "EXPIRED" | "CANCELED" | "REFUNDED" | "TRIAL" | "PAST_DUE";
 
 export interface User {
   id: number;
@@ -27,9 +27,23 @@ export interface Plan {
   name: string;
   isActive: string;
   price: number;
+  trialDays: number;
   duration: number;
   description: string;
   features: Feature[];
+}
+
+export interface SubscriptionPlan {
+  id: number;
+  name: string;
+  price: number;
+  duration: number;
+  trialDays: number;
+  description: string;
+  features: Feature[];
+  stripePriceId?: string;
+  discountPercent?: number;
+  isRecommended?: boolean;
 }
 
 export interface Payment {
@@ -46,6 +60,10 @@ export interface Subscription {
   plan: Plan;
   payment: Payment | null;
   status: SubscriptionStatus;
+  nextPlan?: SubscriptionPlan | null;
+  nextPlanId?: number | null;
+  lastPayment?: Payment | null;
+  scheduledChangeAt?: string | null;
   startDate: string;     // ISO string
   endDate: string;       // ISO string
   createdAt: string;     // ISO string
@@ -105,6 +123,7 @@ export interface GetAllSubscriptionsResponse {
 export interface AdminSubscriptionState {
   isLoading: boolean;
   error: string | null;
+  checkoutUrl: string | null;
   subscriptions: Subscription[];
   selectedSubscription: Subscription | null;
   pagination: Pagination;
@@ -112,7 +131,8 @@ export interface AdminSubscriptionState {
   stats: SubscriptionDashboardResponse["stats"] | null;
   charts: SubscriptionDashboardResponse["charts"] | null;
   refundResult: RefundResponse | null;
-
+  currentSubscription: Subscription | null;
+  successMessage: string | null;
 }
 
 
@@ -165,7 +185,7 @@ export interface ChangePlanPayload {
 }
 
 export interface CheckoutSessionPayload {
-  url?: string;
+  url: string;
   trialActivated?: boolean;
   message?: string;
 }

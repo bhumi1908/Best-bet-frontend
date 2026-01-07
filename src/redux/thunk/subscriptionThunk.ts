@@ -5,7 +5,7 @@ import apiClient from "@/utilities/axios/instance";
 import { routes } from "@/utilities/routes";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
-interface RejectPayload {
+export interface RejectPayload {
   message: string;
 }
 
@@ -163,35 +163,29 @@ export const revokeUserSubscriptionAdminThunk = createAsyncThunk<
   }
 );
 
-export const refundSubscriptionPaymentAdminThunk = createAsyncThunk<
-  RefundResponse,
-  { paymentIntentId: string; amount: number; reason?: string },
-  { rejectValue: RejectPayload }
+// Get user's own subscription
+export const getUserSubscriptionSelfThunk = createAsyncThunk<
+  any,
+  void,
+  { rejectValue: { message: string } }
 >(
-  "admin/refundSubscriptionPayment",
-  async ({ paymentIntentId, amount, reason }, { rejectWithValue }) => {
+  "subscription/getUserSubscriptionSelf",
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post<RefundResponse>(
-        routes.api.subscription.admin.refundSubscription(paymentIntentId),
-        { amount, reason }
-      );
-
-      if (!response.data) {
-        throw new Error("Invalid refund response from server");
-      }
-
+      const response = await apiClient.get<{
+        data: any;
+        message: string;
+      }>(routes.api.subscription.user.profile);
       return response.data.data;
     } catch (error: any) {
       const message =
         typeof error.response?.data?.message === "string"
           ? error.response.data.message
-          : error.message || "Failed to process refund";
-
+          : error.message || "Failed to fetch subscription";
       return rejectWithValue({ message });
     }
   }
 );
-
 
 export const changeUserSubscriptionPlanAdminThunk = createAsyncThunk<
   Subscription,
@@ -222,17 +216,107 @@ export const changeUserSubscriptionPlanAdminThunk = createAsyncThunk<
   }
 );
 
+export const revokeUserSubscriptionSelfThunk = createAsyncThunk<
+  any,
+  void,
+  { rejectValue: RejectPayload }
+>(
+  "user/revokeSubscription",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post<{ data: any; message: string }>(
+        routes.api.subscription.user.revokeSubscription
+      );
+
+      if (!response.data?.message) {
+        throw new Error("Invalid response from server");
+      }
+
+      return response.data.data;
+
+    } catch (error: any) {
+      const message =
+        typeof error.response?.data?.message === "string"
+          ? error.response.data.message
+          : error.message || "Failed to revoke subscription";
+
+      return rejectWithValue({ message });
+    }
+  }
+);
+
+/**
+ * Change subscription plan for the logged-in user
+ */
+export const changeUserSubscriptionPlanSelfThunk = createAsyncThunk<
+  any,
+  { newPlanId: number },
+  { rejectValue: RejectPayload }
+>(
+  "user/changeSubscriptionPlan",
+  async ({ newPlanId }, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post<{
+        data: any;
+        message: string;
+      }>(
+        routes.api.subscription.user.changePlanSubscription,
+        { newPlanId }
+      );
+
+      return response.data.data;
+    } catch (error: any) {
+      const message =
+        typeof error.response?.data?.message === "string"
+          ? error.response.data.message
+          : error.message || "Failed to change subscription plan";
+
+      return rejectWithValue({ message });
+    }
+  }
+);
+
+export const refundSubscriptionPaymentAdminThunk = createAsyncThunk<
+  RefundResponse,
+  { paymentIntentId: string; amount: number; reason?: string },
+  { rejectValue: RejectPayload }
+>(
+  "admin/refundSubscriptionPayment",
+  async ({ paymentIntentId, amount, reason }, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post<RefundResponse>(
+        routes.api.subscription.admin.refundSubscription(paymentIntentId),
+        { amount, reason }
+      );
+
+      if (!response.data) {
+        throw new Error("Invalid refund response from server");
+      }
+
+      return response.data.data;
+    } catch (error: any) {
+      const message =
+        typeof error.response?.data?.message === "string"
+          ? error.response.data.message
+          : error.message || "Failed to process refund";
+
+      return rejectWithValue({ message });
+    }
+  }
+);
+
+
 //Checkout
 export const createCheckoutSessionThunk = createAsyncThunk<
   CheckoutSessionPayload,
   number,
-  { rejectValue: CheckoutSessionPayload }
+  { rejectValue: { message: string }  }
 >(
   "subscription/createCheckoutSession",
   async (planId, { rejectWithValue }) => {
     try {
       const response = await apiClient.post<{
-        data: { url?: string; trialActivated?: boolean; message?: string };
+        data: { url: string; trialActivated?: boolean; message?: string };
         message: string;
       }>(
         routes.api.subscription.checkout,
@@ -251,3 +335,27 @@ export const createCheckoutSessionThunk = createAsyncThunk<
   }
 );
 
+// Cancel scheduled plan change
+export const cancelScheduledPlanChangeThunk = createAsyncThunk<
+  any,
+  void,
+  { rejectValue: { message: string } }
+>(
+  "subscription/cancelScheduledPlanChange",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post<{
+        data: any;
+        message: string;
+      }>(routes.api.subscription.user.cancelScheduledChange);
+
+      return response.data.data;
+    } catch (error: any) {
+      const message =
+        typeof error.response?.data?.message === "string"
+          ? error.response.data.message
+          : error.message || "Failed to cancel scheduled change";
+      return rejectWithValue({ message });
+    }
+  }
+);

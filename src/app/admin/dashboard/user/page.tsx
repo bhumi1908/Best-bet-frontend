@@ -403,9 +403,9 @@ export default function UserPage() {
                   users.map((user) => {
                     const name = user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "N/A";
                     // Get subscription data if available (from user object or subscriptions array)
-                  const subscription = user.subscriptions[0] ?? null
-                  const subscriptionPlan = subscription?.plan.name ||  "N/A"
-                  const subscriptionDate = subscription?.createdAt || null
+                    const subscription = user.subscriptions[0] ?? null
+                    const subscriptionPlan = subscription?.plan.name || "N/A"
+                    const subscriptionDate = subscription?.createdAt || null
 
                     return (
                       <TableRow key={user.id}>

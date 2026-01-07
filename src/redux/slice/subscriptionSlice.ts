@@ -8,20 +8,27 @@ import {
     SubscriptionDashboardResponse,
 } from "@/types/subscription";
 import {
+    cancelScheduledPlanChangeThunk,
     changeUserSubscriptionPlanAdminThunk,
+    changeUserSubscriptionPlanSelfThunk,
     createCheckoutSessionThunk,
     getAllUserSubscriptionsAdminThunk,
     getSubscriptionDashboardAdminThunk,
     getSubscriptionDetailsAdminThunk,
+    getUserSubscriptionSelfThunk,
     refundSubscriptionPaymentAdminThunk,
     revokeUserSubscriptionAdminThunk,
+    revokeUserSubscriptionSelfThunk,
 } from "../thunk/subscriptionThunk";
+import { RejectPayload } from "../thunk/supportThunk";
 
 const initialState: AdminSubscriptionState = {
     isLoading: false,
+    checkoutUrl: null,
     error: null,
     subscriptions: [],
     selectedSubscription: null,
+    currentSubscription: null,
     pagination: {
         page: 1,
         limit: 10,
@@ -40,6 +47,7 @@ const initialState: AdminSubscriptionState = {
     stats: null,
     charts: null,
     refundResult: null,
+    successMessage: null
 };
 
 const adminSubscriptionSlice = createSlice({
@@ -59,6 +67,13 @@ const adminSubscriptionSlice = createSlice({
                 ...action.payload,
             };
             state.pagination.page = 1;
+        },
+        setCheckoutUrl: (state, action: PayloadAction<string | null>) => {
+            state.checkoutUrl = action.payload;
+        },
+
+        clearSubscriptionSuccess: (state) => {
+            state.successMessage = null;
         },
 
         resetFilters(state) {
@@ -100,6 +115,23 @@ const adminSubscriptionSlice = createSlice({
                         action.payload?.message || "Failed to fetch subscribed users";
                 }
             )
+
+            // Get user subscription
+            .addCase(getUserSubscriptionSelfThunk.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(
+                getUserSubscriptionSelfThunk.fulfilled,
+                (state, action: PayloadAction<Subscription>) => {
+                    state.isLoading = false;
+                    state.currentSubscription = action.payload.status === 'ACTIVE' ? action.payload : null;
+                }
+            )
+            .addCase(getUserSubscriptionSelfThunk.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload?.message || "Failed to fetch subscription";
+            })
 
             // Get subscription details
             .addCase(getSubscriptionDetailsAdminThunk.pending, (state) => {
@@ -185,44 +217,22 @@ const adminSubscriptionSlice = createSlice({
                 state.error = action.payload?.message || "Failed to revoke subscription";
             })
 
-            // Refund the subscription
-            .addCase(refundSubscriptionPaymentAdminThunk
-                .pending, (state) => {
-                    state.isLoading = true;
-                    state.error = null;
-                    state.refundResult = null;
-                })
-            .addCase(refundSubscriptionPaymentAdminThunk.fulfilled, (state, action) => {
-
-                const refundData = action.payload;
-                const userId = refundData.userId;
-
+            // REVOKE SUBSCRIPTION (SELF)
+            .addCase(revokeUserSubscriptionSelfThunk.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(revokeUserSubscriptionSelfThunk.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.error = null;
-                state.refundResult = refundData;
-
-                state.subscriptions = state.subscriptions.map((sub) =>
-                    sub.user.id === userId && sub.status === "ACTIVE"
-                        ? { ...sub, status: "REFUNDED" }
-                        : sub
-                );
-
-                if (
-                    state.selectedSubscription &&
-                    state.selectedSubscription.user.id === userId &&
-                    state.selectedSubscription.status === "ACTIVE"
-                ) {
-                    state.selectedSubscription = {
-                        ...state.selectedSubscription,
-                        status: "REFUNDED",
-                    };
-                }
+                state.currentSubscription = action.payload.status === 'CANCELED' ? null : action.payload;
+                state.successMessage = "Subscription cancellation scheduled";
             })
-            .addCase(refundSubscriptionPaymentAdminThunk.rejected, (state, action) => {
+            .addCase(revokeUserSubscriptionSelfThunk.rejected, (state, action: PayloadAction<RejectPayload | undefined>) => {
                 state.isLoading = false;
-                state.error = action.payload?.message || "Failed to process refund";
-                state.refundResult = null;
+                state.error = action.payload?.message || "Failed to revoke subscription";
             })
+
 
             // Change user subscription plan
             .addCase(changeUserSubscriptionPlanAdminThunk.pending, (state) => {
@@ -289,13 +299,88 @@ const adminSubscriptionSlice = createSlice({
                     action.payload?.message || "Failed to change subscription plan";
             })
 
+            // CHANGE PLAN (SELF)
+            .addCase(changeUserSubscriptionPlanSelfThunk.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(changeUserSubscriptionPlanSelfThunk.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.error = null;
+                state.currentSubscription = action.payload;
+                state.successMessage = "Plan change scheduled successfully";
+            })
+            .addCase(changeUserSubscriptionPlanSelfThunk.rejected, (state, action: PayloadAction<RejectPayload | undefined>) => {
+                state.isLoading = false;
+                state.error = action.payload?.message || "Failed to change subscription plan";
+            })
+
+            // Refund the subscription
+            .addCase(refundSubscriptionPaymentAdminThunk
+                .pending, (state) => {
+                    state.isLoading = true;
+                    state.error = null;
+                    state.refundResult = null;
+                })
+            .addCase(refundSubscriptionPaymentAdminThunk.fulfilled, (state, action) => {
+
+                const refundData = action.payload;
+                const userId = refundData.userId;
+
+                state.isLoading = false;
+                state.error = null;
+                state.refundResult = refundData;
+
+                state.subscriptions = state.subscriptions.map((sub) =>
+                    sub.user.id === userId && sub.status === "ACTIVE"
+                        ? { ...sub, status: "REFUNDED" }
+                        : sub
+                );
+
+                if (
+                    state.selectedSubscription &&
+                    state.selectedSubscription.user.id === userId &&
+                    state.selectedSubscription.status === "ACTIVE"
+                ) {
+                    state.selectedSubscription = {
+                        ...state.selectedSubscription,
+                        status: "REFUNDED",
+                    };
+                }
+            })
+            .addCase(refundSubscriptionPaymentAdminThunk.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload?.message || "Failed to process refund";
+                state.refundResult = null;
+            })
+
+            // Cancel scheduled plan change
+            .addCase(cancelScheduledPlanChangeThunk.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(
+                cancelScheduledPlanChangeThunk.fulfilled,
+                (state, action: PayloadAction<any>) => {
+                    state.isLoading = false;
+                    state.currentSubscription = action.payload;
+                    state.successMessage = "Scheduled plan change cancelled";
+                }
+            )
+            .addCase(cancelScheduledPlanChangeThunk.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload?.message || "Failed to cancel scheduled change";
+            })
+
             //Checkout
             .addCase(createCheckoutSessionThunk.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
             })
-            .addCase(createCheckoutSessionThunk.fulfilled, (state) => {
+            .addCase(createCheckoutSessionThunk.fulfilled, (state, action) => {
                 state.isLoading = false;
+                state.checkoutUrl = action.payload.url;
+
             })
             .addCase(createCheckoutSessionThunk.rejected, (state, action) => {
                 state.isLoading = false;
@@ -312,6 +397,8 @@ export const {
     resetFilters,
     setPagination,
     clearSelectedSubscription,
+    clearSubscriptionSuccess,
+    setCheckoutUrl
 } = adminSubscriptionSlice.actions;
 
 export default adminSubscriptionSlice.reducer;

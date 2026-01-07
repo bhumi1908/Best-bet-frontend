@@ -24,6 +24,7 @@ const statusOptions: { value: string; label: string }[] = [
   { value: "EXPIRED", label: "Expired" },
   { value: "REFUNDED", label: "Refunded" },
   { value: "TRIAL", label: "Trial" },
+  { value: "PAST_DUE", label: "PAST_DUE" },
 ];
 
 export const SubscriptionsWrapper = () => {

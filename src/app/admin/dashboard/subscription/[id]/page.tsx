@@ -586,7 +586,7 @@ export default function SubscriptionDetailsPage() {
                                         icon={<ArrowDown className="w-4 h-4" />}
                                         onClick={() => setDowngradeDialogOpen(true)}
                                         disabled={!hasDowngradePlans || (selectedSubscription.status !== "ACTIVE" && selectedSubscription.status !== "TRIAL")}
-                                        className={`${!hasDowngradePlans ||  (selectedSubscription.status !== "ACTIVE" && selectedSubscription.status !== "TRIAL")
+                                        className={`${!hasDowngradePlans || (selectedSubscription.status !== "ACTIVE" && selectedSubscription.status !== "TRIAL")
                                             ? "text-gray-400 cursor-not-allowed opacity-50"
                                             : "text-text cursor-pointer hover:bg-gray-100"
                                             }`}

@@ -16,7 +16,7 @@ export const routes = {
   privacy: '/privacy',
   about: '/about-us',
   support: '/support',
-    game1: '/game-1',
+  game1: '/game-1',
   game2: '/game-2',
   profile: '/profile',
 
@@ -74,13 +74,19 @@ export const routes = {
     },
     subscription: {
       checkout: '/subscription/checkout',
+      user: {
+        profile: `/subscription/me/subscription`,
+        revokeSubscription: `/subscription/me/revoke`,
+        changePlanSubscription: `/subscription/me/change-plan`,
+        cancelScheduledChange: `/subscription/me/cancel/schedule-plan`,
+      },
       admin: {
         dashboard: '/subscription/dashboard',
         getAll: '/subscription/users',
         getSubscriptionDetails: (id: number | string) => `/subscription/users/${id}`,
         revokeSubscription: (id: number | string) => `/subscription/users/${id}/revoke`,
         refundSubscription: (id: number | string) => `/subscription/refund/${id}`,
-        changePlanSubscription: (id:number | string) => `/subscription/change-plan/${id}`
+        changePlanSubscription: (id: number | string) => `/subscription/change-plan/${id}`
       }
     },
     stripe: {
