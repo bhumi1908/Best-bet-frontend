@@ -690,24 +690,9 @@ export default function LandingPage() {
               </motion.div>
             </motion.div>
 
-            {/* Money-Back Guarantee Banner */}
-            <motion.div
-              className="bg-gradient-to-r from-yellow-400/10 to-yellow-500/10 backdrop-blur-md rounded-2xl p-8 border border-yellow-400/30 text-center"
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-            >
-              <div className="flex items-center gap-2 justify-center mb-4">
-                <Shield className="w-8 h-8 text-yellow-400" />
-                <h3 className="text-3xl font-bold">Best Bet's Guarantee to You!</h3>
-              </div>
-              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                If (your State) does not get at least 15 Hits (Exact or Box / Any) within 30 days, we will refund your $9.99 for that month or give you the next month free, (your choice).
-              </p>
-            </motion.div>
+           
 
-             <motion.div
+             {/* <motion.div
               className="text-center mt-16"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -722,7 +707,7 @@ export default function LandingPage() {
               >
                 Start Winning Today
               </Button>
-            </motion.div>
+            </motion.div> */}
           </div>
         </section>
 
@@ -866,6 +851,23 @@ export default function LandingPage() {
                   </p>
                 </motion.div>
               </motion.div> */}
+            </motion.div>
+
+             {/* Money-Back Guarantee Banner */}
+            <motion.div
+              className="bg-gradient-to-r from-yellow-400/10 to-yellow-500/10 backdrop-blur-md rounded-2xl p-8 border border-yellow-400/30 text-center"
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="flex items-center gap-2 justify-center mb-4">
+                <Shield className="w-8 h-8 text-yellow-400" />
+                <h3 className="text-3xl font-bold">Best Bet's Guarantee to You!</h3>
+              </div>
+              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+                If (your State) does not get at least 15 Hits (Exact or Box / Any) within 30 days, we will refund your $9.99 for that month or give you the next month free, (your choice).
+              </p>
             </motion.div>
 
             {/* CTA */}
