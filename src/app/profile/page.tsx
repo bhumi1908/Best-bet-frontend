@@ -832,11 +832,11 @@ export default function ProfilePage() {
                       </p>
                       <div className="mb-6">
                         <span className="text-3xl font-bold text-yellow-400">
-                          ${currentSubscription.plan.price.toFixed(2)}
+                          ${currentSubscription.status === "ACTIVE" ? currentSubscription.plan.price.toFixed(2) : '0.00'}
                         </span>
-                        <span className="text-sm text-gray-400 ml-1">
+                        {currentSubscription.status === "ACTIVE" && <span className="text-sm text-gray-400 ml-1">
                           {currentSubscription.plan.duration === 12 ? '/year' : '/month'}
-                        </span>
+                        </span>}
 
                         {hasActiveSubscription && (
                           <div className="mt-2 flex items-center gap-2 text-sm text-gray-400">
