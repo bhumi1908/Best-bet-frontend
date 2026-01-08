@@ -23,7 +23,7 @@ const PricingCardSkeleton = () => {
             viewport={{ once: true, margin: "-50px" }}
         >
             {/* Plans Grid Skeleton */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {[1, 2, 3].map((index) => (
                     <div
                         key={index}

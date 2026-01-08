@@ -176,7 +176,6 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       ${isDisabled ? typeConfig.disabled : ""}
       ${danger && dangerClasses[validType] ? dangerClasses[validType] : ""}
       ${ghost && ghostClasses[validType] ? ghostClasses[validType] : ""}
-      ${validType === "primary" && !danger && !ghost ? "shadow-lg" : ""}
       ${validType === "primary" && !danger && !ghost ? "shadow-accent-primary/20" : ""}
     `.trim().replace(/\s+/g, " ");
 

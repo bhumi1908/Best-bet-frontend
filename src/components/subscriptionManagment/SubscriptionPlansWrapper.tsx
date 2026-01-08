@@ -220,7 +220,7 @@ export const SubscriptionPlansWrapper = () => {
                     </div>
                 </div>
 
-                {isLoading ? <PricingCardSkeleton /> : <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                {isLoading ? <div className="mb-8"><PricingCardSkeleton /></div> : <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                     {subscriptionPlan.map((plan) => (
                         <div
                             key={plan.id}

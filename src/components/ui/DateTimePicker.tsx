@@ -445,7 +445,7 @@ export function DateTimePicker({
   const popoverContent = (
     <div
       ref={popoverRef}
-      className="fixed z-50 rounded-lg border border-border-primary bg-bg-card shadow-lg animate-in fade-in-0 zoom-in-95"
+      className="fixed z-1000 rounded-lg border border-border-primary bg-bg-card shadow-lg animate-in fade-in-0 zoom-in-95"
       style={{
         top: `${position.top}px`,
         left: `${position.left}px`,

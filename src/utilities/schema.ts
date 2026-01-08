@@ -183,3 +183,36 @@ export const updateUserSchema = z.object({
       'Please provide a valid phone number'
     ),
 });
+
+
+// Validation schema for form values (allows empty strings)
+export const gameHistoryFormSchema = z.object({
+  state_id: z.number().min(1, "State is required"),
+  game_id: z.number().min(1, "Game type is required"),
+  draw_date: z.string().min(1, "Draw date is required"),
+  draw_time: z.union([z.literal("MID"), z.literal("EVE"), z.literal("")]).refine((val) => val !== "", {
+      message: "Draw time is required",
+  }),
+  winning_numbers: z.string()
+      .min(1, "Winning numbers are required")
+      .regex(/^\d+$/, "Winning numbers must contain only digits"),
+  result: z.union([z.literal("WIN"), z.literal("LOSS"), z.literal("PENDING"), z.literal("")]).refine((val) => val !== "", {
+      message: "Result status is required",
+  }),
+  prize_amount: z.union([
+      z.number().min(0, "Prize amount must be greater than or equal to 0"),
+      z.literal(""),
+  ]),
+}).superRefine((data, ctx) => {
+  // Prize amount is required only when result is WIN
+  if (data.result === "WIN") {
+    if (data.prize_amount === "" || (typeof data.prize_amount === "number" && data.prize_amount <= 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Prize amount must be greater than 0 when result is WIN",
+        path: ["prize_amount"],
+      });
+    }
+  }
+  // For LOSS and PENDING, prize should be 0 (handled by form logic, not validation)
+});
