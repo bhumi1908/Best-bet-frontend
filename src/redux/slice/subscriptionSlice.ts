@@ -123,9 +123,13 @@ const adminSubscriptionSlice = createSlice({
             })
             .addCase(
                 getUserSubscriptionSelfThunk.fulfilled,
-                (state, action: PayloadAction<Subscription>) => {
+                (state, action: PayloadAction<any>) => {
                     state.isLoading = false;
-                    state.currentSubscription = action.payload.status === 'ACTIVE' || action.payload.status === 'TRIAL' ? action.payload : null;
+                    if (action.payload) {
+                        state.currentSubscription = action.payload.status === 'ACTIVE' || action.payload.status === 'TRIAL' || action.payload.status === 'CANCELED' ? action.payload : null;
+                    } else {
+                        state.currentSubscription = null;
+                    }
                 }
             )
             .addCase(getUserSubscriptionSelfThunk.rejected, (state, action) => {
@@ -226,6 +230,7 @@ const adminSubscriptionSlice = createSlice({
                 state.isLoading = false;
                 state.error = null;
                 state.currentSubscription = action.payload.status === 'CANCELED' ? null : action.payload;
+           
                 state.successMessage = "Subscription cancellation scheduled";
             })
             .addCase(revokeUserSubscriptionSelfThunk.rejected, (state, action: PayloadAction<RejectPayload | undefined>) => {
@@ -307,8 +312,10 @@ const adminSubscriptionSlice = createSlice({
             .addCase(changeUserSubscriptionPlanSelfThunk.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.error = null;
-                state.currentSubscription = action.payload;
-                state.successMessage = "Plan change scheduled successfully";
+                if (action.payload) {
+                    state.currentSubscription = action.payload;
+                }
+                state.successMessage = action.payload?.message || "Plan change scheduled successfully";
             })
             .addCase(changeUserSubscriptionPlanSelfThunk.rejected, (state, action: PayloadAction<RejectPayload | undefined>) => {
                 state.isLoading = false;
@@ -363,7 +370,9 @@ const adminSubscriptionSlice = createSlice({
                 cancelScheduledPlanChangeThunk.fulfilled,
                 (state, action: PayloadAction<any>) => {
                     state.isLoading = false;
-                    state.currentSubscription = action.payload;
+                    if (action.payload) {
+                        state.currentSubscription = action.payload;
+                    }
                     state.successMessage = "Scheduled plan change cancelled";
                 }
             )

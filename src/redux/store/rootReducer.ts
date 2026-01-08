@@ -10,6 +10,9 @@ import profileReducer from '../slice/profileSlice';
 import subscriptionPlanReducer from '../slice/subscriptionPlanSlice';
 import stripeIntegrationReducer from '../slice/stripeSlice';
 import subscriptionReducer from '../slice/subscriptionSlice';
+import gameHistoryReducer from '../slice/gameHistorySlice';
+import statesReducer from '../slice/statesSlice';
+import gameTypesReducer from '../slice/gameTypesSlice';
 
 // Combine all reducers
 export const rootReducer = combineReducers({
@@ -18,7 +21,10 @@ export const rootReducer = combineReducers({
   profile: profileReducer,
   subscriptionPlan: subscriptionPlanReducer,
   stripeIntegration: stripeIntegrationReducer,
-  subscription: subscriptionReducer
+  subscription: subscriptionReducer,
+  gameHistory: gameHistoryReducer,
+  states: statesReducer,
+  gameTypes: gameTypesReducer,
   
   // Add other reducers here as needed
 });

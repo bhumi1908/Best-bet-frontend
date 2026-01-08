@@ -91,7 +91,20 @@ export const routes = {
     },
     stripe: {
       getIntegrationStatus: '/stripe/status',
-    }
+    },
+    states: {
+      getAll: '/states',
+    },
+    gameTypes: {
+      getAll: '/game-types',
+    },
+    gameHistory: {
+      create: '/game-history',
+      update: (id: number | string) => `/game-history/${id}`,
+      getAll: '/game-histories',
+      getById: (id: number | string) => `/game-histories/${id}`,
+      delete: (id: number | string) => `/game-histories/${id}`,
+    },
   },
 } as const;
 

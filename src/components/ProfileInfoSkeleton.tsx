@@ -1,5 +1,8 @@
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Package } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Button } from "./ui/Button";
+import { routes } from "@/utilities/routes";
 
 export function ProfileInfoSkeleton() {
   return (
@@ -52,6 +55,7 @@ export function CurrentPlanSkeleton() {
   );
 }
 export function NoSubscription() {
+  const router = useRouter();
   return (
     <div className="bg-white/5 rounded-2xl p-8 border border-white/10 text-center">
       <Package className="w-10 h-10 text-gray-500 mx-auto mb-3" />
@@ -61,10 +65,18 @@ export function NoSubscription() {
       <p className="text-sm text-gray-400">
         You don’t have an active plan. Choose a plan to unlock premium features.
       </p>
+      <Button
+        type="primary"
+        className="!w-fit mt-4"
+        onClick={() => {
+          router.push(routes.plans);
+        }}
+      >
+        Browse Plans
+      </Button>
     </div>
   );
 }
-
 
 
 export default function ProfilePageSkeleton() {
