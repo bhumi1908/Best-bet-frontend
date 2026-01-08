@@ -125,7 +125,7 @@ const adminSubscriptionSlice = createSlice({
                 getUserSubscriptionSelfThunk.fulfilled,
                 (state, action: PayloadAction<Subscription>) => {
                     state.isLoading = false;
-                    state.currentSubscription = action.payload.status === 'ACTIVE' ? action.payload : null;
+                    state.currentSubscription = action.payload.status === 'ACTIVE' || action.payload.status === 'TRIAL' ? action.payload : null;
                 }
             )
             .addCase(getUserSubscriptionSelfThunk.rejected, (state, action) => {
