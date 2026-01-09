@@ -40,6 +40,15 @@ export const registerSchema = z
         /^\+?[1-9]\d{0,2}[\s.-]?\(?\d{1,4}\)?([\s.-]?\d{2,4}){2,4}$/,
         'Please provide a valid phone number'
       ),
+    role: z.enum(['USER', 'ADMIN']).optional(),
+    stateId: z
+      .number()
+      .min(1, 'State is required')
+      .nullable()
+      .or(z.string().nonempty('State is required').transform((val) => parseInt(val, 10)))
+      .refine((val) => val !== null, {
+        message: 'State is required',
+      }),
     password: z
       .string()
       .nonempty('Password is required')
@@ -164,6 +173,15 @@ export const updateAdminSchema = z.object({
       'Please provide a valid phone number'
     ),
 
+  stateId: z
+    .string()
+    .nonempty("State is required")
+    .or(z.number().min(1, "State is required"))
+    .transform((val) => typeof val === 'string' ? parseInt(val, 10) : val)
+    .refine((val) => !isNaN(val) && val > 0, {
+      message: "State is required",
+    }),
+
   role: z
     .enum(["USER", "ADMIN"], {
       errorMap: () => ({ message: "Role is required" }),
@@ -182,6 +200,14 @@ export const updateUserSchema = z.object({
       /^\+?[1-9]\d{0,2}[\s.-]?\(?\d{1,4}\)?([\s.-]?\d{2,4}){2,4}$/,
       'Please provide a valid phone number'
     ),
+  stateId: z
+    .string()
+    .nonempty("State is required")
+    .or(z.number().min(1, "State is required"))
+    .transform((val) => typeof val === 'string' ? parseInt(val, 10) : val)
+    .refine((val) => !isNaN(val) && val > 0, {
+      message: "State is required",
+    }),
 });
 
 

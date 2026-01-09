@@ -40,6 +40,7 @@ import "slick-carousel/slick/slick-theme.css";
 import { useAppDispatch, useAppSelector } from "@/redux/store/hooks";
 import { getAllSubscriptionPlansThunk } from "@/redux/thunk/subscriptionPlanThunk";
 import PricingCardSkeleton from "@/components/PricingCardSkeleton";
+import { useRouter } from "next/navigation";
 
 // interface Plan {
 //   id: number;
@@ -189,7 +190,51 @@ function SamplePrevArrow(props: any) {
   );
 }
 
+const performanceStates = [
+  { name: "Arizona", number: "589", hit: false },
+  { name: "Arkansas", number: "124", hit: true },
+  { name: "California", number: "643", hit: false },
+  { name: "Colorado", number: "556", hit: true },
+  { name: "Connecticut", number: "289", hit: true },
+  { name: "Delaware", number: "452", hit: false },
+  { name: "Florida", number: "332", hit: false },
+  { name: "Georgia", number: "122", hit: true },
+  { name: "Idaho", number: "752", hit: false },
+  { name: "Illinois", number: "332", hit: false },
+  { name: "Indiana", number: "121", hit: false },
+  { name: "Iowa", number: "256", hit: false },
+  { name: "Kansas", number: "892", hit: false },
+  { name: "Kentucky", number: "720", hit: false },
+  { name: "Louisiana", number: "456", hit: false },
+  { name: "Maine", number: "906", hit: false },
+  { name: "Maryland", number: "856", hit: false },
+  { name: "Michigan", number: "007", hit: true },
+  { name: "Minnesota", number: "501", hit: false },
+  { name: "Mississippi", number: "068", hit: true },
+  { name: "Missouri", number: "150", hit: true },
+  { name: "Nebraska", number: "121", hit: true },
+  { name: "New Hampshire", number: "906", hit: false },
+  { name: "New Jersey", number: "289", hit: false },
+  { name: "New Mexico", number: "923", hit: true },
+  { name: "New York", number: "511", hit: false },
+  { name: "North Carolina", number: "178", hit: true },
+  { name: "Ohio", number: "802", hit: false },
+  { name: "Oklahoma", number: "156", hit: true },
+  { name: "Pennsylvania", number: "523", hit: false },
+  { name: "Puerto Rico", number: "356", hit: true },
+  { name: "South Carolina", number: "526", hit: false },
+  { name: "Tennessee", number: "724", hit: true },
+  { name: "Texas", number: "401", hit: true },
+  { name: "Vermont", number: "906", hit: false },
+  { name: "Virginia", number: "828", hit: false },
+  { name: "Washington", number: "624", hit: false },
+  { name: "Washington, D.C.", number: "425", hit: false },
+  { name: "West Virginia", number: "023", hit: true },
+  { name: "Wisconsin", number: "425", hit: false },
+]
+
 export default function LandingPage() {
+  const router = useRouter();
   const { data: session } = useSession();
   const isAuthenticated = !!session;
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -432,6 +477,82 @@ export default function LandingPage() {
             </motion.div> */}
           </motion.div>
         </section>
+
+        
+        {/* ==================== PROOF OF PERFORMANCE SECTION ==================== */}
+        {/* <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/5 via-gray-900/10 to-gray-900/5">
+          <div className="max-w-7xl mx-auto">
+            <motion.div
+              className="text-center mb-12"
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.6 }}
+            >
+              <motion.div
+                className="inline-block px-4 py-2 mb-6 rounded-full bg-yellow-400/10 border border-yellow-400/30"
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                <span className="text-yellow-400 text-sm font-semibold capitalize">Who's Winning</span>
+              </motion.div>
+              <motion.h2
+                className="text-4xl md:text-5xl lg:text-6xl font-black mb-4 leading-tight"
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+              >
+                <span className="text-white">Proof Of</span>{" "}
+                <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">
+                  Performance
+                </span>
+              </motion.h2>
+              <motion.p
+                className="text-gray-300 text-lg md:text-xl max-w-3xl mx-auto"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+              >
+                The Latest Winning States Using Best Bet's Predictions!
+              </motion.p>
+            </motion.div>
+            <motion.div
+              className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 md:gap-8"
+              variants={staggerContainer}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true, margin: "-50px" }}
+            >
+              {performanceStates.map((state, index) => (
+                <motion.div
+                  key={state.name}
+                  className="text-center"
+                  variants={staggerItem}
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div
+                    onClick={() => router.push(`${routes.state}?name=${encodeURIComponent(state.name)}`)}
+                    className={`backdrop-blur-md rounded-xl cursor-pointer p-4 border hover:border-yellow-400/50 transition-all duration-300 ${state.hit ? "bg-yellow-500/5 border-yellow-400/50" : "bg-white/5 border-white/10"}`}>
+                    <h3 className="text-white text-sm md:text-base font-semibold mb-2">
+                      {state.name}
+                    </h3>
+                    <div
+                      className={`text-2xl md:text-3xl font-black ${state.hit ? "text-green-400" : "text-white"
+                        }`}
+                    >
+                      {state.number}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section> */}
 
         {/* ==================== KEY FEATURES SECTION ==================== */}
         <section className="relative py-28 px-4 bg-gradient-to-b from-transparent via-gray-900/5 to-gray-900/5">
@@ -866,7 +987,7 @@ export default function LandingPage() {
                 <h3 className="text-3xl font-bold">Best Bet's Guarantee to You!</h3>
               </div>
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                If (your State) does not get at least 15 Hits (Exact or Box / Any) within 30 days, we will refund your $9.99 for that month or give you the next month free, (your choice).
+                If {session?.user?.state?.name ?? 'your State'} does not get at least 15 Hits (Exact or Box / Any) within 30 days, we will refund your $9.99 for that month or give you the next month free, (your choice).
               </p>
             </motion.div>
 

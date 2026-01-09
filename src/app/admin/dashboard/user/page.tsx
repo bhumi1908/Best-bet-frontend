@@ -39,6 +39,7 @@ import { registerSchema } from "@/utilities/schema";
 import apiClient from "@/utilities/axios/instance";
 import { toast } from "react-toastify";
 import { Popup } from "@/components/ui/Popup";
+import { UserRole } from "@/types/auth";
 
 type SortOrder = "ascend" | "descend" | null;
 type SortColumn = "name" | "email" | "phoneNo" | "role" | "isActive" | "createdAt" | null;
@@ -79,11 +80,12 @@ export default function UserPage() {
       firstName: '',
       lastName: '',
       email: '',
-      role: 'USER',
+      role: 'USER' as UserRole,
       phoneNo: '',
       password: '',
       confirmPassword: '',
       terms: true,
+      stateId: null,
     },
     validate: zodFormikValidate(registerSchema),
     onSubmit: async (values, { setSubmitting, resetForm }) => {
@@ -403,7 +405,7 @@ export default function UserPage() {
                   users.map((user) => {
                     const name = user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "N/A";
                     // Get subscription data if available (from user object or subscriptions array)
-                    const subscription = user.subscriptions[0] ?? null
+                    const subscription = user?.subscriptions?.[0] || null
                     const subscriptionPlan = subscription?.plan.name || "N/A"
                     const subscriptionDate = subscription?.createdAt || null
 
@@ -720,7 +722,7 @@ export default function UserPage() {
               </label>
               <div className="relative">
                 <Select
-                  value={formik.values.role}
+                  value={formik.values.role ?? 'USER'}
                   onValueChange={(value) =>
                     formik.setFieldValue('role', value)
                   }

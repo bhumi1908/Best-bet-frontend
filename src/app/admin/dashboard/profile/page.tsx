@@ -24,6 +24,8 @@ import { Dropdown, DropdownContent, DropdownItem, DropdownTrigger } from "@/comp
 import { Popup } from "@/components/ui/Popup";
 import PricingCardSkeleton from "@/components/PricingCardSkeleton";
 import ProfilePageSkeleton, { CurrentPlanSkeleton, NoSubscription } from "@/components/ProfileInfoSkeleton";
+import { getAllStatesThunk } from "@/redux/thunk/statesThunk";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
 
 export default function ProfilePage() {
   const { data: session, update } = useSession();
@@ -51,17 +53,20 @@ export default function ProfilePage() {
     firstName: "",
     lastName: "",
     phoneNo: "",
+    stateId: null,
   });
   const [formValues, setFormValues] = useState({
     firstName: "",
     lastName: "",
     phoneNo: "",
+    stateId: null,
   });
 
   const dispatch = useAppDispatch();
   const { isLoading, error, successConfirmPassMessage } = useAppSelector(
     (state) => state.profile
   );
+  const { states } = useAppSelector((state) => state.states);
   const { userPlans: plans, isLoading: plansLoading } = useAppSelector(
     (state) => state.subscriptionPlan
   );
@@ -273,7 +278,8 @@ export default function ProfilePage() {
       const data = {
         firstName: session.user.firstName,
         lastName: session.user.lastName,
-        phoneNo: session.user.phoneNo
+        phoneNo: session.user.phoneNo,
+        stateId: session.user.stateId,
       };
       setProfile(data);
       setFormValues(data);
@@ -291,13 +297,21 @@ export default function ProfilePage() {
     }
   }, [successConfirmPassMessage, error, dispatch]);
 
+  // Fetch states on mount
+  useEffect(() => {
+    if (states.length === 0) {
+      dispatch(getAllStatesThunk());
+    }
+  }, [dispatch, states.length]);
+
   const handleEditProfile = async () => {
     setIsEditProfile(!isEditProfile);
     if (isEditProfile) {
       const isDirty =
         formValues.firstName.trim() !== profile.firstName.trim() ||
         formValues.lastName.trim() !== profile.lastName.trim() ||
-        formValues.phoneNo.trim() !== profile.phoneNo.trim();
+        formValues.phoneNo.trim() !== profile.phoneNo.trim() ||
+        formValues.stateId !== profile.stateId;
 
       if (!isDirty) {
         setIsEditProfile(false);
@@ -313,6 +327,7 @@ export default function ProfilePage() {
             firstName: formValues.firstName.trim(),
             lastName: formValues.lastName.trim(),
             phoneNo: formValues.phoneNo.trim(),
+            stateId: Number(formValues.stateId) ?? undefined,
           })
         ).unwrap();
 
@@ -320,6 +335,7 @@ export default function ProfilePage() {
           firstName: updatedUser.firstName,
           lastName: updatedUser.lastName,
           phoneNo: updatedUser.phoneNo || "",
+          stateId: formValues.stateId,
         });
 
         update({
@@ -328,6 +344,7 @@ export default function ProfilePage() {
             firstName: updatedUser.firstName,
             lastName: updatedUser.lastName,
             phoneNo: updatedUser.phoneNo,
+            stateId: formValues.stateId,
           },
         });
 
@@ -345,11 +362,22 @@ export default function ProfilePage() {
   const handleChange =
     (field: keyof typeof formValues) =>
       (e: React.ChangeEvent<HTMLInputElement>) => {
+
         setFormValues(prev => ({
           ...prev,
           [field]: e.target.value,
         }));
       };
+
+  const handleSelectChange =
+    (field: keyof typeof formValues) =>
+      (value: string) => {
+        setFormValues(prev => ({
+          ...prev,
+          [field]: value,
+        }));
+      };
+
 
   const handleCancel = () => {
     setFormValues(profile);
@@ -421,7 +449,7 @@ export default function ProfilePage() {
       </span>
     );
   };
-
+  
   return (
     <>
       {/* Page Header */}
@@ -521,6 +549,32 @@ export default function ProfilePage() {
                   ) : (
                     <p className="text-sm text-text-primary">{user?.phoneNo || "N/A"}</p>
                   )}
+                </div>
+                <div>
+                  <label className="text-xs text-text-tertiary mb-1.5 block font-medium">State</label>
+                  {isEditProfile ?
+                    <>
+                      <Select
+                        value={formValues.stateId ?? ''}
+                        onValueChange={handleSelectChange("stateId")}
+                      >
+                        <SelectTrigger>
+                          <SelectValue>
+                            {formValues.stateId ? states.find((state) => state.id === Number(formValues.stateId))?.state_name : <p className='text-text-muted'>Select your state </p>}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {states.map((state) => (
+                            <SelectItem key={state.id} value={state.id.toString()}>
+                              {state.state_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </>
+                    :
+                    <p className="text-sm text-text-primary">{user.stateId ? states.find((state) => state.id === Number(user.stateId))?.state_name : "N/A"}</p>
+                  }
                 </div>
                 <div>
                   <label className="text-xs text-text-tertiary mb-1.5 block font-medium">Email</label>

@@ -1,7 +1,7 @@
 "use client";
-
+import { format } from "date-fns";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { routes } from "@/utilities/routes";
 import { Button } from "@/components/ui/Button";
@@ -12,209 +12,108 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
+import { DateTimePicker } from "@/components/ui/DateTimePicker";
 import {
   Search,
   Filter,
-  TrendingUp,
   Clock,
   MapPin,
   BarChart3,
-  Target,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Calendar as CalendarIcon,
-  ArrowUpDown,
   FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@/redux/store/hooks";
+import { getDrawHistoriesThunk } from "@/redux/thunk/drawHistoryThunk";
+import { setFilters, resetFilters, DrawHistoryFilters } from "@/redux/slice/drawHistorySlice";
+import { getAllStatesThunk } from "@/redux/thunk/statesThunk";
+import { DrawHistorySkeleton } from "@/components/DrawHistorySkeleton";
 
-// Draw history data interface
-interface DrawResult {
-  id: string;
-  date: string;
-  time: string;
-  numbers: string;
-  type: "Midday" | "Evening";
-  state: string;
-  jackpot?: number;
-  winners?: number;
-}
+const formatISODate =  (date: Date | null | undefined): string | undefined => {
+  if (!date) return undefined;
+  
+  // Uses local time, not UTC (which prevents timezone off-by-one errors)
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+};
+
+
 
 export default function DrawHistoryPage() {
-  const [selectedState, setSelectedState] = useState<string>("North Carolina");
+  const dispatch = useAppDispatch();
+
+  // Redux state
+  const { drawHistories, filters, isLoading, error } = useAppSelector(
+    (state) => state.drawHistory
+  );
+  const { states } = useAppSelector((state) => state.states);
+
+  // Local UI state
+  const [selectedStateName, setSelectedStateName] = useState<string>("Florida");
   const [selectedDrawType, setSelectedDrawType] = useState<string>("All");
-  const [dateRange, setDateRange] = useState<"today" | "week" | "month" | "custom">("week");
-  const [startDate, setStartDate] = useState<string>(
-    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-  );
-  const [endDate, setEndDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showFilters, setShowFilters] = useState<boolean>(true);
-  const [sortBy, setSortBy] = useState<"date" | "numbers">("date");
+  const [sortBy, setSortBy] = useState<"drawDate" | "winningNumbers">("drawDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-
-  const states = [
-    "Arkansas",
-    "California",
-    "Colorado",
-    "Connecticut",
-    "Delaware",
-    "Florida",
-    "Georgia",
-    "Idaho",
-    "Illinois",
-    "Indiana",
-    "Kansas",
-    "Kentucky",
-    "Maine",
-    "Maryland",
-    "Michigan",
-    "Mississippi",
-    "Missouri",
-    "North Carolina",
-    "New Hampshire",
-    "New Jersey",
-    "New Mexico",
-    "New York",
-    "Ohio",
-    "Pennsylvania",
-    "South Carolina",
-    "Virginia",
-    "Vermont",
-    "Wisconsin",
-  ];
 
   const drawTypes = ["All", "Midday", "Evening"];
 
-  // Enhanced mock draw history data with more details
-  const generateMockDraws = (): DrawResult[] => {
-    const draws: DrawResult[] = [];
-    const today = new Date();
+  // Use draws directly from Redux (backend handles all filtering/sorting)
+  const filteredDraws = useMemo(() => {
+    // Backend handles all filtering and sorting, so we just use the data as-is
+    return drawHistories;
+  }, [drawHistories]);
 
-    for (let i = 0; i < 30; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-
-      // Midday draw
-      draws.push({
-        id: `midday-${i}`,
-        date: date.toISOString().split("T")[0],
-        time: "12:00 PM",
-        numbers: `${Math.floor(Math.random() * 10)}-${Math.floor(Math.random() * 10)}-${Math.floor(Math.random() * 10)}`,
-        type: "Midday",
-        state: "North Carolina",
-        jackpot: Math.floor(Math.random() * 5000) + 1000,
-        winners: Math.floor(Math.random() * 50),
-      });
-
-      // Evening draw
-      draws.push({
-        id: `evening-${i}`,
-        date: date.toISOString().split("T")[0],
-        time: "11:00 PM",
-        numbers: `${Math.floor(Math.random() * 10)}-${Math.floor(Math.random() * 10)}-${Math.floor(Math.random() * 10)}`,
-        type: "Evening",
-        state: "North Carolina",
-        jackpot: Math.floor(Math.random() * 5000) + 1000,
-        winners: Math.floor(Math.random() * 50),
-      });
-    }
-
-    return draws;
-  };
-
-  const allDraws = generateMockDraws();
-
-  // Filter draws based on selected criteria
-  const filteredDraws = allDraws.filter((draw) => {
-    // State filter
-    if (draw.state !== selectedState) return false;
-
-    // Draw type filter
-    if (selectedDrawType !== "All" && draw.type !== selectedDrawType) return false;
-
-    // Date range filter
-    const drawDate = new Date(draw.date);
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    if (drawDate < start || drawDate > end) return false;
-
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        draw.numbers.includes(query) ||
-        draw.date.includes(query) ||
-        draw.type.toLowerCase().includes(query)
-      );
-    }
-
-    return true;
-  });
-
-  // Sort draws
-  const sortedDraws = [...filteredDraws].sort((a, b) => {
-    if (sortBy === "date") {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      
-      // If dates are the same, sort by type (Evening first, then Midday)
-      if (dateA === dateB) {
-        if (a.type === "Evening" && b.type === "Midday") return -1;
-        if (a.type === "Midday" && b.type === "Evening") return 1;
-        return 0;
-      }
-      
-      return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
-    } else {
-      return sortOrder === "asc"
-        ? a.numbers.localeCompare(b.numbers)
-        : b.numbers.localeCompare(a.numbers);
-    }
-  });
 
   // Calculate statistics
-  const stats = {
-    totalDraws: filteredDraws.length,
-    middayDraws: filteredDraws.filter((d) => d.type === "Midday").length,
-    eveningDraws: filteredDraws.filter((d) => d.type === "Evening").length,
-    totalJackpot: filteredDraws.reduce((sum, d) => sum + (d.jackpot || 0), 0),
-    totalWinners: filteredDraws.reduce((sum, d) => sum + (d.winners || 0), 0),
+  const stats = useMemo(() => {
+    return {
+      totalDraws: filteredDraws.length,
+      middayDraws: filteredDraws.filter((d) => d.draw_time === "MID").length,
+      eveningDraws: filteredDraws.filter((d) => d.draw_time === "EVE").length,
+      totalJackpot: filteredDraws.reduce((sum, d) => sum + (d.prize_amount || 0), 0),
+      totalWinners: filteredDraws.reduce((sum, d) => sum + (d.total_winners || 0), 0),
+    };
+  }, [filteredDraws]);
+
+  // Handle date range change
+  const handleDateRangeChange = (range: { start?: Date; end?: Date }) => {
+    setStartDate(range.start);
+    setEndDate(range.end);
   };
+  
 
-  // Handle date range preset
-  const handleDateRangeChange = (range: "today" | "week" | "month" | "custom") => {
-    setDateRange(range);
-    const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
-
-    switch (range) {
-      case "today":
-        setStartDate(todayStr);
-        setEndDate(todayStr);
-        break;
-      case "week":
-        const weekAgo = new Date(today);
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        setStartDate(weekAgo.toISOString().split("T")[0]);
-        setEndDate(todayStr);
-        break;
-      case "month":
-        const monthAgo = new Date(today);
-        monthAgo.setDate(monthAgo.getDate() - 30);
-        setStartDate(monthAgo.toISOString().split("T")[0]);
-        setEndDate(todayStr);
-        break;
-      case "custom":
-        // Keep current dates
-        break;
+  // Get draw type from draw time enum (MID or EVE)
+  const getDrawType = (drawTime: string): "Midday" | "Evening" => {
+    // drawTime is enum: 'MID' or 'EVE'
+    if (drawTime === "MID") {
+      return "Midday";
     }
+    return "Evening";
   };
 
+  // Format draw time for display
+  const formatDrawTime = (drawTime: string): string => {
+    // drawTime is enum: 'MID' or 'EVE'
+    if (drawTime === "MID") {
+      return "12:00 PM";
+    }
+    return "11:00 PM";
+  };
+
+  // Format winning numbers for display
+  const formatWinningNumbers = (numbers: string): string[] => {
+    // Remove any non-digit characters first, then split into single digits
+    return numbers.replace(/\D/g, '').split('');
+  };
+  
   // Animation variants
   const fadeInUp = {
     initial: { opacity: 0, y: 60 },
@@ -238,6 +137,82 @@ export default function DrawHistoryPage() {
     animate: { opacity: 1, y: 0 },
   };
 
+    // Initialize: Fetch states on mount
+    useEffect(() => {
+      if (states.length === 0) {
+        dispatch(getAllStatesThunk());
+      }
+    }, [dispatch, states.length]);
+  
+    // Find selected state ID
+    const selectedState = useMemo(() => {
+      if (states.length === 0) return null;
+      return states.find((s) => s.state_name === selectedStateName) || states[0];
+    }, [states, selectedStateName]);
+  
+    // Update selected state name when states load - default to Florida
+    useEffect(() => {
+      if (states.length > 0) {
+        const floridaState = states.find((s) => s.state_name === "Florida");
+        if (floridaState && selectedStateName !== "Florida") {
+          setSelectedStateName("Florida");
+        } else if (!states.find((s) => s.state_name === selectedStateName)) {
+          // If selected state is not in the list, default to first state
+          setSelectedStateName(states[0].state_name);
+        }
+      }
+    }, []);
+  
+    // Fetch draw histories when filters change
+    useEffect(() => {
+      const fetchData = async () => {
+        if (!selectedState) {
+          return;
+        }
+  
+        const filterParams: DrawHistoryFilters = {
+          stateId: selectedState.id,
+          sortBy,
+          sortOrder,
+        };
+  
+        // Add draw time filter (enum: MID or EVE)
+        if (selectedDrawType !== "All") {
+          if (selectedDrawType === "Midday") {
+            filterParams.drawTime = "MID";
+          } else if (selectedDrawType === "Evening") {
+            filterParams.drawTime = "EVE";
+          }
+        }
+  
+        // Add date range filter
+        if (startDate && endDate) {
+          filterParams.fromDate = formatISODate(startDate);
+          filterParams.toDate = formatISODate(endDate);
+        }
+  
+        // Add search filter
+        if (searchQuery.trim()) {
+          filterParams.search = searchQuery.trim();
+        }
+  
+        dispatch(setFilters(filterParams));
+        dispatch(getDrawHistoriesThunk(filterParams));
+      };
+  
+      fetchData();
+    }, [
+      selectedState,
+      selectedDrawType,
+      startDate,
+      endDate,
+      searchQuery,
+      sortBy,
+      sortOrder,
+      dispatch,
+    ]);
+  
+
   return (
     <motion.div
       className="min-h-screen bg-black text-white overflow-hidden"
@@ -247,7 +222,7 @@ export default function DrawHistoryPage() {
       {/* Background Image with Overlay */}
       <div className="fixed inset-0">
         {/* Blue Background Image with 50% opacity */}
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: 'url(/images/Blue-Background.png)',
@@ -351,7 +326,7 @@ export default function DrawHistoryPage() {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                       type="text"
-                      placeholder="Search by numbers, date, or type..."
+                      placeholder="Search by numbers"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-10 pr-4 py-2 bg-black/50 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
@@ -366,18 +341,23 @@ export default function DrawHistoryPage() {
                         <MapPin className="w-4 h-4 inline mr-1" />
                         State
                       </label>
-                      <Select value={selectedState} onValueChange={setSelectedState}>
+                      <Select
+                        value={selectedStateName}
+                        onValueChange={(value) => {
+                          setSelectedStateName(value);
+                        }}
+                      >
                         <SelectTrigger className="w-full bg-black/50 border-white/20 text-white hover:bg-black/70 focus:ring-yellow-400 py-2.5 h-fit">
                           <SelectValue placeholder="Select State" />
                         </SelectTrigger>
                         <SelectContent className="max-h-60">
                           {states.map((state) => (
                             <SelectItem
-                              key={state}
-                              value={state}
+                              key={state.id}
+                              value={state.state_name}
                               className="hover:bg-white/10 focus:bg-white/10 text-white"
                             >
-                              {state}
+                              {state.state_name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -408,42 +388,24 @@ export default function DrawHistoryPage() {
                       </Select>
                     </div>
 
-                    {/* Date Range Preset */}
+                    {/* Date Range Picker */}
                     <div>
                       <label className="block text-sm font-medium text-yellow-300 mb-2">
-                        <CalendarIcon className="w-4 h-4 inline mr-1" />
-                        Quick Range
+                        <Clock className="w-4 h-4 inline mr-1" />
+                        Date Range
                       </label>
-                      <Select
-                        value={dateRange}
-                        onValueChange={(value) =>
-                          handleDateRangeChange(value as "today" | "week" | "month" | "custom")
-                        }
-                      >
-                        <SelectTrigger className="w-full bg-black/50 border-white/20 text-white hover:bg-black/70 focus:ring-yellow-400 py-2.5 h-fit">
-                          <SelectValue placeholder="Select Date Range" />
-                        </SelectTrigger>                       
-                        <SelectContent>
-                          <SelectItem
-                            value="today"
-                            className="hover:bg-white/10 focus:bg-white/10 text-white"
-                          >
-                            Today
-                          </SelectItem>
-                          <SelectItem
-                            value="week"
-                            className="hover:bg-white/10 focus:bg-white/10 text-white"
-                          >
-                            Last 7 Days
-                          </SelectItem>
-                          <SelectItem
-                            value="month"
-                            className="hover:bg-white/10 focus:bg-white/10 text-white"
-                          >
-                            Last 30 Days
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <DateTimePicker
+                        rangePicker={true}
+                        rangeValue={{
+                          start: startDate,
+                          end: endDate,
+                        }}
+                        onRangeChange={handleDateRangeChange}
+                        showDate={true}
+                        showTime={false}
+                        placeholder="Select date range"
+                        className="w-full bg-black/50 border-white/20 text-white"
+                      />
                     </div>
 
                     {/* Sort By */}
@@ -456,20 +418,25 @@ export default function DrawHistoryPage() {
                         <Select
                           value={sortBy}
                           className="w-full"
-                          onValueChange={(value) => setSortBy(value as "date" | "numbers")}
+                          onValueChange={(value) => setSortBy(value as "drawDate" | "winningNumbers")}
                         >
                           <SelectTrigger className="flex-1 bg-black/50 border-white/20 text-white hover:bg-black/70 focus:ring-yellow-400 py-2.5 h-fit">
-                            <SelectValue placeholder="Sort By" />
-                          </SelectTrigger>                           
-                        <SelectContent>
+                            {/* <SelectValue placeholder="Sort By" /> */}
+                            {sortBy === "drawDate"
+                              ? 'Date'
+                              : sortBy === "winningNumbers"
+                              ? 'Numbers'
+                                : "Sort By"}
+                          </SelectTrigger>
+                          <SelectContent>
                             <SelectItem
-                              value="date"
+                              value="drawDate"
                               className="hover:bg-white/10 focus:bg-white/10 text-white"
                             >
                               Date
                             </SelectItem>
                             <SelectItem
-                              value="numbers"
+                              value="winningNumbers"
                               className="hover:bg-white/10 focus:bg-white/10 text-white"
                             >
                               Numbers
@@ -487,13 +454,13 @@ export default function DrawHistoryPage() {
                             <ChevronUp
                               className={cn(
                                 "w-3 h-3",
-                                sortOrder === "asc" ? "text-accent-primary" : "text-text-muted"
+                                sortOrder === "asc" ? "text-yellow-400" : "text-gray-500"
                               )}
                             />
                             <ChevronDown
                               className={cn(
                                 "w-3 h-3 -mt-1",
-                                sortOrder === "desc" ? "text-accent-primary" : "text-text-muted"
+                                sortOrder === "desc" ? "text-yellow-400" : "text-gray-500"
                               )}
                             />
                           </span>
@@ -510,7 +477,7 @@ export default function DrawHistoryPage() {
         {/* ==================== DRAW RESULTS SECTION ==================== */}
         <section className="relative px-4 py-8">
           <div className="max-w-7xl mx-auto">
-            {selectedState === "North Carolina" ? (
+            {selectedState ? (
               <>
                 {/* Results Header */}
                 <motion.div
@@ -521,111 +488,127 @@ export default function DrawHistoryPage() {
                 >
                   <div>
                     <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-                      {selectedState} Draw Results
+                      {selectedStateName} Draw Results
                     </h2>
                     <p className="text-gray-400 text-sm">
-                      Showing {sortedDraws.length} result{sortedDraws.length !== 1 ? "s" : ""} for{" "}
-                      {new Date(startDate).toLocaleDateString()} -{" "}
-                      {new Date(endDate).toLocaleDateString()}
+                      Showing {filteredDraws.length} result{filteredDraws.length !== 1 ? "s" : ""}
+                      {startDate && endDate && (
+                        <> for{" "}
+                          {startDate.toLocaleDateString()} -{" "}
+                          {endDate.toLocaleDateString()}
+                        </>
+                      )}
                     </p>
                   </div>
                 </motion.div>
 
                 {/* Draws List */}
-                {sortedDraws.length > 0 ? (
+                {isLoading  ? (
+                  <DrawHistorySkeleton />
+                ) : filteredDraws.length > 0 ? (
                   <motion.div
                     className="space-y-3"
                     variants={staggerContainer}
                     initial="initial"
                     animate="animate"
                   >
-                    {sortedDraws.map((draw, index) => (
-                      <motion.div
-                        key={draw.id}
-                        className="group bg-black/75 backdrop-blur-md rounded-xl p-6 border border-white/10 hover:border-yellow-400/50 transition-all duration-300"
-                        variants={staggerItem}
-                        whileHover={{ scale: 1.01, y: -2 }}
-                      >
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                          {/* Left Section - Date & Time */}
-                          <div className="flex items-center gap-6">
-                            <div className="flex flex-col items-center justify-center min-w-[80px]">
-                              <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">
-                                {new Date(draw.date).toLocaleDateString("en-US", {
-                                  month: "short",
-                                })}
+                    {filteredDraws.map((draw, index) => {
+                      const drawType = getDrawType(draw.draw_time);
+                      const numbers = formatWinningNumbers(draw.winning_numbers);
+                      const drawDate = new Date(draw.draw_date);
+
+                      return (
+                        <motion.div
+                          key={draw.id}
+                          className="group bg-black/75 backdrop-blur-md rounded-xl p-6 border border-white/10 hover:border-yellow-400/50 transition-all duration-300"
+                          variants={staggerItem}
+                          whileHover={{ scale: 1.01, y: -2 }}
+                        >
+                          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            {/* Left Section - Date & Time */}
+                            <div className="flex items-center gap-6">
+                              <div className="flex flex-col items-center justify-center min-w-[80px]">
+                                <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                                  {drawDate.toLocaleDateString("en-US", {
+                                    month: "short",
+                                  })}
+                                </div>
+                                <div className="text-2xl font-bold text-yellow-400">
+                                  {drawDate.getDate()}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {drawDate.toLocaleDateString("en-US", {
+                                    year: "numeric",
+                                  })}
+                                </div>
                               </div>
-                              <div className="text-2xl font-bold text-yellow-400">
-                                {new Date(draw.date).getDate()}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {new Date(draw.date).toLocaleDateString("en-US", {
-                                  year: "numeric",
-                                })}
+
+                              <div className="h-16 w-px bg-white/10"></div>
+
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <span
+                                    className={cn(
+                                      "px-3 py-1 rounded-full text-xs font-semibold",
+                                      drawType === "Midday"
+                                        ? "bg-yellow-400/20 text-yellow-400 border border-yellow-400/30"
+                                        : "bg-blue-400/20 text-blue-400 border border-blue-400/30"
+                                    )}
+                                  >
+                                    {drawType}
+                                  </span>
+                                  {/* <span className="text-gray-400 text-sm">
+                                    {formatDrawTime(draw.draw_time)}
+                                  </span> */}
+                                </div>
+                                <div className="text-2xl md:text-3xl font-black text-white tracking-wider">
+                                  {numbers}
+                                </div>
                               </div>
                             </div>
 
-                            <div className="h-16 w-px bg-white/10"></div>
-
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-3 mb-2">
-                                <span
-                                  className={`px-3 py-1 rounded-full text-xs font-semibold ${draw.type === "Midday"
-                                    ? "bg-yellow-400/20 text-yellow-400 border border-yellow-400/30"
-                                    : "bg-blue-400/20 text-blue-400 border border-blue-400/30"
-                                    }`}
-                                >
-                                  {draw.type}
-                                </span>
-                                <span className="text-gray-400 text-sm">{draw.time}</span>
+                            {/* Right Section - Stats */}
+                            <div className="flex items-center gap-6 md:gap-8">
+                              <div className="flex items-center gap-1">
+                                {numbers.map((num, idx) => (
+                                  <span
+                                    key={idx}
+                                    className={cn(
+                                      "w-8 sm:w-10 h-8 sm:h-10 rounded-full flex items-center justify-center text-md font-semibold border-2 bg-yellow-400 text-black border-yellow-400",
+                                    )}
+                                  >
+                                    {Number(num)}
+                                  </span>
+                                ))}
                               </div>
-                              <div className="text-2xl md:text-3xl font-black text-white tracking-wider">
-                              {draw.numbers.split("-")}
+                              {draw.prize_amount > 0 && (
+                                <div className="text-right">
+                                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                                    Jackpot
+                                  </div>
+                                  <div className="text-base sm:text-lg font-bold text-yellow-400">
+                                    ${draw.prize_amount.toLocaleString()}
+                                  </div>
+                                </div>
+                              )}
+                              {draw.total_winners !== undefined && (
+                                <div className="text-right">
+                                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                                    Winners
+                                  </div>
+                                  <div className="text-lg font-bold text-emerald-400">
+                                    {draw.total_winners}
+                                  </div>
+                                </div>
+                              )}
+                              <div className="w-10 h-10 hidden sm:flex rounded-lg bg-yellow-400/10 border border-yellow-400/20 items-center justify-center group-hover:bg-yellow-400/20 transition-colors">
+                                <CheckCircle2 className="w-5 h-5 text-yellow-400" />
                               </div>
                             </div>
                           </div>
-
-                          {/* Right Section - Stats */}
-                          <div className="flex items-center gap-6 md:gap-8">
-                          <div className="flex items-center gap-1">
-                              {draw.numbers.split("-").map((num, idx) => (
-                                <span
-                                  key={idx}
-                                  className={cn(
-                                    "w-8 sm:w-10 h-8 sm:h-10 rounded-full flex items-center justify-center text-md font-semibold border-2 bg-accent-primary text-black border-accent-primary",
-                                  )}
-                                >
-                                  {Number(num)}
-                                </span>
-                              ))}
-                            </div>
-                            {draw.jackpot && (
-                              <div className="text-right">
-                                <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">
-                                  Jackpot
-                                </div>
-                                <div className="text-base sm:text-lg font-bold text-yellow-400">
-                                  ${draw.jackpot.toLocaleString()}
-                                </div>
-                              </div>
-                            )}
-                            {draw.winners !== undefined && (
-                              <div className="text-right">
-                                <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">
-                                  Winners
-                                </div>
-                                <div className="text-lg font-bold text-emerald-400">
-                                  {draw.winners}
-                                </div>
-                              </div>
-                            )}
-                            <div className="w-10 h-10 hidden sm:flex rounded-lg bg-yellow-400/10 border border-yellow-400/20 items-center justify-center group-hover:bg-yellow-400/20 transition-colors">
-                              <CheckCircle2 className="w-5 h-5 text-yellow-400" />
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      );
+                    })}
                   </motion.div>
                 ) : (
                   <motion.div
@@ -635,19 +618,22 @@ export default function DrawHistoryPage() {
                     transition={{ duration: 0.6 }}
                   >
                     <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-white mb-2">No Results Found</h3>
+                    <h3 className="text-xl font-bold text-white mb-2">No Data Found</h3>
                     <p className="text-gray-400 mb-6">
-                      Try adjusting your filters to see more results.
+                      No draw history found for the selected state or filters. Try adjusting your filters to see more results.
                     </p>
                     <Button
                       type="primary"
                       className="!w-fit py-3 h-fit rounded-lg"
                       onClick={() => {
                         setSearchQuery("");
-                        setSelectedState("North Carolina");
+                        setSelectedStateName("Florida");
                         setSelectedDrawType("All");
-                        setDateRange("week");
-                        handleDateRangeChange("week");
+                        const weekAgo = new Date();
+                        weekAgo.setDate(weekAgo.getDate() - 7);
+                        setStartDate(undefined);
+                        setEndDate(undefined);
+                        dispatch(resetFilters());
                       }}
                     >
                       Reset Filters
@@ -664,7 +650,7 @@ export default function DrawHistoryPage() {
               >
                 <MapPin className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                 <h3 className="text-2xl font-bold text-white mb-2">
-                  Draw history for {selectedState} is coming soon!
+                  Draw history for {selectedStateName} is coming soon!
                 </h3>
                 <p className="text-gray-400 mb-6 max-w-md mx-auto">
                   Currently, we're servicing North Carolina. More states will be added soon.

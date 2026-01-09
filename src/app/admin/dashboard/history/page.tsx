@@ -69,6 +69,18 @@ type FormValues = {
     prize_amount: number | "";
 };
 
+const formatISODate =  (date: Date | null | undefined): string | undefined => {
+    if (!date) return undefined;
+    
+    // Uses local time, not UTC (which prevents timezone off-by-one errors)
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+  };
+  
+
 
 export default function HistoryPage() {
     const dispatch = useAppDispatch();
@@ -312,8 +324,8 @@ export default function HistoryPage() {
             ...filters,
             search: searchTerm || undefined,
             result: resultFilter !== "all" ? (resultFilter as "WIN" | "LOSS" | "PENDING") : undefined,
-            fromDate: startDate ? startDate.toISOString().split("T")[0] : undefined,
-            toDate: endDate ? endDate.toISOString().split("T")[0] : undefined,
+            fromDate: formatISODate(startDate) ,
+            toDate: formatISODate(endDate)
         };
 
         dispatch(setFilters(searchFilters));

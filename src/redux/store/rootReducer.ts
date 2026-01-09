@@ -13,6 +13,7 @@ import subscriptionReducer from '../slice/subscriptionSlice';
 import gameHistoryReducer from '../slice/gameHistorySlice';
 import statesReducer from '../slice/statesSlice';
 import gameTypesReducer from '../slice/gameTypesSlice';
+import drawHistoryReducer from '../slice/drawHistorySlice';
 
 // Combine all reducers
 export const rootReducer = combineReducers({
@@ -25,6 +26,7 @@ export const rootReducer = combineReducers({
   gameHistory: gameHistoryReducer,
   states: statesReducer,
   gameTypes: gameTypesReducer,
+  drawHistory: drawHistoryReducer,
   
   // Add other reducers here as needed
 });

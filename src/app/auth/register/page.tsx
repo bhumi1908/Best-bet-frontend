@@ -14,11 +14,14 @@ import { routes } from '@/utilities/routes';
 import { registerSchema } from '@/utilities/schema';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { UserRegister } from '@/types/auth';
 import { useRouter } from 'next/navigation';
 import apiClient from '@/utilities/axios/instance';
 import { toast } from 'react-toastify';
 import { zodFormikValidate } from '@/utilities/zodFormikValidate';
+import { useAppDispatch, useAppSelector } from '@/redux/store/hooks';
+import { getAllStatesThunk } from '@/redux/thunk/statesThunk';
 
 
 // Form user Register initialValues
@@ -26,7 +29,8 @@ export const registerInitialValues = {
   firstName: '',
   lastName: '',
   email: '',
-  phoneNo:'',
+  phoneNo: '',
+  stateId: 0,
   password: '',
   confirmPassword: '',
   terms: false,
@@ -36,17 +40,34 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter()
+  const dispatch = useAppDispatch();
+  const { states } = useAppSelector((state) => state.states);
+
+  // Fetch states on mount
+  useEffect(() => {
+    if (states.length === 0) {
+      dispatch(getAllStatesThunk());
+    }
+  }, [dispatch, states.length]);
 
   // Formik form configuration
   const formik = useFormik<RegisterFormValues>({
-    initialValues: registerInitialValues,
+    initialValues: {
+      ...registerInitialValues,
+      stateId: registerInitialValues.stateId ?? 0,
+    } as RegisterFormValues,
     validate: zodFormikValidate(registerSchema),
-
-
 
     onSubmit: async (registerDetails: UserRegister, { setSubmitting }) => {
       try {
-        const res = await apiClient.post(routes.api.auth.register, registerDetails);
+        // Convert stateId to number if it's a string
+        const payload = {
+          ...registerDetails,
+          stateId: typeof registerDetails.stateId === 'string'
+            ? parseInt(registerDetails.stateId, 10)
+            : registerDetails.stateId,
+        };
+        const res = await apiClient.post(routes.api.auth.register, payload);
         if (res.status === 201) {
           toast.success('Registration successful! Please login.', {
             theme: 'dark',
@@ -107,70 +128,70 @@ export default function RegisterPage() {
           {/* Register Form */}
           <form className="space-y-6" noValidate>
             <div className='flex item-center gap-3 '>
-            {/* First Name */}
-            <div className="w-full space-y-2">
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-300">
-                First Name
-              </label>
-              <div className="relative">
-                <Input
-                  id="firstName"
-                  name="firstName"
-                  type="text"
-                  autoComplete="given-name"
-                  placeholder="Enter your first name"
-                  value={formik.values.firstName}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                />
-                {formik.touched.firstName && formik.errors.firstName && (
-                  <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    {formik.errors.firstName}
-                  </p>
-                )}
+              {/* First Name */}
+              <div className="w-full space-y-2">
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-300">
+                  First Name
+                </label>
+                <div className="relative">
+                  <Input
+                    id="firstName"
+                    name="firstName"
+                    type="text"
+                    autoComplete="given-name"
+                    placeholder="Enter your first name"
+                    value={formik.values.firstName}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                  />
+                  {formik.touched.firstName && formik.errors.firstName && (
+                    <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      {formik.errors.firstName}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Last Name */}
+              <div className="w-full space-y-2">
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-300">
+                  Last Name
+                </label>
+                <div className="relative">
+                  <Input
+                    id="lastName"
+                    name="lastName"
+                    type="text"
+                    autoComplete="family-name"
+                    placeholder="Enter your last name"
+                    value={formik.values.lastName}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                  />
+                  {formik.touched.lastName && formik.errors.lastName && (
+                    <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      {formik.errors.lastName}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Last Name */}
-            <div className="w-full space-y-2">
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-300">
-                Last Name
-              </label>
-              <div className="relative">
-                <Input
-                  id="lastName"
-                  name="lastName"
-                  type="text"
-                  autoComplete="family-name"
-                  placeholder="Enter your last name"
-                  value={formik.values.lastName}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                />
-                {formik.touched.lastName && formik.errors.lastName && (
-                  <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    {formik.errors.lastName}
-                  </p>
-                )}
-              </div>
-            </div>
-            </div>
-
-              {/* Phone No */}
+            {/* Phone No */}
             <div className="space-y-2">
               <label htmlFor="phoneNo" className="block text-sm font-medium text-gray-300">
                 Phone No
@@ -227,6 +248,49 @@ export default function RegisterPage() {
                       />
                     </svg>
                     {formik.errors.email}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* State */}
+            <div className="space-y-2">
+              <label htmlFor="stateId" className="block text-sm font-medium text-gray-300">
+                State
+              </label>
+              <div className="relative">
+                <Select
+                  className='text'
+                  value={formik.values.stateId && formik.values.stateId > 0 ? String(formik.values.stateId) : ''}
+                  onValueChange={(val) => formik.setFieldValue('stateId', parseInt(val, 10))}
+                >
+                  <SelectTrigger>
+                    <SelectValue>
+                      {formik.values.stateId && formik.values.stateId > 0
+                        ? states.find(
+                          (state) => String(state.id) === String(formik.values.stateId)
+                        )?.state_name
+                        : <p className='text-text-muted'>Select your state </p>}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {states.map((state) => (
+                      <SelectItem key={state.id} value={String(state.id)}>
+                        {state.state_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formik.touched.stateId && formik.errors.stateId && (
+                  <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {formik.errors.stateId}
                   </p>
                 )}
               </div>
@@ -310,10 +374,10 @@ export default function RegisterPage() {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                 />
-                 <label htmlFor="terms" className="text-xs sm:text-sm text-gray-300">
+                <label htmlFor="terms" className="text-xs sm:text-sm text-gray-300">
                   I have read and agree to the{' '}
-                  <Link 
-                    href={routes.terms} 
+                  <Link
+                    href={routes.terms}
                     className="text-yellow-400 hover:text-yellow-300 underline transition-colors"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -321,8 +385,8 @@ export default function RegisterPage() {
                     Terms of Service
                   </Link>
                   {' '}and{' '}
-                  <Link 
-                    href={routes.privacy} 
+                  <Link
+                    href={routes.privacy}
                     className="text-yellow-400 hover:text-yellow-300 underline transition-colors"
                     target="_blank"
                     rel="noopener noreferrer"
