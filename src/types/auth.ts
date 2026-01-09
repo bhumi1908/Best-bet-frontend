@@ -23,6 +23,7 @@ export interface UserRegister {
   phoneNo: string;
   password: string;
   role?: UserRole;
+  stateId?: number;
 }
 
 // Login credentials
@@ -77,6 +78,8 @@ export interface User {
   phoneNo: string;
     lastName: string;
     role?: UserRole;
+    stateId?: number | null;
+    state?: { id: number; name: string; code: string | null } | null;
 }
 
 // Auth state interface

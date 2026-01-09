@@ -313,6 +313,8 @@ export interface ApiUserDetail {
   firstName: string | null;
   lastName: string | null;
   phoneNo: string | null;
+  stateId: number | null;
+  state: { id: number; name: string; code: string | null } | null;
   isTrial: boolean,
   role: UserRole;
   isInactive: boolean;

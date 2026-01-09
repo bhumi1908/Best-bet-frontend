@@ -17,6 +17,8 @@ declare module "next-auth" {
       firstName: string;
       lastName: string;
       phoneNo: string;
+      stateId?: number | null;
+      state?: { id: number; name: string; code: string | null } | null;
     } & DefaultSession["user"];
   }
 
@@ -27,6 +29,8 @@ declare module "next-auth" {
     firstName: string;
     lastName: string;
     phoneNo: string;
+    stateId?: number | null;
+    state?: { id: number; name: string; code: string | null } | null;
     accessToken: string;
     refreshToken: string;
     accessTokenExpires: number;
@@ -40,6 +44,8 @@ declare module "next-auth/jwt" {
     firstName: string;
     lastName: string;
     phoneNo: string;
+    stateId?: number | null;
+    state?: { id: number; name: string; code: string | null } | null;
     accessToken?: string;
     refreshToken?: string;
     accessTokenExpires?: number;

@@ -184,6 +184,8 @@ export const authOptions: NextAuthOptions = {
             firstName: data.user.firstName,
             lastName: data.user.lastName,
             phoneNo: data.user.phoneNo,
+            stateId: data.user.stateId,
+            state: data.user.state,
             role: data.user.role ?? 'USER',
             accessToken: data.token.accessToken,
             refreshToken: data.token.refreshToken,
@@ -210,6 +212,8 @@ export const authOptions: NextAuthOptions = {
         token.firstName = user.firstName;
         token.lastName = user.lastName;
         token.phoneNo = user.phoneNo;
+        token.stateId = user.stateId;
+        token.state = user.state;
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
         token.accessTokenExpires = user.accessTokenExpires;
@@ -221,6 +225,8 @@ export const authOptions: NextAuthOptions = {
         token.firstName = session.user.firstName;
         token.lastName = session.user.lastName;
         token.phoneNo = session.user.phoneNo;
+        token.stateId = session.user.stateId;
+        token.state = session.user.state;
       }
 
       // Access token still valid
@@ -243,6 +249,8 @@ export const authOptions: NextAuthOptions = {
         firstName: token.firstName as string,
         lastName: token.lastName as string,
         phoneNo: token.phoneNo as string,
+        stateId: token.stateId as number | null | undefined,
+        state: token.state as { id: number; name: string; code: string | null } | null | undefined,
       };
 
       session.accessToken = token.accessToken as string;

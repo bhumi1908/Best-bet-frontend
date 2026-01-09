@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
+import { getAllStatesThunk } from "@/redux/thunk/statesThunk";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/Dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/Accordion";
@@ -59,6 +60,14 @@ export default function UserDetailPage() {
   const dispatch = useAppDispatch();
 
   const { selectedUser, isLoading } = useAppSelector((state) => state.user);
+  const { states } = useAppSelector((state) => state.states);
+
+  // Fetch states on mount
+  useEffect(() => {
+    if (states.length === 0) {
+      dispatch(getAllStatesThunk());
+    }
+  }, [dispatch, states.length]);
 
   const [editing, setEditing] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -77,6 +86,7 @@ export default function UserDetailPage() {
       firstName: selectedUser?.firstName ?? "",
       lastName: selectedUser?.lastName ?? "",
       phoneNo: selectedUser?.phoneNo ?? "",
+      stateId: selectedUser?.stateId ? String(selectedUser.stateId) : "",
       role: selectedUser?.role ?? "USER",
     },
     validate: zodFormikValidate(updateAdminSchema),
@@ -85,11 +95,15 @@ export default function UserDetailPage() {
 
       try {
         setUpdating(true);
+        const payload = {
+          ...values,
+          stateId: values.stateId ? parseInt(values.stateId, 10) : undefined,
+        }
 
         await dispatch(
           updateUserThunk({
             id: selectedUser.id,
-            ...values,
+            ...payload,
           })
         ).unwrap();
 
@@ -221,6 +235,7 @@ export default function UserDetailPage() {
     formik.values.firstName === (selectedUser?.firstName ?? "") &&
     formik.values.lastName === (selectedUser?.lastName ?? "") &&
     formik.values.phoneNo === (selectedUser?.phoneNo ?? "") &&
+    formik.values.stateId === (selectedUser?.stateId ? String(selectedUser.stateId) : "") &&
     formik.values.role === (selectedUser?.role ?? "USER");
 
 
@@ -349,6 +364,41 @@ export default function UserDetailPage() {
                       <p className="text-text-primary">{selectedUser.email}</p>
                       {editing && (
                         <p className="text-xs text-text-muted mt-1">Email cannot be changed</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="text-xs text-text-muted mb-1 block">State</label>
+                      {editing ? (
+                        <>
+                          <Select
+                            value={formik.values.stateId}
+                            onValueChange={(val) => formik.setFieldValue("stateId", val)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue>
+                                {formik.values.stateId
+                                  ? states.find(
+                                    (state) => String(state.id) === String(formik.values.stateId)
+                                  )?.state_name
+                                  : <p className='text-text-muted'>Select your state </p>}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {states.map((state) => (
+                                <SelectItem key={state.id} value={String(state.id)}>
+                                  {state.state_name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {formik.touched.stateId && formik.errors.stateId && (
+                            <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                              {formik.errors.stateId}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-text-primary">{selectedUser.state?.name || "N/A"}</p>
                       )}
                     </div>
                     <div>

@@ -4,6 +4,7 @@ export interface EditProfilePayload {
   firstName: string;
   lastName: string;
   phoneNo?: string;
+  stateId?: number;
 }
 
 export interface UserProfile {
@@ -12,6 +13,8 @@ export interface UserProfile {
   firstName: string;
   lastName: string;
   phoneNo?: string;
+  stateId?: number | null;
+  state?: { id: number; name: string; code: string | null } | null;
   role: string;
 }
 

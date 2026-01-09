@@ -15,6 +15,8 @@ import { useFormik } from "formik";
 import { clearError, clearSuccessMessage } from "@/redux/slice/profileSlice";
 import { changePasswordSchema, updateUserSchema } from "@/utilities/schema";
 import { zodFormikValidate } from "@/utilities/zodFormikValidate";
+import { getAllStatesThunk } from "@/redux/thunk/statesThunk";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
 import { motion } from "framer-motion";
 import { Dropdown, DropdownContent, DropdownItem, DropdownTrigger } from "@/components/ui/Dropdown";
 import { Popup } from "@/components/ui/Popup";
@@ -57,6 +59,7 @@ export default function ProfilePage() {
     (state) => state.subscriptionPlan
   );
   const { selectedUser, isLoading: userLoading, error: userError } = useAppSelector((state) => state.user);
+  const { states } = useAppSelector((state) => state.states);
   const {
     currentSubscription,
     isLoading: subscriptionLoading,
@@ -64,6 +67,13 @@ export default function ProfilePage() {
     successMessage,
     checkoutUrl
   } = useAppSelector((state) => state.subscription);
+
+  // Fetch states on mount
+  useEffect(() => {
+    if (states.length === 0) {
+      dispatch(getAllStatesThunk());
+    }
+  }, [dispatch, states.length]);
 
   const getSubscriptionStatusBadge = (status: string) => {
     const styles = {
@@ -111,6 +121,7 @@ export default function ProfilePage() {
       firstName: user?.firstName || "",
       lastName: user?.lastName || "",
       phoneNo: user?.phoneNo || "",
+      stateId: user?.stateId ? String(user.stateId) : "",
     },
     validate: zodFormikValidate(updateUserSchema),
     onSubmit: async (values) => {
@@ -124,6 +135,7 @@ export default function ProfilePage() {
             firstName: values.firstName.trim(),
             lastName: values.lastName.trim(),
             phoneNo: values.phoneNo.trim(),
+            stateId: values.stateId ? parseInt(values.stateId, 10) : undefined,
           })
         ).unwrap();
 
@@ -134,6 +146,8 @@ export default function ProfilePage() {
             firstName: updatedUser.firstName,
             lastName: updatedUser.lastName,
             phoneNo: updatedUser.phoneNo,
+            stateId: updatedUser.stateId,
+            state: updatedUser.state,
           },
         });
 
@@ -478,7 +492,7 @@ export default function ProfilePage() {
         {/* {isPageLoading && !subscriptionOpen && !billing && !cancelConfirmOpen && !scheduleCancelConfirmOpen ? (
           <ProfilePageSkeleton />
         ) : ( */}
-          <section className="relative px-4 py-4 pb-24">
+        <section className="relative px-4 py-4 pb-24">
           <div className="max-w-7xl mx-auto">
 
             <motion.div
@@ -635,6 +649,39 @@ export default function ProfilePage() {
                           )}
                         </div>
                         <div>
+                          <label className="text-xs text-gray-400 mb-1.5 block font-medium">State</label>
+                          {isEditProfile ? (
+                            <>
+                              <Select
+                                value={profileFormik.values.stateId}
+                                onValueChange={(val) => profileFormik.setFieldValue("stateId", val)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue>
+                                    {profileFormik.values.stateId
+                                      ? states.find(
+                                        (state) => String(state.id) === String(profileFormik.values.stateId)
+                                      )?.state_name
+                                      : <p className='text-text-muted'>Select your state </p>}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {states.map((state) => (
+                                    <SelectItem key={state.id} value={String(state.id)}>
+                                      {state.state_name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {profileFormik.touched.stateId && profileFormik.errors.stateId && (
+                                <p className="text-xs text-red-400 mt-1">{profileFormik.errors.stateId}</p>
+                              )}
+                            </>
+                          ) : (
+                            <p className="text-sm text-white">{user?.state?.name || "N/A"}</p>
+                          )}
+                        </div>
+                        <div>
                           <label className="text-xs text-gray-400 mb-1.5 block font-medium">Email</label>
                           <p className="text-sm text-white">{user?.email || "N/A"}</p>
                         </div>
@@ -745,7 +792,7 @@ export default function ProfilePage() {
                         <Table className="w-full rounded-lg overflow-hidden bg-white/2 border border-white/10">
                           <TableHeader>
                             <TableRow className="bg-white/5">
-                            <TableHead className="min-w-[120px] bg-white/10 pl-8">Plan</TableHead>
+                              <TableHead className="min-w-[120px] bg-white/10 pl-8">Plan</TableHead>
                               <TableHead className="min-w-[100px] bg-white/10 pl-8">Status</TableHead>
                               <TableHead className="min-w-[120px] bg-white/10">Start Date</TableHead>
                               <TableHead className="min-w-[120px] bg-white/10">End Date</TableHead>
@@ -755,7 +802,7 @@ export default function ProfilePage() {
                           </TableHeader>
                           <TableBody>
                             {selectedUser.allSubscriptions.map((subscription: ApiCurrentSubscriptionTable) => (
-                              <TableRow key={subscription.id}  className="bg-white/5">
+                              <TableRow key={subscription.id} className="bg-white/5">
                                 <TableCell className="text-text-primary font-medium">
                                   {subscription.planName}
                                 </TableCell>
@@ -1235,7 +1282,7 @@ export default function ProfilePage() {
             </div>
           }
         >
-            <div className="pt-4">
+          <div className="pt-4">
             {isPopupLoading ? (
               <PricingCardSkeleton />
             ) : (
