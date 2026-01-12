@@ -1,8 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
+import { refreshSubscriptionStatus } from "@/utilities/auth/refreshSubscription";
 import { motion } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useEffect } from "react";
 
 export default function SubscriptionSuccessPage() {
   return (

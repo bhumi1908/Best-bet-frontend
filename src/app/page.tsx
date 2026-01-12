@@ -480,7 +480,7 @@ export default function LandingPage() {
 
         
         {/* ==================== PROOF OF PERFORMANCE SECTION ==================== */}
-        {/* <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/5 via-gray-900/10 to-gray-900/5">
+        <section className="relative py-24 px-4 bg-gradient-to-b from-gray-900/5 via-gray-900/10 to-gray-900/5">
           <div className="max-w-7xl mx-auto">
             <motion.div
               className="text-center mb-12"
@@ -535,24 +535,38 @@ export default function LandingPage() {
                   whileHover={{ scale: 1.05, y: -5 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <div
+                                    <div
                     onClick={() => router.push(`${routes.state}?name=${encodeURIComponent(state.name)}`)}
-                    className={`backdrop-blur-md rounded-xl cursor-pointer p-4 border hover:border-yellow-400/50 transition-all duration-300 ${state.hit ? "bg-yellow-500/5 border-yellow-400/50" : "bg-white/5 border-white/10"}`}>
-                    <h3 className="text-white text-sm md:text-base font-semibold mb-2">
-                      {state.name}
-                    </h3>
-                    <div
-                      className={`text-2xl md:text-3xl font-black ${state.hit ? "text-green-400" : "text-white"
-                        }`}
-                    >
-                      {state.number}
+                    className="relative rounded-xl cursor-pointer p-4 transition-all duration-300 overflow-hidden"
+                  >
+                    {state.hit && (
+                      <div
+                        className="absolute inset-0 opacity-50"
+                        style={{
+                          backgroundImage: 'url(/images/fireworks.gif)',
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          backgroundRepeat: 'no-repeat'
+                        }}
+                      />
+                    )}
+                    <div className="relative z-10">
+                      <h3 className="text-white text-sm md:text-base font-semibold mb-2">
+                        {state.name}
+                      </h3>
+                      <div
+                        className={`text-2xl md:text-3xl font-black ${state.hit ? "text-green-400" : "text-white"
+                          }`}
+                      >
+                        {state.number}
+                      </div>
                     </div>
                   </div>
                 </motion.div>
               ))}
             </motion.div>
           </div>
-        </section> */}
+        </section>
 
         {/* ==================== KEY FEATURES SECTION ==================== */}
         <section className="relative py-28 px-4 bg-gradient-to-b from-transparent via-gray-900/5 to-gray-900/5">

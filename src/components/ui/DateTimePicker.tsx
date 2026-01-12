@@ -87,6 +87,8 @@ export function DateTimePicker({
     const scrollY = window.scrollY;
     const scrollX = window.scrollX;
     const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
 
     const popoverHeight = rangePicker ? 380 : 400;
     const gap = 8;
@@ -94,9 +96,6 @@ export function DateTimePicker({
     const spaceBelow = viewportHeight - rect.bottom;
     const shouldPlaceAbove = spaceBelow < popoverHeight && rect.top > spaceBelow;
 
-    const top = shouldPlaceAbove
-      ? rect.top + scrollY - popoverHeight - gap
-      : rect.bottom + scrollY + gap;
 
     const width = rangePicker
       ? 640 // Two months side by side
@@ -106,9 +105,24 @@ export function DateTimePicker({
           ? 320
           : 160;
 
+    const spaceRight = viewportWidth - rect.left;
+    const spaceLeft = rect.right;
+    const top = shouldPlaceAbove
+      ? rect.top - popoverHeight - gap * -0.5
+      : rect.bottom + gap;
+
+    let left = rect.left + scrollX;
+
+    if (spaceRight < width && spaceLeft >= width) {
+      left = rect.right + scrollX - width;
+    }
+
+    // Final safety clamp (never overflow screen)
+    left = Math.max(gap, Math.min(left, viewportWidth - width - gap));
+
     setPosition({
       top,
-      left: rect.left + scrollX,
+      left,
       width,
     });
   }, [showDate, showTime, rangePicker]);

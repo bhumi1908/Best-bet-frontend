@@ -22,14 +22,22 @@ import { Dropdown, DropdownContent, DropdownItem, DropdownTrigger } from "@/comp
 import { Popup } from "@/components/ui/Popup";
 import { getAllSubscriptionPlansThunk } from "@/redux/thunk/subscriptionPlanThunk";
 import { cancelScheduledPlanChangeThunk, changeUserSubscriptionPlanSelfThunk, createCheckoutSessionThunk, getUserSubscriptionSelfThunk, revokeUserSubscriptionSelfThunk } from "@/redux/thunk/subscriptionThunk";
+import { refreshSubscriptionStatus } from "@/utilities/auth/refreshSubscription";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
 import { ApiCurrentSubscription, ApiCurrentSubscriptionTable } from "@/types/user";
 import { getUserByIdThunk } from "@/redux/thunk/userThunk";
 import ProfilePageSkeleton, { NoSubscription, SubscriptionTableSkeleton, ProfileInfoSkeleton, CurrentPlanSkeleton } from "@/components/ProfileInfoSkeleton";
 import { clearSubscriptionSuccess } from "@/redux/slice/subscriptionSlice";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
 import PricingCardSkeleton from "@/components/PricingCardSkeleton";
+import {
+  getSubscriptionStatusBadge,
+  formatDateShort,
+  formatDateWithPattern,
+  formatPrice,
+  formatPriceWithPeriod,
+  formatCurrency,
+} from "@/utilities/formatting";
 
 export default function ProfilePage() {
   const { data: session, update } = useSession();
@@ -75,27 +83,6 @@ export default function ProfilePage() {
     }
   }, [dispatch, states.length]);
 
-  const getSubscriptionStatusBadge = (status: string) => {
-    const styles = {
-      ACTIVE: "bg-green-500/20 text-green-400 border-green-500/30",
-      CANCELED: "bg-red-500/20 text-red-400 border-red-500/30",
-      EXPIRED: "bg-gray-500/20 text-gray-400 border-gray-500/30",
-      REFUNDED: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-      TRIAL: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-      PAST_DUE: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-
-    };
-    return (
-      <span
-        className={cn(
-          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
-          styles[status as keyof typeof styles] || styles.ACTIVE
-        )}
-      >
-        {status.charAt(0).toUpperCase() + status.slice(1).replace("_", " ")}
-      </span>
-    );
-  };
 
   const formik = useFormik({
     initialValues: {
@@ -256,11 +243,16 @@ export default function ProfilePage() {
       await dispatch(revokeUserSubscriptionSelfThunk()).unwrap();
       setCancelConfirmOpen(false);
       setPendingCancellation(true);
+      
       // Refresh subscription data
       if (user?.id) {
         await dispatch(getUserSubscriptionSelfThunk());
         await dispatch(getUserByIdThunk(Number(user.id)));
       }
+      
+      // Immediately refresh NextAuth session to update subscription status
+      // This ensures middleware and game routes reflect the change immediately
+      await refreshSubscriptionStatus(update);
     } catch (err: any) {
       console.error("Failed to cancel subscription:", err);
       toast.error(err?.message || "Failed to cancel subscription");
@@ -274,6 +266,12 @@ export default function ProfilePage() {
 
     try {
       setChangingPlan(true);
+      if (isFreePlan(currentSubscription?.plan)) {
+        await dispatch(createCheckoutSessionThunk(selectedPlanId)).unwrap();
+        await refreshSubscriptionStatus(update);
+        return;
+      }
+
       const result = await dispatch(changeUserSubscriptionPlanSelfThunk({ newPlanId: selectedPlanId })).unwrap();
 
       if (selectedPlanId === currentPlanId) {
@@ -283,11 +281,16 @@ export default function ProfilePage() {
       }
       setSubscriptionOpen(false);
       setSelectedPlanId(null);
+      
       // Refresh subscription data
       if (user?.id) {
         await dispatch(getUserSubscriptionSelfThunk());
         await dispatch(getUserByIdThunk(Number(user.id)));
       }
+      
+      // Immediately refresh NextAuth session to update subscription status
+      // This ensures middleware and game routes reflect the change immediately
+      await refreshSubscriptionStatus(update);
     } catch (err: any) {
       console.error("Failed to change plan:", err);
       toast.error(err?.message || "Failed to change subscription plan");
@@ -302,6 +305,14 @@ export default function ProfilePage() {
       await dispatch(cancelScheduledPlanChangeThunk()).unwrap();
       setScheduleCancelConfirmOpen(false)
       toast.success("Scheduled plan change cancelled");
+      
+      // Refresh subscription data
+      if (user?.id) {
+        await dispatch(getUserSubscriptionSelfThunk());
+      }
+      
+      // Immediately refresh NextAuth session to update subscription status
+      await refreshSubscriptionStatus(update);
     } catch (err: any) {
       console.error("Failed to cancel scheduled change:", err);
       toast.error(err.message || "Failed to cancel scheduled change");
@@ -693,7 +704,7 @@ export default function ProfilePage() {
                         </div>
                         <div>
                           <label className="text-xs text-gray-400 mb-1.5 block font-medium">Subscription Plan</label>
-                          <p className="text-sm text-white">Pro Plan</p>
+                          <p className="text-sm text-white">{currentSubscription?.plan.name || "N/A"}</p>
                         </div>
                         <div>
                           <label className="text-xs text-gray-400 mb-1.5 block font-medium">Subscribed On</label>
@@ -816,24 +827,16 @@ export default function ProfilePage() {
                                   </span>
                                 </TableCell>
                                 <TableCell className="text-text-primary font-medium">
-                                  {new Date(subscription.startDate).toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "numeric",
-                                  })}
+                                  {formatDateShort(subscription.startDate)}
                                 </TableCell>
                                 <TableCell className="text-text-primary font-medium">
-                                  {new Date(subscription.endDate).toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "numeric",
-                                  })}
+                                  {formatDateShort(subscription.endDate)}
                                 </TableCell>
                                 <TableCell className="text-text-primary font-medium">
                                   {subscription.status === "TRIAL"
                                     ? "FREE"
                                     : subscription.price != null
-                                      ? `$${subscription.price.toFixed(2)}`
+                                      ? formatPrice(subscription.price)
                                       : "N/A"}
                                 </TableCell>
                                 <TableCell className="text-text-tertiary font-medium">
@@ -943,7 +946,7 @@ export default function ProfilePage() {
                               <p className="text-blue-400 font-medium">Plan Change Scheduled</p>
                               <p className="text-blue-300">
                                 Changing to <span className="font-semibold">{nextPlan.name}</span> on{' '}
-                                {format(new Date(currentSubscription.scheduledChangeAt!), 'MMM dd, yyyy')}
+                                {formatDateWithPattern(currentSubscription.scheduledChangeAt!, 'MMM dd, yyyy')}
                               </p>
                             </div>
                           </div>
@@ -967,7 +970,7 @@ export default function ProfilePage() {
                             <p className="text-orange-400 font-medium">Cancellation Scheduled</p>
                             <p className="text-orange-300">
                               Your subscription will end on{' '}
-                              {format(new Date(currentSubscription.endDate), 'MMM dd, yyyy')}
+                              {formatDateWithPattern(currentSubscription.endDate, 'MMM dd, yyyy')}
                             </p>
                           </div>
                         </div>
@@ -987,7 +990,7 @@ export default function ProfilePage() {
                     </p>
                     <div className="mb-6">
                       <span className="text-3xl font-bold text-yellow-400">
-                        ${currentSubscription.plan.price.toFixed(2)}
+                        {formatPrice(currentSubscription.plan.price, '0.00')}
                       </span>
                       <span className="text-sm text-gray-400 ml-1">
                         {currentSubscription.plan.duration === 12 ? '/year' : '/month'}
@@ -1295,7 +1298,7 @@ export default function ProfilePage() {
                         <p className="text-sm font-medium text-yellow-400">Current Plan</p>
                         <p className="text-lg font-bold text-white">{currentSubscription.plan.name}</p>
                         <p className="text-sm text-gray-400">
-                          Active until {format(new Date(currentSubscription.endDate), 'MMM dd, yyyy')}
+                          Active until {formatDateWithPattern(currentSubscription.endDate, 'MMM dd, yyyy')}
                           {hasScheduledChange && (
                             <span className="ml-2 text-blue-400">
                               (Change to {nextPlan?.name} scheduled)
@@ -1416,7 +1419,7 @@ export default function ProfilePage() {
                           ) : (
                             <div className="flex items-baseline gap-1">
                               <span className="text-3xl font-extrabold text-yellow-400">
-                                ${plan.price}
+                                ${plan.price != null ? plan.price.toFixed(2) : '0.00'}
                               </span>
                               <span className="text-gray-400 text-sm">{plan.period}</span>
                             </div>
@@ -1424,7 +1427,7 @@ export default function ProfilePage() {
                           {(plan.discountPercent ?? 0) > 0 && (
                             <div className="flex items-baseline gap-1 mt-1">
                               <span className="text-gray-500 text-lg line-through">
-                                ${plan.originalPrice?.toFixed(2) ?? 'N/A'}
+                                {formatPrice(plan.originalPrice, 'N/A')}
                               </span>
                               <span className="text-gray-400 text-sm">{plan.period}</span>
                             </div>
@@ -1532,7 +1535,7 @@ export default function ProfilePage() {
 
                   <p className="text-sm text-gray-300 mt-1">
                     <strong>Active until:</strong>{" "}
-                    {format(new Date(currentSubscription.endDate), "MMM dd, yyyy")}
+                    {formatDateWithPattern(currentSubscription.endDate, "MMM dd, yyyy")}
                   </p>
 
                   {hasScheduledChange && (
@@ -1613,8 +1616,11 @@ export default function ProfilePage() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-400">Plan Price</span>
                       <span className="text-lg font-semibold text-yellow-400">
-                        ${currentSubscription.plan.price.toFixed(2)}
-                        {currentSubscription.plan.duration === 12 ? "/year" : "/month"}
+                        {formatPriceWithPeriod(
+                          currentSubscription.plan.price,
+                          currentSubscription.plan.duration === 12 ? "year" : "month",
+                          '0.00'
+                        )}
                       </span>
                     </div>
 
@@ -1634,10 +1640,7 @@ export default function ProfilePage() {
                           : "Next Billing Date"}
                       </span>
                       <span className="text-sm text-white">
-                        {format(
-                          new Date(currentSubscription.endDate),
-                          "MMM dd, yyyy"
-                        )}
+                        {formatDateWithPattern(currentSubscription.endDate, "MMM dd, yyyy")}
                       </span>
                     </div>
 
@@ -1656,10 +1659,7 @@ export default function ProfilePage() {
                             Change Date
                           </span>
                           <span className="text-sm text-blue-400">
-                            {format(
-                              new Date(currentSubscription.scheduledChangeAt!),
-                              "MMM dd, yyyy"
-                            )}
+                            {formatDateWithPattern(currentSubscription.scheduledChangeAt!, "MMM dd, yyyy")}
                           </span>
                         </div>
                       </>
@@ -1676,11 +1676,8 @@ export default function ProfilePage() {
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-400">Last Payment</span>
                         <span className="text-sm text-white">
-                          ${currentSubscription.lastPayment.amount.toFixed(2)} on{" "}
-                          {format(
-                            new Date(currentSubscription.lastPayment.createdAt),
-                            "MMM dd, yyyy"
-                          )}
+                          {formatPrice(currentSubscription.lastPayment.amount, '0.00')} on{" "}
+                          {formatDateWithPattern(currentSubscription.lastPayment.createdAt, "MMM dd, yyyy")}
                         </span>
                       </div>
                     )}
@@ -1789,7 +1786,7 @@ export default function ProfilePage() {
 
                 <p className="text-sm text-gray-300">
                   <strong>Change Date:</strong>{" "}
-                  {format(new Date(currentSubscription!.scheduledChangeAt!), "MMM dd, yyyy")}
+                  {formatDateWithPattern(currentSubscription!.scheduledChangeAt!, "MMM dd, yyyy")}
                 </p>
               </div>
             </div>

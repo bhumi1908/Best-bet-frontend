@@ -15,6 +15,11 @@ import { getAllUserSubscriptionsAdminThunk } from '@/redux/thunk/subscriptionThu
 import { setFilters, setPagination } from '@/redux/slice/subscriptionSlice';
 import { SubscriptionStatus } from '@/types/subscription';
 import { getAllSubscriptionPlansThunk } from '@/redux/thunk/subscriptionPlanThunk';
+import {
+  getSubscriptionStatusBadge,
+  formatDateMedium,
+  formatPrice,
+} from '@/utilities/formatting';
 
 
 const statusOptions: { value: string; label: string }[] = [
@@ -86,27 +91,6 @@ export const SubscriptionsWrapper = () => {
 
   };
 
-  // Status badge
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      ACTIVE: "bg-green-500/20 text-green-400 border-green-500/30",
-      CANCELED: "bg-red-500/20 text-red-400 border-red-500/30",
-      EXPIRED: "bg-gray-500/20 text-gray-400 border-gray-500/30",
-      REFUNDED: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-      TRIAL: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-
-    };
-    return (
-      <span
-        className={cn(
-          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
-          styles[status as keyof typeof styles] || styles.ACTIVE
-        )}
-      >
-        {status.charAt(0).toUpperCase() + status.slice(1).replace("_", " ")}
-      </span>
-    );
-  };
 
 
 
@@ -329,16 +313,17 @@ export const SubscriptionsWrapper = () => {
                     )}
                   </div>
                 </TableHead>
+                <TableHead className="min-w-[140px]">State</TableHead>
                 <TableHead className="min-w-[140px]">Payment Method</TableHead>
                 <TableHead className="!text-center min-w-[140px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableSkeleton columns={7} />
+                <TableSkeleton columns={8} />
               ) : subscriptions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-text-tertiary">
+                  <TableCell colSpan={8} className="text-center py-8 text-text-tertiary">
                     No subscriptions found
                   </TableCell>
                 </TableRow>
@@ -352,24 +337,19 @@ export const SubscriptionsWrapper = () => {
                       </div>
                     </TableCell>
                     <TableCell className="text-text-primary">{subscription.plan.name}</TableCell>
-                    <TableCell>{getStatusBadge(subscription.status)}</TableCell>
+                    <TableCell>{getSubscriptionStatusBadge(subscription.status)}</TableCell>
                     <TableCell className="text-accent-primary font-medium">
-                      {subscription.status === "TRIAL"
+                      {subscription.status === "TRIAL" || subscription.plan.price == null
                         ? "FREE"
-                        : `$${subscription.plan.price.toFixed(2)}`}
+                        : formatPrice(subscription.plan.price)}
 
                     </TableCell>
                     <TableCell className="text-text-primary">
 
-                      <div className="font-medium"> {new Date(subscription.startDate).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })} to {new Date(subscription.endDate).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}</div>
+                      <div className="font-medium"> {formatDateMedium(subscription.startDate)} to {formatDateMedium(subscription.endDate)}</div>
                       <div className="text-xs text-text-tertiary">One Month Subscription</div>
                     </TableCell>
+                    <TableCell className="text-text-tertiary">{subscription.user.state?.name || "N/A"}</TableCell>
                     <TableCell className="text-text-tertiary">{subscription.payment?.paymentMethod || "N/A"}</TableCell>
                     <TableCell className="text-center">
                       <Button

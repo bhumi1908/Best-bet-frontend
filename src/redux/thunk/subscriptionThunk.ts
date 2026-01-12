@@ -136,22 +136,25 @@ export const getSubscriptionDashboardAdminThunk = createAsyncThunk<
 );
 
 export const revokeUserSubscriptionAdminThunk = createAsyncThunk<
-  { message: string },
+  Subscription,
   number,
   { rejectValue: RejectPayload }
 >(
   "admin/revokeUserSubscription",
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post<{ message: string }>(
+      const response = await apiClient.post<{
+        data: Subscription;
+        message: string;
+      }>(
         routes.api.subscription.admin.revokeSubscription(userId)
       );
 
-      if (!response.data?.message) {
+      if (!response.data?.data) {
         throw new Error("Invalid response from server");
       }
 
-      return { message: response.data.message };
+      return response.data.data;
     } catch (error: any) {
       const message =
         typeof error.response?.data?.message === "string"
@@ -277,19 +280,22 @@ export const changeUserSubscriptionPlanSelfThunk = createAsyncThunk<
 );
 
 export const refundSubscriptionPaymentAdminThunk = createAsyncThunk<
-  RefundResponse,
+  RefundResponse & { subscription?: Subscription },
   { paymentIntentId: string; amount: number; reason?: string },
   { rejectValue: RejectPayload }
 >(
   "admin/refundSubscriptionPayment",
   async ({ paymentIntentId, amount, reason }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post<RefundResponse>(
+      const response = await apiClient.post<{
+        data: RefundResponse & { subscription?: Subscription };
+        message: string;
+      }>(
         routes.api.subscription.admin.refundSubscription(paymentIntentId),
         { amount, reason }
       );
 
-      if (!response.data) {
+      if (!response.data?.data) {
         throw new Error("Invalid refund response from server");
       }
 

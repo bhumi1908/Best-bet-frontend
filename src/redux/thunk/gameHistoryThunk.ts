@@ -35,7 +35,7 @@ export const getAllGameHistoriesThunk = createAsyncThunk<
   async ({ page = 1, limit = 10, filters = {} }, { rejectWithValue }) => {
     try {
       // Build query parameters
-      const params: Record<string, string> = {
+      const params: Record<string, string | Date> = {
         page: page.toString(),
         limit: limit.toString(),
       };

@@ -297,7 +297,7 @@ export const SubscriptionPlansWrapper = () => {
                                 ) : (
                                     // Regular paid plan UI
                                     <p className="text-3xl font-bold text-accent-primary leading-tight">
-                                        ${plan.price?.toFixed(2)}
+                                        ${plan.price != null ? plan.price.toFixed(2) : '0.00'}
                                         <span className="text-sm font-normal text-text-tertiary ml-1">
                                             {plan.duration === 12 ? "/yr (billed annually)" : "/mo"}
                                         </span>
@@ -329,7 +329,7 @@ export const SubscriptionPlansWrapper = () => {
                                             </span>
 
                                             {/* Original Price if Discounted */}
-                                            {plan.price && (plan.discountPercent ?? 0) > 0 && (
+                                            {plan.price != null && (plan.discountPercent ?? 0) > 0 && (
                                                 <span className="text-lg text-text-tertiary line-through ">
                                                     ${plan.price.toFixed(2)}
                                                 </span>

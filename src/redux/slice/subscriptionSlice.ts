@@ -21,6 +21,13 @@ import {
     revokeUserSubscriptionSelfThunk,
 } from "../thunk/subscriptionThunk";
 import { RejectPayload } from "../thunk/supportThunk";
+import {
+    toggleSubscriptionPlanStatusThunk,
+    createSubscriptionPlanThunk,
+    deleteSubscriptionPlanThunk,
+    updateSubscriptionPlanThunk,
+} from "../thunk/subscriptionPlanThunk";
+import { RootState } from "../store/rootReducer";
 
 const initialState: AdminSubscriptionState = {
     isLoading: false,
@@ -126,7 +133,18 @@ const adminSubscriptionSlice = createSlice({
                 (state, action: PayloadAction<any>) => {
                     state.isLoading = false;
                     if (action.payload) {
-                        state.currentSubscription = action.payload.status === 'ACTIVE' || action.payload.status === 'TRIAL' || action.payload.status === 'CANCELED' ? action.payload : null;
+                        // Show subscription if it's ACTIVE, TRIAL, or CANCELED (but not yet expired)
+                        // CANCELED subscriptions should still be shown until endDate passes
+                        const now = new Date();
+                        const endDate = action.payload.endDate ? new Date(action.payload.endDate) : null;
+                        const isNotExpired = !endDate || endDate > now;
+                        
+                        if (action.payload.status === 'ACTIVE' || 
+                            action.payload.status === 'TRIAL') {
+                            state.currentSubscription = action.payload;
+                        } else {
+                            state.currentSubscription = null;
+                        }
                     } else {
                         state.currentSubscription = null;
                     }
@@ -185,6 +203,80 @@ const adminSubscriptionSlice = createSlice({
                     "Failed to load subscription dashboard";
             })
 
+            // Update dashboard stats when plan status is toggled
+            .addCase(
+                toggleSubscriptionPlanStatusThunk.fulfilled,
+                (state, action: PayloadAction<{ id: number; isActive: boolean; previousIsActive: boolean }>) => {
+                    if (state.stats) {
+                        const { isActive, previousIsActive } = action.payload;
+                        
+                        // Only update if the status actually changed
+                        if (isActive !== previousIsActive) {
+                            if (isActive && !previousIsActive) {
+                                // Plan was activated: increment activePlans
+                                state.stats.activePlans = (state.stats.activePlans || 0) + 1;
+                            } else if (!isActive && previousIsActive) {
+                                // Plan was deactivated: decrement activePlans
+                                state.stats.activePlans = Math.max(0, (state.stats.activePlans || 0) - 1);
+                            }
+                        }
+                    }
+                }
+            )
+
+            // Update dashboard stats when a plan is created
+            .addCase(
+                createSubscriptionPlanThunk.fulfilled,
+                (state, action: PayloadAction<any>) => {
+                    if (state.stats) {
+                        // Increment total plans
+                        state.stats.totalPlans = (state.stats.totalPlans || 0) + 1;
+                        
+                        // If the new plan is active, increment active plans
+                        if (action.payload.isActive) {
+                            state.stats.activePlans = (state.stats.activePlans || 0) + 1;
+                        }
+                    }
+                }
+            )
+
+            // Update dashboard stats when a plan is updated (if isActive status changed)
+            .addCase(
+                updateSubscriptionPlanThunk.fulfilled,
+                (state, action: PayloadAction<any>) => {
+                    if (state.stats && action.payload.previousIsActive !== undefined) {
+                        const { isActive, previousIsActive } = action.payload;
+                        
+                        // Only update if the status actually changed
+                        if (isActive !== previousIsActive) {
+                            if (isActive && !previousIsActive) {
+                                // Plan was activated: increment activePlans
+                                state.stats.activePlans = (state.stats.activePlans || 0) + 1;
+                            } else if (!isActive && previousIsActive) {
+                                // Plan was deactivated: decrement activePlans
+                                state.stats.activePlans = Math.max(0, (state.stats.activePlans || 0) - 1);
+                            }
+                        }
+                    }
+                }
+            )
+
+            // Update dashboard stats when a plan is deleted
+            .addCase(
+                deleteSubscriptionPlanThunk.fulfilled,
+                (state, action: PayloadAction<{ id: number | string; wasActive: boolean }>) => {
+                    if (state.stats) {
+                        // Decrement total plans
+                        state.stats.totalPlans = Math.max(0, (state.stats.totalPlans || 0) - 1);
+                        
+                        // If the deleted plan was active, decrement active plans
+                        if (action.payload.wasActive) {
+                            state.stats.activePlans = Math.max(0, (state.stats.activePlans || 0) - 1);
+                        }
+                    }
+                }
+            )
+
             //Revoke subscriptions
             .addCase(revokeUserSubscriptionAdminThunk.pending, (state) => {
                 state.isLoading = true;
@@ -229,8 +321,10 @@ const adminSubscriptionSlice = createSlice({
             .addCase(revokeUserSubscriptionSelfThunk.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.error = null;
-                state.currentSubscription = action.payload.status === 'CANCELED' ? null : action.payload;
-           
+                // Keep CANCELED subscription visible until it expires
+                if (action.payload) {
+                    state.currentSubscription = action.payload;
+                }
                 state.successMessage = "Subscription cancellation scheduled";
             })
             .addCase(revokeUserSubscriptionSelfThunk.rejected, (state, action: PayloadAction<RejectPayload | undefined>) => {

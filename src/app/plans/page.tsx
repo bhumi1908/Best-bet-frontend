@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { createCheckoutSessionThunk } from "@/redux/thunk/subscriptionThunk";
 import { toast } from "react-toastify";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { refreshSubscriptionStatus } from "@/utilities/auth/refreshSubscription";
 
 type PlanTier = 1 | 2 | 3;
 
@@ -65,7 +66,7 @@ const PLAN_UI_CONFIG: Record<string, { icon: JSX.Element; cta: string }> = {
 };
 
 export default function PlansPage() {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const isAuthenticated = !!session;
 
   const [hoveredPlan, setHoveredPlan] = useState<number | null>(null);
@@ -101,8 +102,6 @@ export default function PlansPage() {
         discountPercent > 0
           ? Number((basePrice * (1 - discountPercent / 100)).toFixed(2))
           : basePrice;
-
-
 
       return {
         id: plan.id,
@@ -173,6 +172,7 @@ export default function PlansPage() {
       const payload = await dispatch(
         createCheckoutSessionThunk(plan.id)
       ).unwrap();
+
       if (payload.message && !payload.trialActivated && !payload.url) {
         toast.error(payload.message);
         return;
@@ -183,6 +183,7 @@ export default function PlansPage() {
         router.push(routes.home);
         return;
       }
+      
       if (payload.url) {
         toast.info("Redirecting to Stripe for payment...");
         window.location.href = payload.url;
@@ -193,6 +194,7 @@ export default function PlansPage() {
       router.push(routes.profile)
     } finally {
       setLoadingIndex(null)
+      await refreshSubscriptionStatus(update)
     }
   };
 
@@ -361,7 +363,7 @@ export default function PlansPage() {
                         ) : (
                           <div className="flex items-baseline gap-1">
                             <span className="text-5xl font-extrabold text-yellow-400">
-                              ${plan.price}
+                              ${plan.price != null ? plan.price.toFixed(2) : '0.00'}
                             </span>
                             <span className="text-gray-400 text-sm">{plan.period}</span>
                           </div>
@@ -370,7 +372,7 @@ export default function PlansPage() {
                       {(plan.discountPercent ?? 0) > 0 && (
                         <div className="flex items-baseline gap-1">
                           <span className="text-gray-400 text-2xl line-through">
-                            ${plan.originalPrice?.toFixed(2)}
+                            ${plan.originalPrice != null ? plan.originalPrice.toFixed(2) : 'N/A'}
                           </span>
                           <span className="text-gray-400 text-sm">{plan.period}</span>
                         </div>

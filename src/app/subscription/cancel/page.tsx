@@ -3,8 +3,48 @@
 import { Button } from "@/components/ui/Button";
 import { motion } from "framer-motion";
 import { XCircle } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
+import { routes } from "@/utilities/routes";
+import { useSession } from "next-auth/react";
 
 export default function SubscriptionCancelPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { status: sessionStatus } = useSession();
+
+  // Route protection: Verify user came from Stripe checkout
+  useEffect(() => {
+    // Check if session_id is present (Stripe passes this on redirect)
+    const sessionId = searchParams.get("session_id");
+    
+    if (!sessionId) {
+      // No session_id means user accessed page directly - redirect to plans
+      router.replace(routes.plans);
+      return;
+    }
+
+    // If session is not authenticated, wait for it
+    if (sessionStatus === "loading") {
+      return;
+    }
+
+    if (sessionStatus === "unauthenticated") {
+      // User not logged in - redirect to login
+      router.replace(`${routes.auth.login}?from=${encodeURIComponent("/subscription/cancel")}`);
+      return;
+    }
+  }, [searchParams, router, sessionStatus]);
+
+  // Show loading state while checking route protection
+  if (sessionStatus === "loading" || !searchParams.get("session_id")) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-black px-4">
       <motion.div

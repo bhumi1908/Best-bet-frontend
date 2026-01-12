@@ -82,8 +82,8 @@ export interface UpdateGameHistoryPayload {
 export interface GameHistoryFilters {
   search?: string;
   result?: 'WIN' | 'LOSS' | 'PENDING';
-  fromDate?: string; // ISO date string
-  toDate?: string; // ISO date string
+  fromDate?: Date; // ISO date string
+  toDate?: Date; // ISO date string
   sortBy?: 'drawDate' | 'resultStatus' | 'createdAt';
   sortOrder?: 'asc' | 'desc';
 }
