@@ -1,6 +1,5 @@
 "use client";
 
-import { format } from "date-fns";
 import { useState, useEffect } from "react";
 import { useFormik } from "formik";
 import { z } from "zod";
@@ -50,6 +49,15 @@ import { getAllStatesThunk } from "@/redux/thunk/statesThunk";
 import { getAllGameTypesThunk } from "@/redux/thunk/gameTypesThunk";
 import { GameHistory, CreateGameHistoryPayload, UpdateGameHistoryPayload, State, GameType } from "@/types/gameHistory";
 import { gameHistoryFormSchema } from "@/utilities/schema";
+import {
+    formatDateShort,
+    formatISODate,
+    getDrawTimeLabel,
+    getResultBadge,
+    getResultLabel,
+    formatCurrency,
+} from "@/utilities/formatting";
+import { WinningNumbers } from "@/components/ui/WinningNumbers";
 
 const RESULT_LABELS: Record<string, string> = {
     all: "All Results",
@@ -69,17 +77,6 @@ type FormValues = {
     prize_amount: number | "";
 };
 
-const formatISODate =  (date: Date | null | undefined): string | undefined => {
-    if (!date) return undefined;
-    
-    // Uses local time, not UTC (which prevents timezone off-by-one errors)
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    
-    return `${year}-${month}-${day}`;
-  };
-  
 
 
 export default function HistoryPage() {
@@ -89,6 +86,7 @@ export default function HistoryPage() {
     const { gameHistories, pagination, filters, isLoading, error } = useAppSelector((state) => state.gameHistory);
     const { states } = useAppSelector((state) => state.states);
     const { gameTypes } = useAppSelector((state) => state.gameTypes);
+
 
     // Local state
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -168,25 +166,6 @@ export default function HistoryPage() {
         },
     });
 
-    // Handle result type changes - auto-set values for Loss/Pending
-    // Note: This is handled in the onValueChange handler for the result select
-    // Keeping this as a backup in case result is changed programmatically
-    useEffect(() => {
-        if (formik.values.result === "LOSS" || formik.values.result === "PENDING") {
-            // Auto-set prize to 0 and winning numbers to "000"
-            if (formik.values.prize_amount !== 0 && formik.values.prize_amount !== "") {
-                formik.setFieldValue("prize_amount", 0);
-            }
-            if (formik.values.winning_numbers !== "000" && formik.values.winning_numbers !== "") {
-                formik.setFieldValue("winning_numbers", "000");
-            }
-        }
-        else{
-            formik.setFieldValue("prize_amount", "");
-            formik.setFieldValue("winning_numbers", "");
-        }
-    }, [formik.values.result]); // eslint-disable-line react-hooks/exhaustive-deps
-
     // Handlers
     const handleCreate = () => {
         formik.resetForm({
@@ -206,6 +185,8 @@ export default function HistoryPage() {
 
     const handleEdit = (history: GameHistory) => {
         setSelectedHistory(history);
+        console.log('history', history);
+
         formik.setValues({
             state_id: history.state_id,
             game_id: history.game_id,
@@ -225,21 +206,21 @@ export default function HistoryPage() {
             toast.success("Game history deleted successfully");
             setDeleteDialogOpen(false);
             setSelectedHistory(null);
-            
+
             // Calculate if we need to go to previous page
             const currentItemsOnPage = gameHistories.length;
             const isLastItemOnPage = currentItemsOnPage === 1;
             const isNotFirstPage = pagination.page > 1;
-            
+
             // If we deleted the last item on the current page and we're not on page 1, go to previous page
-            const targetPage = isLastItemOnPage && isNotFirstPage 
-                ? pagination.page - 1 
+            const targetPage = isLastItemOnPage && isNotFirstPage
+                ? pagination.page - 1
                 : pagination.page;
-            
+
             if (targetPage !== pagination.page) {
                 dispatch(setPagination({ page: targetPage }));
             }
-            
+
             // Refetch data to update pagination correctly
             await dispatch(
                 getAllGameHistoriesThunk({
@@ -261,56 +242,6 @@ export default function HistoryPage() {
         dispatch(setPagination({ limit, page: 1 }));
     };
 
-    // Convert winning numbers string to array for display
-    const renderWinningNumbers = (numbers: string) => {
-        return (
-            <div className="flex items-center gap-1">
-                {numbers.split("").map((num, idx) => (
-                    <span
-                        key={idx}
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border-2 bg-accent-primary text-black border-accent-primary"
-                    >
-                        {num}
-                    </span>
-                ))}
-            </div>
-        );
-    };
-
-    const getResultBadge = (result: string) => {
-        const styles = {
-            WIN: "bg-green-500/20 text-green-400 border-green-500/30",
-            LOSS: "bg-red-500/20 text-red-400 border-red-500/30",
-            PENDING: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-        };
-        return (
-            <span
-                className={cn(
-                    "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
-                    styles[result as keyof typeof styles] || styles.PENDING
-                )}
-            >
-                {result}
-            </span>
-        );
-    };
-
-    const getResultLabel = (result: string) => {
-        return result === "WIN" ? "Win" : result === "LOSS" ? "Loss" : "Pending";
-    };
-
-    const getDrawTimeLabel = (time: string) => {
-        return time === "MID" ? "Midday (MID)" : "Evening (EVE)";
-    };
-
-    // Format date for display
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-        });
-    };
 
     // Fetch initial data
     useEffect(() => {
@@ -324,8 +255,8 @@ export default function HistoryPage() {
             ...filters,
             search: searchTerm || undefined,
             result: resultFilter !== "all" ? (resultFilter as "WIN" | "LOSS" | "PENDING") : undefined,
-            fromDate: formatISODate(startDate) ,
-            toDate: formatISODate(endDate)
+            fromDate: startDate,
+            toDate: endDate
         };
 
         dispatch(setFilters(searchFilters));
@@ -397,24 +328,21 @@ export default function HistoryPage() {
                         </SelectContent>
                     </Select>
                     <div className="flex gap-2">
-                        <div className="w-[220px]">
-                            <DateTimePicker
-                                rangePicker={true}
-                                rangeValue={{
-                                    start: startDate,
-                                    end: endDate,
-                                }}
-                                onRangeChange={(range) => {
-                                    setStartDate(range.start);
-                                    setEndDate(range.end);
-                                }}
-                                placeholder="Filter by date"
-                                className="w-full min-w-[220px]"
-                                showDate={true}
-                                showTime={false}
-                            />
-                        </div>
-
+                        <DateTimePicker
+                            rangePicker={true}
+                            rangeValue={{
+                                start: startDate,
+                                end: endDate,
+                            }}
+                            onRangeChange={(range) => {
+                                setStartDate(range.start);
+                                setEndDate(range.end);
+                            }}
+                            placeholder="Filter by date"
+                            className="w-full min-w-[220px]"
+                            showDate={true}
+                            showTime={false}
+                        />
                     </div>
                     <Button
                         type="primary"
@@ -455,58 +383,66 @@ export default function HistoryPage() {
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    gameHistories.map((history) => (
-                                        <TableRow key={history.id}>
-                                            <TableCell className="text-text-primary">
-                                                {formatDate(history.draw_date)}
-                                            </TableCell>
-                                            <TableCell className="text-text-primary">
-                                                {getDrawTimeLabel(history.draw_time)}
-                                            </TableCell>
-                                            <TableCell className="text-text-primary">{history.game_name}</TableCell>
-                                            <TableCell className="text-text-primary">{history.state_name}</TableCell>
-                                            <TableCell>{renderWinningNumbers(history.winning_numbers)}</TableCell>
-                                            <TableCell>{getResultBadge(history.result)}</TableCell>
-                                            <TableCell className="text-accent-primary font-medium">
-                                                {history.result === "WIN" ? (
-                                                    <>${history.prize_amount.toLocaleString()}</>
-                                                ) : (
-                                                    <span className="text-text-tertiary">N/A</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="text-text-primary">
-                                                <div className="flex flex-col gap-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <Users className="w-4 h-4 text-text-tertiary" />
-                                                        <span className="font-semibold text-accent-primary">{history.total_winners}</span>
+                                    gameHistories.map((history) => {
+                                        return (
+                                            <TableRow key={history.id}>
+                                                <TableCell className="text-text-primary">
+                                                    {formatDateShort(history.draw_date)}
+                                                </TableCell>
+                                                <TableCell className="text-text-primary">
+                                                    {getDrawTimeLabel(history.draw_time)}
+                                                </TableCell>
+                                                <TableCell className="text-text-primary">{history.game_name}</TableCell>
+                                                <TableCell className="text-text-primary">{history.state_name}</TableCell>
+                                                <TableCell>
+                                                    <WinningNumbers
+                                                        numbers={history.winning_numbers}
+                                                        size="small"
+                                                        numberClassName="bg-accent-primary text-black border-accent-primary"
+                                                    />
+                                                </TableCell>
+                                                <TableCell>{getResultBadge(history.result)}</TableCell>
+                                                <TableCell className="text-accent-primary font-medium">
+                                                    {history.result === "WIN" ? (
+                                                        <>{formatCurrency(history.prize_amount)}</>
+                                                    ) : (
+                                                        <span className="text-text-tertiary">N/A</span>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="text-text-primary">
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <Users className="w-4 h-4 text-text-tertiary" />
+                                                            <span className="font-semibold text-accent-primary">{history.total_winners}</span>
+                                                        </div>
+
                                                     </div>
-                                                
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-center">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <Button
-                                                        type="text"
-                                                        size="small"
-                                                        icon={<Edit className="w-4 h-4" />}
-                                                        onClick={() => handleEdit(history)}
-                                                        className="!p-1 !h-auto !w-fit hover:bg-bg-tertiary transition-colors"
-                                                    />
-                                                    <Button
-                                                        type="text"
-                                                        size="small"
-                                                        danger
-                                                        icon={<Trash2 className="w-4 h-4" />}
-                                                        onClick={() => {
-                                                            setSelectedHistory(history);
-                                                            setDeleteDialogOpen(true);
-                                                        }}
-                                                        className="!p-1 !h-auto !w-fit hover:bg-bg-tertiary transition-colors"
-                                                    />
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <Button
+                                                            type="text"
+                                                            size="small"
+                                                            icon={<Edit className="w-4 h-4" />}
+                                                            onClick={() => handleEdit(history)}
+                                                            className="!p-1 !h-auto !w-fit hover:bg-bg-tertiary transition-colors"
+                                                        />
+                                                        <Button
+                                                            type="text"
+                                                            size="small"
+                                                            danger
+                                                            icon={<Trash2 className="w-4 h-4" />}
+                                                            onClick={() => {
+                                                                setSelectedHistory(history);
+                                                                setDeleteDialogOpen(true);
+                                                            }}
+                                                            className="!p-1 !h-auto !w-fit hover:bg-bg-tertiary transition-colors"
+                                                        />
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    })
                                 )}
                             </TableBody>
                         </Table>
@@ -626,7 +562,7 @@ export default function HistoryPage() {
                             value={formik.values.draw_date ? new Date(formik.values.draw_date) : undefined}
                             onChange={(date) => {
                                 if (date) {
-                                    formik.setFieldValue("draw_date", format(date, "yyyy-MM-dd"));
+                                    formik.setFieldValue("draw_date", date);
                                 }
                             }}
                             placeholder="Select draw date"
@@ -844,7 +780,7 @@ export default function HistoryPage() {
                     {selectedHistory && (
                         <div className="p-4 bg-bg-tertiary/50 rounded-lg">
                             <p className="text-sm text-text-primary mb-2">
-                                <strong>Draw Date:</strong> {formatDate(selectedHistory.draw_date)} at {getDrawTimeLabel(selectedHistory.draw_time)}
+                                <strong>Draw Date:</strong> {formatDateShort(selectedHistory.draw_date)} at {getDrawTimeLabel(selectedHistory.draw_time)}
                             </p>
                             <p className="text-sm text-text-primary mb-2">
                                 <strong>Game Type:</strong> {selectedHistory.game_name}

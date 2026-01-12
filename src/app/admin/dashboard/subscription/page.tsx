@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 import { Tabs, TabPane } from "@/components/ui/Tabs";
-import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from "recharts";
+import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, BarChart, Bar } from "recharts";
 import { useAppDispatch, useAppSelector } from "@/redux/store/hooks";
 
 import StripeIntegrationWrapper from "@/components/subscriptionManagment/StripeIntegrationWrapper";
@@ -20,41 +20,62 @@ import SubscriptionsWrapper from "@/components/subscriptionManagment/Subscriptio
 import { getSubscriptionDashboardAdminThunk } from "@/redux/thunk/subscriptionThunk";
 import SubscriptionDashboardStatsSkeleton from "@/components/SubscriptionDashboardStatsSkeleton";
 
-
-
 export default function SubscriptionPage() {
   const [activeTab, setActiveTab] = useState("subscriptions");
 
   const dispatch = useAppDispatch();
   const { charts, stats, isLoading } = useAppSelector((state) => state.subscription)
 
-  const revenueChartData = charts?.revenueChartData ?? []
-  const totalRevenue = stats?.totalRevenue ?? 0
-  const revenueGrowth = stats?.totalRevenueGrowth ?? 0
+  // Yearly Revenue
+  const yearlyRevenueChartData = charts?.yearlyRevenueChartData ?? []
+  const yearlyRevenue = stats?.yearlyRevenue ?? 0
+  const yearlyRevenueGrowth = stats?.yearlyRevenueGrowth ?? 0
+
+  // Active Subscriptions
   const subscriptionsChartData = charts?.subscriptionsChartData ?? []
   const activeSubscriptions = stats?.activeSubscriptions ?? 0
   const totalSubscriptions = stats?.totalSubscriptions ?? 0
   const subscriptionsGrowth = stats?.activeSubscriptionsGrowth ?? 0
+  const activeSubscriptionsPercentage = totalSubscriptions > 0 
+    ? Math.round((activeSubscriptions / totalSubscriptions) * 100) 
+    : 0
+
+  // Monthly Revenue
   const monthlyRevenue = stats?.monthlyRevenue ?? 0
   const monthlyRevenueGrowth = stats?.monthlyRevenueGrowth ?? 0
   const monthlyRevenueChartData = charts?.monthlyRevenueChartData ?? []
+
+  // Active Plans
   const activePlans = stats?.activePlans ?? 0
   const totalPlans = stats?.totalPlans ?? 0
 
-  const isPositive = revenueGrowth > 0
-  const isNegative = revenueGrowth < 0
-
-  const growthColor = isPositive
+  // Growth indicators for yearly revenue
+  const yearlyIsPositive = yearlyRevenueGrowth > 0
+  const yearlyIsNegative = yearlyRevenueGrowth < 0
+  const yearlyGrowthColor = yearlyIsPositive
     ? 'text-green-400'
-    : isNegative
+    : yearlyIsNegative
       ? 'text-red-400'
       : 'text-text-muted'
-
-  const strokeColor = isPositive ? '#10b981' : isNegative ? '#f87171' : '#9ca3af'
-
-  const GrowthIcon = isPositive
+  const yearlyStrokeColor = yearlyIsPositive ? '#10b981' : yearlyIsNegative ? '#f87171' : '#9ca3af'
+  const YearlyGrowthIcon = yearlyIsPositive
     ? TrendingUp
-    : isNegative
+    : yearlyIsNegative
+      ? TrendingDown
+      : Minus
+
+  // Growth indicators for monthly revenue
+  const monthlyIsPositive = monthlyRevenueGrowth > 0
+  const monthlyIsNegative = monthlyRevenueGrowth < 0
+  const monthlyGrowthColor = monthlyIsPositive
+    ? 'text-green-400'
+    : monthlyIsNegative
+      ? 'text-red-400'
+      : 'text-text-muted'
+  const monthlyStrokeColor = monthlyIsPositive ? '#10b981' : monthlyIsNegative ? '#f87171' : '#9ca3af'
+  const MonthlyGrowthIcon = monthlyIsPositive
+    ? TrendingUp
+    : monthlyIsNegative
       ? TrendingDown
       : Minus
 
@@ -63,16 +84,17 @@ export default function SubscriptionPage() {
     return safeGrowth;
   }
 
-    // Custom Tooltip Component
-  const CustomTooltip = ({ active, payload, labelText, isPositive, isCurrency = true }: any) => {
+  // Custom Tooltip Component with performance-based colors
+  const CustomTooltip = ({ active, payload, labelText, isPositive, isCurrency = true, value }: any) => {
     if (!active || !payload || !payload.length) return null;
-    
-    const value = payload[0].value;
-    const dotColor = isPositive ? '#10b981' : '#f87171';
-    const formattedValue = isCurrency 
-      ? `$${typeof value === 'number' ? value.toFixed(2) : value}`
-      : value;
-    
+
+    const tooltipValue = value ?? payload[0].value;
+    // Determine color based on value performance (positive growth = green, no change = gray)
+    const dotColor = isPositive ? '#10b981' : tooltipValue === 0 ? '#9ca3af' : '#f87171';
+    const formattedValue = isCurrency
+      ? `$${typeof tooltipValue === 'number' ? tooltipValue.toFixed(2) : tooltipValue}`
+      : tooltipValue;
+
     return (
       <div
         style={{
@@ -94,6 +116,41 @@ export default function SubscriptionPage() {
             }}
           />
           <span>{labelText}: {formattedValue}</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Custom Tooltip for Active Subscriptions (monthly breakdown)
+  const ActiveSubscriptionsTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload || !payload.length) return null;
+
+    const count = payload[0].value ?? 0;
+
+    return (
+      <div
+        style={{
+          backgroundColor: '#000000',
+          border: '1px solid #6b7280',
+          borderRadius: '4px',
+          padding: '6px 10px',
+          fontSize: '11px',
+          lineHeight: '1.4',
+        }}
+      >
+        <div style={{ color: '#ffffff', marginBottom: '2px' }}>
+          <strong>{label}</strong>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff' }}>
+          <div
+            style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: '#10b981',
+            }}
+          />
+          <span>Subscriptions: {count}</span>
         </div>
       </div>
     );
@@ -127,55 +184,55 @@ export default function SubscriptionPage() {
       </div>
 
       {/* Stats Cards */}
-     {isLoading ? <SubscriptionDashboardStatsSkeleton/> : <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {/* Total Revenue Card with Chart */}
+      {isLoading ? <SubscriptionDashboardStatsSkeleton /> : <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {/* Yearly Revenue Card with Chart */}
         <div className="bg-bg-card border border-border-primary rounded-lg p-6 overflow-hidden">
           <div className="flex items-start justify-between mb-2">
             <div className="flex-1">
-              <p className="text-xs font-semibold text-text-muted mb-1 tracking-wide">Total Revenue</p>
+              <p className="text-xs font-semibold text-text-muted mb-1 tracking-wide">Yearly Revenue</p>
               <p className="text-3xl font-light text-text-primary mb-1">
-                ${totalRevenue.toFixed(2)}
+                ${yearlyRevenue.toFixed(2)}
               </p>
-              <p className="text-xs text-text-muted">All time</p>
+              <p className="text-xs text-text-muted">Jan 1 - Dec 31, {new Date().getFullYear()}</p>
             </div>
             <DollarSign className="w-5 h-5 text-accent-primary" />
           </div>
           {/* Growth Indicator */}
           <div className="flex justify-between items-start gap-2">
             <div className="flex items-center gap-1">
-              <GrowthIcon className={`w-3 h-3 ${growthColor}`} />
+              <YearlyGrowthIcon className={`w-3 h-3 ${yearlyGrowthColor}`} />
 
-              <span className={`text-xs font-medium ${growthColor}`}>
-                {revenueGrowth > 0 && '+'}
-                {getGrowthUI(revenueGrowth)}%
+              <span className={`text-xs font-medium ${yearlyGrowthColor}`}>
+                {yearlyRevenueGrowth > 0 && '+'}
+                {getGrowthUI(yearlyRevenueGrowth)}%
               </span>
             </div>
             {/* Mini Area Chart */}
             <div className="w-32 h-16 -mt-8">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                <AreaChart data={yearlyRevenueChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    <linearGradient id="yearlyRevenueGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={yearlyStrokeColor} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={yearlyStrokeColor} stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#1a1a1a',
-                      border: '1px solid #10b981',
+                      border: `1px solid ${yearlyStrokeColor}`,
                       borderRadius: '8px',
                       padding: '4px 8px',
                     }}
-                     content={<CustomTooltip labelText="Total Revenue" isPositive={isPositive} isCurrency={true} />}
-                    cursor={{ stroke: '#10b981', strokeWidth: 1, strokeDasharray: '3 3' }}
+                    content={<CustomTooltip labelText="Quarterly Revenue" isPositive={yearlyIsPositive} isCurrency={true} />}
+                    cursor={{ stroke: yearlyStrokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}
                   />
                   <Area
                     type="monotone"
                     dataKey="value"
-                    stroke="#10b981"
+                    stroke={yearlyStrokeColor}
                     strokeWidth={2}
-                    fill="url(#revenueGradient)"
+                    fill="url(#yearlyRevenueGradient)"
                     animationDuration={800}
                   />
                 </AreaChart>
@@ -192,48 +249,43 @@ export default function SubscriptionPage() {
               <p className="text-3xl font-light text-text-primary mb-1">
                 {activeSubscriptions}
               </p>
-              <p className="text-xs text-text-muted">of {totalSubscriptions} total</p>
+              <p className="text-xs text-text-muted">
+                Active subscriptions
+              </p>
             </div>
             <Users className="w-5 h-5 text-accent-primary" />
           </div>
           {/* Growth Indicator */}
-          <div className="flex justify-between gap-2">
-            <div className="flex items-center gap-1">
-              <GrowthIcon className={`w-3 h-3 ${growthColor}`} />
+          <div className="flex justify-end gap-2">
+            {/* <div className="flex items-center gap-1 mb-3">
+              <TrendingUp className={`w-3 h-3 ${subscriptionsGrowth > 0 ? 'text-green-400' : subscriptionsGrowth < 0 ? 'text-red-400' : 'text-text-muted'}`} />
 
-              <span className={`text-xs font-medium ${growthColor}`}>
+              <span className={`text-xs font-medium ${subscriptionsGrowth > 0 ? 'text-green-400' : subscriptionsGrowth < 0 ? 'text-red-400' : 'text-text-muted'}`}>
                 {subscriptionsGrowth > 0 && '+'}
-                {getGrowthUI(subscriptionsGrowth)}%
+                {subscriptionsGrowth}%
               </span>
-            </div>
-            {/* Mini Area Chart */}
+            </div> */}
+            {/* Mini Area Chart - Monthly Active Subscriptions */}
             <div className="w-32 h-16 -mt-8">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={subscriptionsChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="subsGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={strokeColor} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={strokeColor} stopOpacity={0} />
+                    <linearGradient id="activeSubscriptionsGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                     </linearGradient>
                   </defs>
+                  <XAxis dataKey="label" hide />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1a1a1a',
-                      border: `1px solid ${strokeColor}`,
-
-                      borderRadius: '8px',
-                      padding: '4px 8px',
-                    }}
-                     content={<CustomTooltip labelText="Subscriptions" isPositive={isPositive} isCurrency={false} />}
-                    cursor={{ stroke: strokeColor, strokeWidth: 1, strokeDasharray: '3 3' }}
+                    content={<ActiveSubscriptionsTooltip />}
+                    cursor={{ stroke: '#10b981', strokeWidth: 1, strokeDasharray: '3 3' }}
                   />
                   <Area
                     type="monotone"
                     dataKey="value"
-                    stroke={strokeColor}
-
+                    stroke="#10b981"
                     strokeWidth={2}
-                    fill="url(#subsGradient)"
+                    fill="url(#activeSubscriptionsGradient)"
                     animationDuration={800}
                   />
                 </AreaChart>
@@ -250,16 +302,18 @@ export default function SubscriptionPage() {
               <p className="text-3xl font-light text-text-primary mb-1">
                 ${monthlyRevenue.toFixed(2)}
               </p>
-              <p className="text-xs text-text-muted">This month</p>
+              <p className="text-xs text-text-muted">
+                {new Date().toLocaleString('default', { month: 'long' })} 1 - {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()}
+              </p>
             </div>
             <TrendingUp className="w-5 h-5 text-accent-primary" />
           </div>
           {/* Growth Indicator */}
           <div className="flex justify-between gap-2">
             <div className="flex items-center gap-1 mb-3">
-              <GrowthIcon className={`w-3 h-3 ${growthColor}`} />
+              <MonthlyGrowthIcon className={`w-3 h-3 ${monthlyGrowthColor}`} />
 
-              <span className={`text-xs font-medium ${growthColor}`}>
+              <span className={`text-xs font-medium ${monthlyGrowthColor}`}>
                 {monthlyRevenueGrowth > 0 && '+'}
                 {getGrowthUI(monthlyRevenueGrowth)}%
               </span>
@@ -270,28 +324,27 @@ export default function SubscriptionPage() {
                 <AreaChart data={monthlyRevenueChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="monthlyGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={strokeColor} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={strokeColor} stopOpacity={0} />
+                      <stop offset="5%" stopColor={monthlyStrokeColor} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={monthlyStrokeColor} stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#1a1a1a',
-                      border: `1px solid ${strokeColor}`,
-
+                      border: `1px solid ${monthlyStrokeColor}`,
                       borderRadius: '8px',
                       padding: '4px 8px',
                     }}
-                     content={<CustomTooltip labelText="Monthly Revenue" isPositive={isPositive} isCurrency={true} />}
+                    content={<CustomTooltip labelText="Weekly Revenue" isPositive={monthlyIsPositive} isCurrency={true} />}
                     cursor={{
-                      stroke: strokeColor,
+                      stroke: monthlyStrokeColor,
                       strokeWidth: 1, strokeDasharray: '3 3'
                     }}
                   />
                   <Area
                     type="monotone"
                     dataKey="value"
-                    stroke={strokeColor}
+                    stroke={monthlyStrokeColor}
                     strokeWidth={2}
                     fill="url(#monthlyGradient)"
                     animationDuration={800}

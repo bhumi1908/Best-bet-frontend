@@ -17,6 +17,7 @@ import { changePasswordSchema } from "@/utilities/schema";
 import { zodFormikValidate } from "@/utilities/zodFormikValidate";
 import { getAllSubscriptionPlansThunk } from "@/redux/thunk/subscriptionPlanThunk";
 import { cancelScheduledPlanChangeThunk, changeUserSubscriptionPlanSelfThunk, createCheckoutSessionThunk, getUserSubscriptionSelfThunk, revokeUserSubscriptionSelfThunk } from "@/redux/thunk/subscriptionThunk";
+import { refreshSubscriptionStatus } from "@/utilities/auth/refreshSubscription";
 import { getUserByIdThunk } from "@/redux/thunk/userThunk";
 import { clearSubscriptionSuccess } from "@/redux/slice/subscriptionSlice";
 import { format } from "date-fns";
@@ -167,6 +168,9 @@ export default function ProfilePage() {
         await dispatch(getUserSubscriptionSelfThunk());
         await dispatch(getUserByIdThunk(Number(user.id)));
       }
+      
+      // Immediately refresh NextAuth session to update subscription status
+      await refreshSubscriptionStatus(update);
     } catch (err: any) {
       console.error("Failed to cancel subscription:", err);
       toast.error(err?.message || "Failed to cancel subscription", { theme: "dark" });
@@ -189,6 +193,9 @@ export default function ProfilePage() {
         await dispatch(getUserSubscriptionSelfThunk());
         await dispatch(getUserByIdThunk(Number(user.id)));
       }
+      
+      // Immediately refresh NextAuth session to update subscription status
+      await refreshSubscriptionStatus(update);
     } catch (err: any) {
       console.error("Failed to change plan:", err);
       toast.error(err?.message || "Failed to change subscription plan", { theme: "dark" });
@@ -207,6 +214,9 @@ export default function ProfilePage() {
         await dispatch(getUserSubscriptionSelfThunk());
         await dispatch(getUserByIdThunk(Number(user.id)));
       }
+      
+      // Immediately refresh NextAuth session to update subscription status
+      await refreshSubscriptionStatus(update);
     } catch (err: any) {
       console.error("Failed to cancel scheduled change:", err);
       toast.error(err?.message || "Failed to cancel scheduled change", { theme: "dark" });
@@ -449,7 +459,7 @@ export default function ProfilePage() {
       </span>
     );
   };
-  
+
   return (
     <>
       {/* Page Header */}
@@ -707,7 +717,7 @@ export default function ProfilePage() {
                 </p>
                 <div className="mb-6">
                   <span className="text-3xl font-bold text-accent-primary">
-                    ${currentSubscription.plan.price.toFixed(2)}
+                    ${currentSubscription.plan.price != null ? currentSubscription.plan.price.toFixed(2) : '0.00'}
                   </span>
                   <span className="text-sm text-text-tertiary ml-1">
                     {currentSubscription.plan.duration === 12 ? '/year' : '/month'}
@@ -1022,7 +1032,7 @@ export default function ProfilePage() {
                           ) : (
                             <div className="flex items-baseline gap-1">
                               <span className="text-3xl font-extrabold text-accent-primary">
-                                ${plan.price}
+                                ${plan.price != null ? plan.price.toFixed(2) : '0.00'}
                               </span>
                               <span className="text-text-tertiary text-sm">{plan.period}</span>
                             </div>
@@ -1240,7 +1250,7 @@ export default function ProfilePage() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-text-tertiary">Plan Price</span>
                     <span className="text-lg font-semibold text-accent-primary">
-                      ${currentSubscription.plan.price.toFixed(2)}
+                      ${currentSubscription.plan.price != null ? currentSubscription.plan.price.toFixed(2) : '0.00'}
                       {currentSubscription.plan.duration === 12 ? "/year" : "/month"}
                     </span>
                   </div>

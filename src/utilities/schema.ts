@@ -215,7 +215,18 @@ export const updateUserSchema = z.object({
 export const gameHistoryFormSchema = z.object({
   state_id: z.number().min(1, "State is required"),
   game_id: z.number().min(1, "Game type is required"),
-  draw_date: z.string().min(1, "Draw date is required"),
+  draw_date: z
+  .union([
+    z.date(),
+    z.string().min(1, "Draw date is required"),
+  ])
+  .transform((val) => {
+    const date = val instanceof Date ? val : new Date(val);
+    if (isNaN(date.getTime())) {
+      throw new Error("Invalid draw date");
+    }
+    return date.toISOString(); //ISO format
+  }),
   draw_time: z.union([z.literal("MID"), z.literal("EVE"), z.literal("")]).refine((val) => val !== "", {
       message: "Draw time is required",
   }),

@@ -6,6 +6,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { apiClient } from '@/utilities/axios/instance';
 import { DrawHistory, DrawHistoryFilters } from '../slice/drawHistorySlice';
+import { routes } from '@/utilities/routes';
 
 interface RejectPayload {
   message: string;
@@ -28,7 +29,7 @@ export const getDrawHistoriesThunk = createAsyncThunk<
   async (filters = {}, { rejectWithValue }) => {
     try {
       // Build query parameters
-      const params: Record<string, string> = {};
+      const params: Record<string, Date | string> = {};
 
       if (filters.search) {
         params.search = filters.search;
@@ -62,7 +63,7 @@ export const getDrawHistoriesThunk = createAsyncThunk<
         status: string;
         message: string;
         data: GetDrawHistoriesResponse;
-      }>('/draw-history', { params });
+      }>(routes.api.drawHistory.getAll, { params });
 
       if (response.data && response.data.data && response.data.data.draw_histories) {
         return response.data.data;

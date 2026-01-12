@@ -23,8 +23,8 @@ export interface DrawHistoryFilters {
   search?: string; // Search by winning number, draw date, or draw time
   stateId?: number;
   drawTime?: 'MID' | 'EVE'; // Filter by draw time enum: MID or EVE
-  fromDate?: string; // ISO date string (YYYY-MM-DD)
-  toDate?: string; // ISO date string (YYYY-MM-DD)
+  fromDate?: Date; // ISO date string (YYYY-MM-DD)
+  toDate?: Date; // ISO date string (YYYY-MM-DD)
   sortBy?: 'drawDate' | 'winningNumbers';
   sortOrder?: 'asc' | 'desc';
 }

@@ -6,6 +6,11 @@
 
 export type SubscriptionStatus = "ACTIVE" | "EXPIRED" | "CANCELED" | "REFUNDED" | "TRIAL" | "PAST_DUE";
 
+export interface State {
+  id: number
+  name: string
+}
+
 export interface User {
   id: number;
   name: string;
@@ -14,6 +19,7 @@ export interface User {
   createdAt: string;
   stripeCustomerId: string;
   isTrial: boolean;
+  state: State | null;
 }
 
 export interface Feature {
@@ -143,20 +149,20 @@ export interface ChartPoint {
 }
 
 export interface SubscriptionDashboardStats {
-  totalRevenue: number;
+  yearlyRevenue: number;
   monthlyRevenue: number;
   activeSubscriptions: number;
   totalSubscriptions: number;
   activePlans: number;
   totalPlans: number;
 
-  totalRevenueGrowth: number;
+  yearlyRevenueGrowth: number;
   monthlyRevenueGrowth: number;
   activeSubscriptionsGrowth: number;
 }
 
 export interface SubscriptionDashboardCharts {
-  revenueChartData: ChartPoint[];
+  yearlyRevenueChartData: ChartPoint[];
   subscriptionsChartData: ChartPoint[];
   monthlyRevenueChartData: ChartPoint[];
 }

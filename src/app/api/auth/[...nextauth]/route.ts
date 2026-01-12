@@ -112,6 +112,7 @@ import { AuthRefreshResponse, AuthResponse, UserRole } from "@/types/auth";
 import { jwtDecode } from "jwt-decode";
 import { routes } from "@/utilities/routes";
 import { signOut } from "next-auth/react";
+import { SubscriptionStatus } from "@/types/subscription";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
@@ -121,6 +122,56 @@ interface DecodedToken {
   role: string;
   iat: number;
   exp: number;
+}
+
+interface BackendSubscriptionResponse {
+  status: string;
+  message: string;
+  data: {
+    id: number;
+    status: SubscriptionStatus;
+    startDate: string;
+    endDate: string;
+    plan: any;
+    [key: string]: any;
+  } | null;
+}
+
+/**
+ * Fetches the current subscription status for a user from the backend API
+ * @param accessToken - The user's access token for API authentication
+ * @returns Promise resolving to SubscriptionStatus or null if no subscription
+ */
+async function fetchSubscriptionStatus(accessToken: string): Promise<SubscriptionStatus | null> {
+  try {
+    const response = await axios.get<BackendSubscriptionResponse>(
+      `${API_URL}${routes.api.subscription.user.profile}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        timeout: 5000, // 5 second timeout to prevent hanging requests
+      }
+    );
+
+    if (!response.data.data) {
+      return null;
+    }
+
+    return response.data.data.status || null;
+  } catch (error: any) {
+    if (error.response?.status === 404 || (error.response?.status === 200 && !error.response.data?.data)) {
+      return null;
+    }
+
+    // Log other errors for debugging
+    console.error("[NextAuth] Failed to fetch subscription status:", {
+      status: error.response?.status,
+      message: error.response?.data?.message || error.message,
+    });
+
+    return null;
+  }
 }
 
 async function refreshAccessToken(data: any) {
@@ -178,6 +229,9 @@ export const authOptions: NextAuthOptions = {
           const data = res.data.data;
           const decoded: { exp: number } = jwtDecode(data.token.accessToken);
 
+          // Fetch subscription status during login
+          const subscriptionStatus = await fetchSubscriptionStatus(data.token.accessToken);
+
           return {
             id: data.user.id,
             email: data.user.email,
@@ -190,6 +244,7 @@ export const authOptions: NextAuthOptions = {
             accessToken: data.token.accessToken,
             refreshToken: data.token.refreshToken,
             accessTokenExpires: decoded.exp,
+            subscriptionStatus,
           };
         }
         catch (error: any) {
@@ -203,9 +258,13 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
+    /**
+     * JWT Callback - Handles token creation and updates
+     */
     async jwt({ token, user, trigger, session }) {
-
-      // Initial login
+      // ============================================
+      // INITIAL LOGIN - Store user data in JWT
+      // ============================================
       if (user) {
         token.id = user.id;
         token.role = user.role;
@@ -217,31 +276,85 @@ export const authOptions: NextAuthOptions = {
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
         token.accessTokenExpires = user.accessTokenExpires;
+        token.subscriptionStatus = user.subscriptionStatus || null;
+        token.subscriptionStatusFetchedAt = Date.now();
 
         return token;
       }
 
-      if (trigger === "update" && session?.user) {
-        token.firstName = session.user.firstName;
-        token.lastName = session.user.lastName;
-        token.phoneNo = session.user.phoneNo;
-        token.stateId = session.user.stateId;
-        token.state = session.user.state;
+      // ============================================
+      // SESSION UPDATE TRIGGER - Event-driven refresh
+      // ============================================
+      if (trigger === "update") {
+        // Update user profile data if provided
+        if (session?.user) {
+          token.firstName = session.user.firstName;
+          token.lastName = session.user.lastName;
+          token.phoneNo = session.user.phoneNo;
+          token.stateId = session.user.stateId;
+          token.state = session.user.state;
+        }
+        console.log('FIRE-1');
+        // Force refresh subscription status from backend when explicitly requested   
+        if (session?.forceRefreshSubscription === true && token.accessToken) {
+          console.log('FIRE-2');
+          try {
+            console.log('FIRE-3');
+            const subscriptionStatus = await fetchSubscriptionStatus(token.accessToken as string);
+            token.subscriptionStatus = subscriptionStatus || null;
+            token.subscriptionStatusFetchedAt = Date.now();
+          } catch (error) {
+            console.log('FIRE-4');
+            console.error("[NextAuth] Failed to refresh subscription status via session.update():", error);
+            // Keep existing status on error to prevent breaking the session
+          }
+        }
+        // Direct subscription status update (if provided directly)
+        else if (session?.subscriptionStatus !== undefined) {
+          token.subscriptionStatus = session.subscriptionStatus;
+          token.subscriptionStatusFetchedAt = Date.now();
+        }
       }
 
-      // Access token still valid
+      // ============================================
+      // ACCESS TOKEN VALIDITY CHECK
+      // ============================================
+      // Check if access token is still valid (with 30 second buffer)
+      const now = Date.now();
       if (
         token.accessTokenExpires &&
-        Date.now() < token.accessTokenExpires - 30000
+        now < token.accessTokenExpires - 30000
       ) {
         return token;
       }
 
-      // Access token expired → refresh
-      return await refreshAccessToken(token);
+      // ============================================
+      // ACCESS TOKEN REFRESH
+      // ============================================
+      // Access token expired → refresh it
+      const refreshedToken = await refreshAccessToken(token);
+
+      // After refreshing access token, also refresh subscription status
+      // This ensures subscription info stays in sync with token lifecycle
+      if (refreshedToken.accessToken) {
+        try {
+          const subscriptionStatus = await fetchSubscriptionStatus(refreshedToken.accessToken as string);
+          refreshedToken.subscriptionStatus = subscriptionStatus || null;
+          refreshedToken.subscriptionStatusFetchedAt = Date.now();
+        } catch (error) {
+          console.error("[NextAuth] Failed to refresh subscription status after token refresh:", error);
+          // Keep existing status on error
+        }
+      }
+
+      return refreshedToken;
     },
 
+    /**
+     * Session Callback - Maps JWT token data to session object
+     */
     async session({ session, token }) {
+      // Map user data from token to session
       session.user = {
         ...session.user,
         id: token.id as string,
@@ -253,13 +366,15 @@ export const authOptions: NextAuthOptions = {
         state: token.state as { id: number; name: string; code: string | null } | null | undefined,
       };
 
+      // Include access token and subscription status in session
       session.accessToken = token.accessToken as string;
       session.error = token.error as string | undefined;
 
+      // Subscription status from JWT (updated via session.update() when changes occur)
+      session.subscriptionStatus = (token.subscriptionStatus as SubscriptionStatus | null | undefined) || null;
+
       return session;
     }
-
-
   },
 
   pages: {

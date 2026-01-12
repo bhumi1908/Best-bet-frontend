@@ -125,6 +125,12 @@ export default function SubscriptionDetailsPage() {
                 toast.success("Subscription upgraded successfully");
                 setUpgradeDialogOpen(false);
                 setSelectedUpgradePlan("");
+
+                // Refresh subscription details to show updated data
+                await fetchSubscriptionDetails();
+
+                // Note: The affected user's session will be updated on their next request
+                // when the JWT callback fetches fresh subscription data from the backend
             }
         } catch (err: any) {
             toast.error(err?.message || "Failed to upgrade subscription");
@@ -146,6 +152,12 @@ export default function SubscriptionDetailsPage() {
                 toast.success("Subscription downgrade scheduled at billing cycle end");
                 setDowngradeDialogOpen(false);
                 setSelectedDowngradePlan("");
+
+                // Refresh subscription details to show updated data
+                await fetchSubscriptionDetails();
+
+                // Note: The affected user's session will be updated on their next request
+                // when the JWT callback fetches fresh subscription data from the backend
             }
         } catch (err: any) {
             toast.error(err?.message || "Failed to downgrade subscription");
@@ -160,6 +172,13 @@ export default function SubscriptionDetailsPage() {
 
             toast.success("Subscription revoked successfully");
             setRevokeDialogOpen(false);
+
+            // Refresh subscription details to show updated data
+            await fetchSubscriptionDetails();
+
+            // Note: The affected user's session will be updated on their next request
+            // when the JWT callback fetches fresh subscription data from the backend
+            // This ensures middleware will immediately deny access to game routes
         } catch (err: any) {
             toast.error(err?.message || "Failed to revoke subscription");
         }
@@ -188,6 +207,13 @@ export default function SubscriptionDetailsPage() {
             toast.success(`Refund of $${amount.toFixed(2)} processed successfully`);
             setRefundDialogOpen(false);
             setRefundFormData({ amount: "", reason: "" });
+
+            // Refresh subscription details to show updated data
+            await fetchSubscriptionDetails();
+
+            // Note: The affected user's session will be updated on their next request
+            // when the JWT callback fetches fresh subscription data from the backend
+            // This ensures middleware will immediately deny access to game routes
         } catch (err: any) {
             toast.error(err?.message || "Failed to process refund");
         }
@@ -402,6 +428,12 @@ export default function SubscriptionDetailsPage() {
                             </div>
                             <div>
                                 <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
+                                    State
+                                </label>
+                                <p className="text-base text-text-primary">{selectedSubscription.user.state?.name || "N/A"}</p>
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-text-muted mb-2 block tracking-wide uppercase">
                                     Member Since
                                 </label>
                                 <p className="text-base text-text-primary">
@@ -528,7 +560,7 @@ export default function SubscriptionDetailsPage() {
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
                                             <p className="font-medium text-text-primary">
-                                                ${selectedSubscription.payment.amount.toFixed(2)}
+                                                ${selectedSubscription.payment.amount != null ? selectedSubscription.payment.amount.toFixed(2) : '0.00'}
                                             </p>
                                             {getPaymentStatusBadge(selectedSubscription.payment.status)}
                                         </div>
@@ -604,7 +636,7 @@ export default function SubscriptionDetailsPage() {
                         {selectedSubscription.status !== "TRIAL" && <div className="mb-6">
                             <div className="flex items-baseline gap-1">
                                 <span className="text-4xl font-bold text-text-primary">
-                                    ${selectedSubscription.plan.price ? selectedSubscription.plan.price.toFixed(2) : "FREE"}
+                                    ${selectedSubscription.plan.price != null && selectedSubscription.plan.price > 0 ? selectedSubscription.plan.price.toFixed(2) : "FREE"}
                                 </span>
                                 <span className="text-text-tertiary">
                                     /{selectedSubscription.plan.duration === 1 ? "month" : "year"}
@@ -726,7 +758,7 @@ export default function SubscriptionDetailsPage() {
                                         .filter(isValidDowngradePlan)
                                         .map((plan) => (
                                             <SelectItem key={plan.id} value={plan.id.toString()}>
-                                                {plan.name} - {plan.price ? `$${plan.price.toFixed(2)}${plan.duration === 1 ? '/mo' : '/yr'}` : "Free Trial"}
+                                                {plan.name} - {plan.price != null && plan.price > 0 ? `$${plan.price.toFixed(2)}${plan.duration === 1 ? '/mo' : '/yr'}` : "Free Trial"}
                                             </SelectItem>
                                         ))}
                                 </SelectContent>

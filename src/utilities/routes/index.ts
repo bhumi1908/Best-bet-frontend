@@ -105,6 +105,9 @@ export const routes = {
       getById: (id: number | string) => `/game-histories/${id}`,
       delete: (id: number | string) => `/game-histories/${id}`,
     },
+    drawHistory: {
+      getAll: '/draw-history',
+    },
   },
 } as const;
 

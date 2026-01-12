@@ -170,9 +170,9 @@ const subscriptionPlanSlice = createSlice({
             })
             .addCase(
                 deleteSubscriptionPlanThunk.fulfilled,
-                (state, action: PayloadAction<number | string>) => {
+                (state, action: PayloadAction<{ id: number | string; wasActive: boolean }>) => {
                     state.isLoading = false;
-                    state.plans = state.plans.filter((plan) => plan.id !== action.payload); // Immediate UI update
+                    state.plans = state.plans.filter((plan) => plan.id !== action.payload.id); // Immediate UI update
                 }
             )
             .addCase(

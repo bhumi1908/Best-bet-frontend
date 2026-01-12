@@ -1,5 +1,4 @@
 "use client";
-import { format } from "date-fns";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
@@ -30,17 +29,15 @@ import { getDrawHistoriesThunk } from "@/redux/thunk/drawHistoryThunk";
 import { setFilters, resetFilters, DrawHistoryFilters } from "@/redux/slice/drawHistorySlice";
 import { getAllStatesThunk } from "@/redux/thunk/statesThunk";
 import { DrawHistorySkeleton } from "@/components/DrawHistorySkeleton";
-
-const formatISODate =  (date: Date | null | undefined): string | undefined => {
-  if (!date) return undefined;
-  
-  // Uses local time, not UTC (which prevents timezone off-by-one errors)
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  
-  return `${year}-${month}-${day}`;
-};
+import {
+  formatISODate,
+  formatDateCalendar,
+  getDrawType,
+  formatWinningNumbers,
+  formatCurrency,
+  formatDateRange,
+} from "@/utilities/formatting";
+import { WinningNumbers } from "@/components/ui/WinningNumbers";
 
 
 
@@ -88,32 +85,9 @@ export default function DrawHistoryPage() {
     setStartDate(range.start);
     setEndDate(range.end);
   };
-  
 
-  // Get draw type from draw time enum (MID or EVE)
-  const getDrawType = (drawTime: string): "Midday" | "Evening" => {
-    // drawTime is enum: 'MID' or 'EVE'
-    if (drawTime === "MID") {
-      return "Midday";
-    }
-    return "Evening";
-  };
 
-  // Format draw time for display
-  const formatDrawTime = (drawTime: string): string => {
-    // drawTime is enum: 'MID' or 'EVE'
-    if (drawTime === "MID") {
-      return "12:00 PM";
-    }
-    return "11:00 PM";
-  };
 
-  // Format winning numbers for display
-  const formatWinningNumbers = (numbers: string): string[] => {
-    // Remove any non-digit characters first, then split into single digits
-    return numbers.replace(/\D/g, '').split('');
-  };
-  
   // Animation variants
   const fadeInUp = {
     initial: { opacity: 0, y: 60 },
@@ -137,81 +111,81 @@ export default function DrawHistoryPage() {
     animate: { opacity: 1, y: 0 },
   };
 
-    // Initialize: Fetch states on mount
-    useEffect(() => {
-      if (states.length === 0) {
-        dispatch(getAllStatesThunk());
+  // Initialize: Fetch states on mount
+  useEffect(() => {
+    if (states.length === 0) {
+      dispatch(getAllStatesThunk());
+    }
+  }, [dispatch, states.length]);
+
+  // Find selected state ID
+  const selectedState = useMemo(() => {
+    if (states.length === 0) return null;
+    return states.find((s) => s.state_name === selectedStateName) || states[0];
+  }, [states, selectedStateName]);
+
+  // Update selected state name when states load - default to Florida
+  useEffect(() => {
+    if (states.length > 0) {
+      const floridaState = states.find((s) => s.state_name === "Florida");
+      if (floridaState && selectedStateName !== "Florida") {
+        setSelectedStateName("Florida");
+      } else if (!states.find((s) => s.state_name === selectedStateName)) {
+        // If selected state is not in the list, default to first state
+        setSelectedStateName(states[0].state_name);
       }
-    }, [dispatch, states.length]);
-  
-    // Find selected state ID
-    const selectedState = useMemo(() => {
-      if (states.length === 0) return null;
-      return states.find((s) => s.state_name === selectedStateName) || states[0];
-    }, [states, selectedStateName]);
-  
-    // Update selected state name when states load - default to Florida
-    useEffect(() => {
-      if (states.length > 0) {
-        const floridaState = states.find((s) => s.state_name === "Florida");
-        if (floridaState && selectedStateName !== "Florida") {
-          setSelectedStateName("Florida");
-        } else if (!states.find((s) => s.state_name === selectedStateName)) {
-          // If selected state is not in the list, default to first state
-          setSelectedStateName(states[0].state_name);
-        }
+    }
+  }, []);
+
+  // Fetch draw histories when filters change
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!selectedState) {
+        return;
       }
-    }, []);
-  
-    // Fetch draw histories when filters change
-    useEffect(() => {
-      const fetchData = async () => {
-        if (!selectedState) {
-          return;
-        }
-  
-        const filterParams: DrawHistoryFilters = {
-          stateId: selectedState.id,
-          sortBy,
-          sortOrder,
-        };
-  
-        // Add draw time filter (enum: MID or EVE)
-        if (selectedDrawType !== "All") {
-          if (selectedDrawType === "Midday") {
-            filterParams.drawTime = "MID";
-          } else if (selectedDrawType === "Evening") {
-            filterParams.drawTime = "EVE";
-          }
-        }
-  
-        // Add date range filter
-        if (startDate && endDate) {
-          filterParams.fromDate = formatISODate(startDate);
-          filterParams.toDate = formatISODate(endDate);
-        }
-  
-        // Add search filter
-        if (searchQuery.trim()) {
-          filterParams.search = searchQuery.trim();
-        }
-  
-        dispatch(setFilters(filterParams));
-        dispatch(getDrawHistoriesThunk(filterParams));
+
+      const filterParams: DrawHistoryFilters = {
+        stateId: selectedState.id,
+        sortBy,
+        sortOrder,
       };
-  
-      fetchData();
-    }, [
-      selectedState,
-      selectedDrawType,
-      startDate,
-      endDate,
-      searchQuery,
-      sortBy,
-      sortOrder,
-      dispatch,
-    ]);
-  
+
+      // Add draw time filter (enum: MID or EVE)
+      if (selectedDrawType !== "All") {
+        if (selectedDrawType === "Midday") {
+          filterParams.drawTime = "MID";
+        } else if (selectedDrawType === "Evening") {
+          filterParams.drawTime = "EVE";
+        }
+      }
+
+      // Add date range filter
+      if (startDate && endDate) {
+        filterParams.fromDate = startDate;
+        filterParams.toDate = endDate;
+      }
+
+      // Add search filter
+      if (searchQuery.trim()) {
+        filterParams.search = searchQuery.trim();
+      }
+
+      dispatch(setFilters(filterParams));
+      dispatch(getDrawHistoriesThunk(filterParams));
+    };
+
+    fetchData();
+  }, [
+    selectedState,
+    selectedDrawType,
+    startDate,
+    endDate,
+    searchQuery,
+    sortBy,
+    sortOrder,
+    dispatch,
+  ]);
+
 
   return (
     <motion.div
@@ -404,7 +378,7 @@ export default function DrawHistoryPage() {
                         showDate={true}
                         showTime={false}
                         placeholder="Select date range"
-                        className="w-full bg-black/50 border-white/20 text-white"
+                        className="w-full min-w-[220px] bg-black/50 border-white/20 text-white"
                       />
                     </div>
 
@@ -425,7 +399,7 @@ export default function DrawHistoryPage() {
                             {sortBy === "drawDate"
                               ? 'Date'
                               : sortBy === "winningNumbers"
-                              ? 'Numbers'
+                                ? 'Numbers'
                                 : "Sort By"}
                           </SelectTrigger>
                           <SelectContent>
@@ -493,17 +467,14 @@ export default function DrawHistoryPage() {
                     <p className="text-gray-400 text-sm">
                       Showing {filteredDraws.length} result{filteredDraws.length !== 1 ? "s" : ""}
                       {startDate && endDate && (
-                        <> for{" "}
-                          {startDate.toLocaleDateString()} -{" "}
-                          {endDate.toLocaleDateString()}
-                        </>
+                        <> for {formatDateRange(startDate, endDate)}</>
                       )}
                     </p>
                   </div>
                 </motion.div>
 
                 {/* Draws List */}
-                {isLoading  ? (
+                {isLoading ? (
                   <DrawHistorySkeleton />
                 ) : filteredDraws.length > 0 ? (
                   <motion.div
@@ -514,8 +485,8 @@ export default function DrawHistoryPage() {
                   >
                     {filteredDraws.map((draw, index) => {
                       const drawType = getDrawType(draw.draw_time);
-                      const numbers = formatWinningNumbers(draw.winning_numbers);
                       const drawDate = new Date(draw.draw_date);
+                      const dateCalendar = formatDateCalendar(draw.draw_date);
 
                       return (
                         <motion.div
@@ -529,17 +500,13 @@ export default function DrawHistoryPage() {
                             <div className="flex items-center gap-6">
                               <div className="flex flex-col items-center justify-center min-w-[80px]">
                                 <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">
-                                  {drawDate.toLocaleDateString("en-US", {
-                                    month: "short",
-                                  })}
+                                  {dateCalendar.month}
                                 </div>
                                 <div className="text-2xl font-bold text-yellow-400">
-                                  {drawDate.getDate()}
+                                  {dateCalendar.day}
                                 </div>
                                 <div className="text-xs text-gray-500">
-                                  {drawDate.toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                  })}
+                                  {dateCalendar.year}
                                 </div>
                               </div>
 
@@ -557,37 +524,23 @@ export default function DrawHistoryPage() {
                                   >
                                     {drawType}
                                   </span>
-                                  {/* <span className="text-gray-400 text-sm">
-                                    {formatDrawTime(draw.draw_time)}
-                                  </span> */}
                                 </div>
                                 <div className="text-2xl md:text-3xl font-black text-white tracking-wider">
-                                  {numbers}
+                                  {formatWinningNumbers(draw.winning_numbers).join("")}
                                 </div>
                               </div>
                             </div>
 
                             {/* Right Section - Stats */}
                             <div className="flex items-center gap-6 md:gap-8">
-                              <div className="flex items-center gap-1">
-                                {numbers.map((num, idx) => (
-                                  <span
-                                    key={idx}
-                                    className={cn(
-                                      "w-8 sm:w-10 h-8 sm:h-10 rounded-full flex items-center justify-center text-md font-semibold border-2 bg-yellow-400 text-black border-yellow-400",
-                                    )}
-                                  >
-                                    {Number(num)}
-                                  </span>
-                                ))}
-                              </div>
+                              <WinningNumbers numbers={draw.winning_numbers} />
                               {draw.prize_amount > 0 && (
                                 <div className="text-right">
                                   <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">
                                     Jackpot
                                   </div>
                                   <div className="text-base sm:text-lg font-bold text-yellow-400">
-                                    ${draw.prize_amount.toLocaleString()}
+                                    {formatCurrency(draw.prize_amount)}
                                   </div>
                                 </div>
                               )}
@@ -656,7 +609,7 @@ export default function DrawHistoryPage() {
                   Currently, we're servicing North Carolina. More states will be added soon.
                 </p>
                 <Link href={routes.plans}>
-                  <Button type="primary">View Subscription Plans</Button>
+                  <Button type="primary" className="!w-fit py-3 h-fit rounded-lg">View Subscription Plans</Button>
                 </Link>
               </motion.div>
             )}
