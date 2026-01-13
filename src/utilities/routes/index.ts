@@ -75,7 +75,7 @@ export const routes = {
     subscription: {
       checkout: '/subscription/checkout',
       user: {
-        profile: `/subscription/me/subscription`,
+        profile: `/subscription/me`,
         revokeSubscription: `/subscription/me/revoke`,
         changePlanSubscription: `/subscription/me/change-plan`,
         cancelScheduledChange: `/subscription/me/cancel/schedule-plan`,

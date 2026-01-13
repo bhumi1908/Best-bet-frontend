@@ -183,7 +183,7 @@ export default function PlansPage() {
         router.push(routes.home);
         return;
       }
-      
+
       if (payload.url) {
         toast.info("Redirecting to Stripe for payment...");
         window.location.href = payload.url;
@@ -194,7 +194,6 @@ export default function PlansPage() {
       router.push(routes.profile)
     } finally {
       setLoadingIndex(null)
-      await refreshSubscriptionStatus(update)
     }
   };
 

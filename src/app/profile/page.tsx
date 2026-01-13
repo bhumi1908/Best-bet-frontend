@@ -243,16 +243,17 @@ export default function ProfilePage() {
       await dispatch(revokeUserSubscriptionSelfThunk()).unwrap();
       setCancelConfirmOpen(false);
       setPendingCancellation(true);
-      
-      // Refresh subscription data
-      if (user?.id) {
-        await dispatch(getUserSubscriptionSelfThunk());
-        await dispatch(getUserByIdThunk(Number(user.id)));
-      }
-      
+
       // Immediately refresh NextAuth session to update subscription status
       // This ensures middleware and game routes reflect the change immediately
-      await refreshSubscriptionStatus(update);
+      // Fetch subscription status from API with retries, then update session ONCE
+      const accessToken = (session as any)?.accessToken;
+      if (accessToken) {
+        await refreshSubscriptionStatus(
+          update,
+          accessToken,
+        );
+      }
     } catch (err: any) {
       console.error("Failed to cancel subscription:", err);
       toast.error(err?.message || "Failed to cancel subscription");
@@ -281,13 +282,13 @@ export default function ProfilePage() {
       }
       setSubscriptionOpen(false);
       setSelectedPlanId(null);
-      
+
       // Refresh subscription data
       if (user?.id) {
         await dispatch(getUserSubscriptionSelfThunk());
         await dispatch(getUserByIdThunk(Number(user.id)));
       }
-      
+
       // Immediately refresh NextAuth session to update subscription status
       // This ensures middleware and game routes reflect the change immediately
       await refreshSubscriptionStatus(update);
@@ -305,12 +306,12 @@ export default function ProfilePage() {
       await dispatch(cancelScheduledPlanChangeThunk()).unwrap();
       setScheduleCancelConfirmOpen(false)
       toast.success("Scheduled plan change cancelled");
-      
+
       // Refresh subscription data
       if (user?.id) {
         await dispatch(getUserSubscriptionSelfThunk());
       }
-      
+
       // Immediately refresh NextAuth session to update subscription status
       await refreshSubscriptionStatus(update);
     } catch (err: any) {

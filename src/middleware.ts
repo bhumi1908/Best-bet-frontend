@@ -3,8 +3,50 @@ import { NextResponse } from "next/server";
 import { routes } from "./utilities/routes";
 import { SubscriptionStatus } from "./types/subscription";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+
+async function fetchLiveSubscriptionStatus(accessToken: string): Promise<SubscriptionStatus | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const res = await fetch(
+      `${API_URL}${routes.api.subscription.user.profile}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        signal: controller.signal,
+      }
+    );
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      if (res.status === 404) {
+        // No subscription for user
+        return null;
+      }
+      // For other errors, fall back to existing token status
+      return null;
+    }
+
+    const json = await res.json();
+
+    if (!json?.data) {
+      return null;
+    }
+
+    return json.data.status as SubscriptionStatus;
+  } catch {
+    // Network / timeout / other errors: do not break auth, keep existing token status
+    return null;
+  }
+}
+
 export default withAuth(
-  function middleware(req) {
+  async function middleware(req) {
     const pathname = req.nextUrl.pathname;
     const token = req.nextauth.token;
 
@@ -21,13 +63,23 @@ export default withAuth(
         return NextResponse.next();
       }
 
-      // Check subscription status from JWT
-      const subscriptionStatus = token.subscriptionStatus as SubscriptionStatus | null | undefined;
+      // Start with subscription status from JWT
+      let effectiveStatus = token.subscriptionStatus as SubscriptionStatus | null | undefined;
 
-      // Only allow ACTIVE subscription status (as per requirements)
-      // All other statuses (TRIAL, EXPIRED, CANCELED, REFUNDED, null) are denied
-      if (subscriptionStatus !== "ACTIVE" && subscriptionStatus !== "TRIAL") {
-        // Redirect to plans page with message indicating subscription is required
+      // On each game route request, validate against live backend subscription state
+      // This ensures admin-triggered actions (revoke, change, refund) take effect immediately
+      if (token.accessToken) {
+        const liveStatus = await fetchLiveSubscriptionStatus(token.accessToken as string);
+        if (liveStatus !== null) {
+          effectiveStatus = liveStatus;
+        } else if (liveStatus === null) {
+          // Explicit null means "no active subscription"
+          effectiveStatus = null;
+        }
+      }
+
+      // Only allow ACTIVE or TRIAL subscription status
+      if (effectiveStatus !== "ACTIVE" && effectiveStatus !== "TRIAL") {
         const plansUrl = new URL(routes.plans, req.url);
         plansUrl.searchParams.set("message", "active_subscription_required");
         return NextResponse.redirect(plansUrl);

@@ -5,9 +5,57 @@ import { refreshSubscriptionStatus } from "@/utilities/auth/refreshSubscription"
 import { motion } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
 export default function SubscriptionSuccessPage() {
+  const { update, data: session } = useSession();
+  const [isRefreshing, setIsRefreshing] = useState(true);
+
+  const refreshSubscription = async () => {
+    try {
+      setIsRefreshing(true);
+      
+      // Get access token from current session
+      const accessToken = (session as any)?.accessToken;
+      if (!accessToken) {
+        console.error("[Subscription Success] No access token available");
+        setIsRefreshing(false);
+        return;
+      }
+
+      // Fetch subscription status from API with retries (handles webhook delays)
+      // Session will be updated ONCE with the fetched status
+      const updatedSession = await refreshSubscriptionStatus(
+        update,
+        accessToken,
+      );
+
+      if (updatedSession) {
+        // Check if subscription is now ACTIVE
+        const subscriptionStatus = (updatedSession as any)?.subscriptionStatus;
+        if (subscriptionStatus === "ACTIVE") {
+          toast.success("Subscription activated! You now have access to all features.");
+        } else {
+          toast.info("Subscription status is being processed. Please wait a moment...");
+        }
+      }
+    } catch (error: any) {
+      console.error("[Subscription Success] Failed to refresh subscription status:", error);
+      // Don't show error toast - the webhook will eventually process
+      // User can refresh the page or wait a moment
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    // Only refresh if we have a session and haven't refreshed yet
+    if (session && isRefreshing) {
+      refreshSubscription();
+    }
+  }, [session]);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-black px-4">
       <motion.div
@@ -35,7 +83,9 @@ export default function SubscriptionSuccessPage() {
         </h1>
 
         <p className="relative z-10 text-gray-400 mb-8">
-          Your payment was successful and your subscription is now active.
+          {isRefreshing
+            ? "Activating your subscription..."
+            : "Your payment was successful and your subscription is now active."}
         </p>
 
         {/* Actions */}
