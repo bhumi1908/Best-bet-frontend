@@ -155,21 +155,28 @@ async function fetchSubscriptionStatus(accessToken: string): Promise<Subscriptio
     );
 
     if (!response.data.data) {
+      // No subscription found - user doesn't have an active subscription
       return null;
     }
 
-    return response.data.data.status || null;
+    const status = response.data.data.status as SubscriptionStatus | null;
+    return status;
   } catch (error: any) {
+    // 404 or empty response means no subscription - this is valid
     if (error.response?.status === 404 || (error.response?.status === 200 && !error.response.data?.data)) {
       return null;
     }
 
-    // Log other errors for debugging
+    // Log other errors for debugging but don't throw
+    // This prevents breaking the session if subscription API is temporarily unavailable
     console.error("[NextAuth] Failed to fetch subscription status:", {
       status: error.response?.status,
       message: error.response?.data?.message || error.message,
+      code: error.code,
     });
 
+    // Return null on error to prevent breaking the session
+    // The retry mechanism in refreshSubscriptionStatus will handle retries
     return null;
   }
 }
@@ -253,6 +260,8 @@ export const authOptions: NextAuthOptions = {
           throw new Error(message);
         }
       }
+
+
     },
     ),
   ],
@@ -294,22 +303,26 @@ export const authOptions: NextAuthOptions = {
           token.stateId = session.user.stateId;
           token.state = session.user.state;
         }
-        console.log('FIRE-1');
+        
         // Force refresh subscription status from backend when explicitly requested   
-        if (session?.forceRefreshSubscription === true && token.accessToken) {
-          console.log('FIRE-2');
+        if (session?.forceRefreshSubscription === true) {
           try {
-            console.log('FIRE-3');
             const subscriptionStatus = await fetchSubscriptionStatus(token.accessToken as string);
-            token.subscriptionStatus = subscriptionStatus || null;
+            
+            // Only update if we got a valid response (including null for no subscription)
+            // This ensures we don't overwrite with stale data on errors
+            token.subscriptionStatus = subscriptionStatus;  
             token.subscriptionStatusFetchedAt = Date.now();
+            
           } catch (error) {
-            console.log('FIRE-4');
             console.error("[NextAuth] Failed to refresh subscription status via session.update():", error);
             // Keep existing status on error to prevent breaking the session
+            // The retry mechanism in refreshSubscriptionStatus will handle retries
           }
         }
         // Direct subscription status update (if provided directly)
+        // This bypasses the API call and immediately updates the session
+        // Use this when you already know the new status (e.g., from webhook confirmation)
         else if (session?.subscriptionStatus !== undefined) {
           token.subscriptionStatus = session.subscriptionStatus;
           token.subscriptionStatusFetchedAt = Date.now();
@@ -375,6 +388,7 @@ export const authOptions: NextAuthOptions = {
 
       return session;
     }
+
   },
 
   pages: {

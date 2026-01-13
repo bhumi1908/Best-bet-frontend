@@ -281,6 +281,7 @@ export default function LandingPage() {
       }
     }
   };
+  
 
   const staggerItem = {
     initial: { opacity: 0, y: 30 },

@@ -14,6 +14,7 @@ import {
     Edit,
     Trash2,
     Users,
+    Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -58,6 +59,7 @@ import {
     formatCurrency,
 } from "@/utilities/formatting";
 import { WinningNumbers } from "@/components/ui/WinningNumbers";
+import * as XLSX from "xlsx";
 
 const RESULT_LABELS: Record<string, string> = {
     all: "All Results",
@@ -185,8 +187,6 @@ export default function HistoryPage() {
 
     const handleEdit = (history: GameHistory) => {
         setSelectedHistory(history);
-        console.log('history', history);
-
         formik.setValues({
             state_id: history.state_id,
             game_id: history.game_id,
@@ -240,6 +240,67 @@ export default function HistoryPage() {
 
     const handlePageSizeChange = (limit: number) => {
         dispatch(setPagination({ limit, page: 1 }));
+    };
+
+    const handleExportToExcel = async () => {
+        try {
+            // Fetch all filtered data (using a high limit to get all records)
+            const exportFilters = {
+                ...filters,
+                search: searchTerm || undefined,
+                result: resultFilter !== "all" ? (resultFilter as "WIN" | "LOSS" | "PENDING") : undefined,
+                fromDate: startDate,
+                toDate: endDate
+            };
+
+            await dispatch(
+                getAllGameHistoriesThunk({
+                    page: 1,
+                    filters: exportFilters,
+                })
+            ).unwrap();
+
+            // Prepare data for Excel
+            const excelData = gameHistories.map((history) => ({
+                "Draw Date": formatDateShort(history.draw_date),
+                "Draw Time": getDrawTimeLabel(history.draw_time),
+                "Game Type": history.game_name,
+                "State": history.state_name,
+                "Winning Numbers": history.winning_numbers,
+                "Result": getResultLabel(history.result),
+                "Prize Amount": history.result === "WIN" ? formatCurrency(history.prize_amount) : "N/A",
+                "Total Winners": history.total_winners,
+            }));
+
+            // Create workbook and worksheet
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Game History");
+
+            // Set column widths for better readability
+            const columnWidths = [
+                { wch: 12 }, // Draw Date
+                { wch: 12 }, // Draw Time
+                { wch: 20 }, // Game Type
+                { wch: 15 }, // State
+                { wch: 18 }, // Winning Numbers
+                { wch: 12 }, // Result
+                { wch: 15 }, // Prize Amount
+                { wch: 15 }, // Total Winners
+            ];
+            worksheet["!cols"] = columnWidths;
+
+            // Generate filename with current date
+            const currentDate = new Date().toISOString().split("T")[0];
+            const filename = `Game_History_${currentDate}.xlsx`;
+
+            // Write file
+            XLSX.writeFile(workbook, filename);
+
+            toast.success(`Exported ${gameHistories.length} records successfully`);
+        } catch (error: any) {
+            toast.error(error?.message || "Failed to export data");
+        }
     };
 
 
@@ -344,14 +405,22 @@ export default function HistoryPage() {
                             showTime={false}
                         />
                     </div>
+                  
                     <Button
                         type="primary"
-                        className="!w-fit"
+                        className="!w-fit "
                         icon={<Plus className="w-4 h-4" />}
                         onClick={handleCreate}
                     >
                         Create History
                     </Button>
+                    <Button
+                        type="button"
+                        className="!w-fit disabled:opacity-50 disabled:cursor-not-allowed bg-bg-primary p"
+                        icon={<Download className="w-4 h-4" />}
+                        onClick={handleExportToExcel}
+                        disabled={gameHistories.length === 0}
+                    />
                 </div>
             </div>
 

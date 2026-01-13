@@ -177,8 +177,6 @@ export default function SubscriptionDetailsPage() {
             await fetchSubscriptionDetails();
 
             // Note: The affected user's session will be updated on their next request
-            // when the JWT callback fetches fresh subscription data from the backend
-            // This ensures middleware will immediately deny access to game routes
         } catch (err: any) {
             toast.error(err?.message || "Failed to revoke subscription");
         }
