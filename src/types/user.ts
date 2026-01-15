@@ -20,6 +20,7 @@ export interface User {
   firstName: string | null;
   lastName: string | null;
   phoneNo: string | null;
+  state: { id: number; name: string; code: string | null } | null;
   role: UserRole;
   isInactive: boolean;
   createdAt: string;
@@ -37,6 +38,7 @@ export interface UIUser {
   firstName?: string | null;
   lastName?: string | null;
   phoneNo?: string | null;
+  state: { id: number; name: string; code: string | null } | null;
   name?: string;
   role: UserRole;
   isActive: boolean;
@@ -245,6 +247,7 @@ export const userToUIUser = (user: User): UIUser => {
       : user.firstName || user.lastName || 'N/A',
     role: user.role,
     isActive: !user.isInactive,
+    state: user.state || null,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     subscriptions: user?.subscriptions
