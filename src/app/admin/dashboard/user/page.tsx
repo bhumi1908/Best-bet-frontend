@@ -389,15 +389,16 @@ export default function UserPage() {
                   </TableHead>
                   <TableHead className="min-w-[140px]">Subscription Plan</TableHead>
                   <TableHead className="min-w-[140px]">Date Subscribed</TableHead>
+                  <TableHead className="min-w-[140px]">State</TableHead>
                   <TableHead className="!text-center min-w-[60px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableSkeleton columns={9} />
+                  <TableSkeleton columns={10} />
                 ) : users.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-text-tertiary">
+                    <TableCell colSpan={10} className="text-center py-8 text-text-tertiary">
                       {error ? `Error: ${error}` : "No data available"}
                     </TableCell>
                   </TableRow>
@@ -467,6 +468,7 @@ export default function UserPage() {
                             })
                             : "N/A"}
                         </TableCell>
+                        <TableCell className="text-text-primary truncate">{user.state?.name ?? "N/A"}</TableCell>
                         <TableCell className="text-center">
                           <Button
                             type="text"
