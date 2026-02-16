@@ -40,6 +40,8 @@ import apiClient from "@/utilities/axios/instance";
 import { toast } from "react-toastify";
 import { Popup } from "@/components/ui/Popup";
 import { UserRole } from "@/types/auth";
+import { getAllStatesThunk } from "@/redux/thunk/statesThunk";
+import { State } from "@/types/gameHistory";
 
 type SortOrder = "ascend" | "descend" | null;
 type SortColumn = "name" | "email" | "phoneNo" | "role" | "isActive" | "createdAt" | null;
@@ -63,6 +65,7 @@ export default function UserPage() {
   const { users: reduxUsers, pagination: reduxPagination, filters, isLoading, error } = useAppSelector(
     (state) => state.user
   );
+  const { states } = useAppSelector((state) => state.states);
   // Local UI state
 
   // Search state (local for debouncing, synced with Redux)
@@ -90,6 +93,7 @@ export default function UserPage() {
     validate: zodFormikValidate(registerSchema),
     onSubmit: async (values, { setSubmitting, resetForm }) => {
       try {
+        console.log(values);
         const res = await apiClient.post(routes.api.auth.register, values);
 
         if (res.status === 201) {
@@ -154,6 +158,11 @@ export default function UserPage() {
 
     return () => clearTimeout(timeoutId);
   }, [searchTerm, filters.search, dispatch]);
+
+  // Fetch states on mount
+  useEffect(() => {
+    dispatch(getAllStatesThunk());
+  }, [dispatch]);
 
   // Fetch users when filters, pagination, or sorting changes
   useEffect(() => {
@@ -584,6 +593,7 @@ export default function UserPage() {
               type="primary"
               className="!w-full sm:!w-fit"
               onClick={(e) => {
+                console.log(formik.values);
                 e.stopPropagation();
                 formik.handleSubmit();
               }}
@@ -741,6 +751,37 @@ export default function UserPage() {
             </div>
           </div>
 
+          {/* Phone Number */}
+          <div className="space-y-2 w-full">
+            <label htmlFor="phoneNo" className="block text-sm font-medium text-gray-300">
+              Phone Number <span className="text-red-400">*</span>
+            </label>
+            <div className="relative">
+              <Input
+                id="phoneNo"
+                name="phoneNo"
+                type="tel"
+                autoComplete="tel"
+                placeholder="Enter phone number"
+                value={formik.values.phoneNo}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+              />
+              {formik.touched.phoneNo && formik.errors.phoneNo && (
+                <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {formik.errors.phoneNo}
+                </p>
+              )}
+            </div>
+          </div>
+
           <div className="flex flex-col md:flex-row gap-4 w-full">
             {/* Password */}
             <div className="space-y-2 w-full">
@@ -808,8 +849,53 @@ export default function UserPage() {
               </div>
             </div>
           </div>
+
+          {/* State */}
+          <div className="space-y-2 w-full">
+            <label htmlFor="stateId" className="block text-sm font-medium text-gray-300">
+              State <span className="text-red-400">*</span>
+            </label>
+            <div className="relative">
+              {(() => {
+                const stateIdValue = formik.values.stateId as number | null;
+                const selectedState = states.find(
+                  (state: State) => state.id === stateIdValue
+                );
+                return (
+                  <Select
+                    value={stateIdValue && stateIdValue > 0 ? stateIdValue.toString() : ""}
+                    onValueChange={(value) => formik.setFieldValue("stateId", Number(value))}
+                  >
+                    <SelectTrigger className="w-full">
+                      {selectedState ? selectedState.state_name : "Select state"}
+                    </SelectTrigger>
+                    <SelectContent>
+                      {states.map((state: State) => (
+                        <SelectItem key={state.id} value={state.id.toString()}>
+                          {state.state_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                );
+              })()}
+              {formik.touched.stateId && formik.errors.stateId && (
+                <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {formik.errors.stateId}
+                </p>
+              )}
+            </div>
+          </div>
         </form>
       </Popup >
     </>
   );
 }
+  
