@@ -7,12 +7,11 @@ import { useState } from "react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
-  const [email, setEmail] = useState("");
 
   const footerLinks = {
     main: [
       { href: routes.state, label: "State" },
-      { href: routes.predictions, label: "Predictions" },
+      // { href: routes.predictions, label: "Predictions" },
       { href: routes.drawHistory, label: "Draw History" },
       { href: routes.plans, label: "Subscription Plans" },
     ],

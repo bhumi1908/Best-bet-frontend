@@ -33,14 +33,13 @@ import {
   Globe,
   BarChart,
 } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart as ReBarChart, Bar } from 'recharts';
-import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { useAppDispatch, useAppSelector } from "@/redux/store/hooks";
 import { getAllSubscriptionPlansThunk } from "@/redux/thunk/subscriptionPlanThunk";
-import PricingCardSkeleton from "@/components/PricingCardSkeleton";
+import { getProofOfPerformanceThunk } from "@/redux/thunk/proofOfPerformanceThunk";
 import { useRouter } from "next/navigation";
+import { ProofOfPerformanceSkeleton } from "@/components/ProofOfPerformanceSkeleton";
 
 // interface Plan {
 //   id: number;
@@ -190,49 +189,6 @@ function SamplePrevArrow(props: any) {
   );
 }
 
-const performanceStates = [
-  { name: "Arizona", number: "589", hit: false },
-  { name: "Arkansas", number: "124", hit: true },
-  { name: "California", number: "643", hit: false },
-  { name: "Colorado", number: "556", hit: true },
-  { name: "Connecticut", number: "289", hit: true },
-  { name: "Delaware", number: "452", hit: false },
-  { name: "Florida", number: "332", hit: false },
-  { name: "Georgia", number: "122", hit: true },
-  { name: "Idaho", number: "752", hit: false },
-  { name: "Illinois", number: "332", hit: false },
-  { name: "Indiana", number: "121", hit: false },
-  { name: "Iowa", number: "256", hit: false },
-  { name: "Kansas", number: "892", hit: false },
-  { name: "Kentucky", number: "720", hit: false },
-  { name: "Louisiana", number: "456", hit: false },
-  { name: "Maine", number: "906", hit: false },
-  { name: "Maryland", number: "856", hit: false },
-  { name: "Michigan", number: "007", hit: true },
-  { name: "Minnesota", number: "501", hit: false },
-  { name: "Mississippi", number: "068", hit: true },
-  { name: "Missouri", number: "150", hit: true },
-  { name: "Nebraska", number: "121", hit: true },
-  { name: "New Hampshire", number: "906", hit: false },
-  { name: "New Jersey", number: "289", hit: false },
-  { name: "New Mexico", number: "923", hit: true },
-  { name: "New York", number: "511", hit: false },
-  { name: "North Carolina", number: "178", hit: true },
-  { name: "Ohio", number: "802", hit: false },
-  { name: "Oklahoma", number: "156", hit: true },
-  { name: "Pennsylvania", number: "523", hit: false },
-  { name: "Puerto Rico", number: "356", hit: true },
-  { name: "South Carolina", number: "526", hit: false },
-  { name: "Tennessee", number: "724", hit: true },
-  { name: "Texas", number: "401", hit: true },
-  { name: "Vermont", number: "906", hit: false },
-  { name: "Virginia", number: "828", hit: false },
-  { name: "Washington", number: "624", hit: false },
-  { name: "Washington, D.C.", number: "425", hit: false },
-  { name: "West Virginia", number: "023", hit: true },
-  { name: "Wisconsin", number: "425", hit: false },
-]
-
 export default function LandingPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -243,6 +199,14 @@ export default function LandingPage() {
   const { plans, isLoading, error } = useAppSelector(
     (state) => state.subscriptionPlan
   );
+  const { items: performanceStates, isLoading: isLoadingProofOfPerformance } = useAppSelector(
+    (state) => state.proofOfPerformance
+  );
+
+  // Fetch proof of performance data on mount
+  useEffect(() => {
+    dispatch(getProofOfPerformanceThunk());
+  }, [dispatch]);
 
   // const mappedPlans: Plan[] = useMemo(() => {
   //   return plans.map((plan, index) => {
@@ -521,51 +485,64 @@ export default function LandingPage() {
                 The Latest Winning States Using Best Bet's Predictions!
               </motion.p>
             </motion.div>
-            <motion.div
-              className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 md:gap-8"
-              variants={staggerContainer}
-              initial="initial"
-              whileInView="animate"
-              viewport={{ once: true, margin: "-50px" }}
-            >
-              {performanceStates.map((state, index) => (
-                <motion.div
-                  key={state.name}
-                  className="text-center"
-                  variants={staggerItem}
-                  whileHover={{ scale: 1.05, y: -5 }}
-                  transition={{ duration: 0.3 }}
-                >
-                                    <div
-                    onClick={() => router.push(`${routes.state}?name=${encodeURIComponent(state.name)}`)}
-                    className="relative rounded-xl cursor-pointer p-4 transition-all duration-300 overflow-hidden"
+            {isLoadingProofOfPerformance ? (
+              <ProofOfPerformanceSkeleton />
+            ) : (
+              <motion.div
+                className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 md:gap-8"
+                variants={staggerContainer}
+                initial="initial"
+                whileInView="animate"
+                viewport={{ once: true, margin: "-50px" }}
+              >
+                {performanceStates.map((state) => (
+                  <motion.div
+                    key={state.stateId}
+                    className="text-center"
+                    variants={staggerItem}
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    transition={{ duration: 0.3 }}
                   >
-                    {state.hit && (
-                      <div
-                        className="absolute inset-0 opacity-50"
-                        style={{
-                          backgroundImage: 'url(/images/fireworks.gif)',
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          backgroundRepeat: 'no-repeat'
-                        }}
-                      />
-                    )}
-                    <div className="relative z-10">
-                      <h3 className="text-white text-sm md:text-base font-semibold mb-2">
-                        {state.name}
-                      </h3>
-                      <div
-                        className={`text-2xl md:text-3xl font-black ${state.hit ? "text-green-400" : "text-white"
+                    <div
+                      onClick={() => router.push(`${routes.state}?name=${encodeURIComponent(state.stateName)}`)}
+                      className="relative rounded-xl cursor-pointer p-4 transition-all duration-300"
+                    >
+                      {state.hit && state.winningNumber !== 'N/A' && (
+                        <div
+                          className="absolute inset-0 opacity-50"
+                          style={{
+                            backgroundImage: 'url(/images/fireworks.gif)',
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat',
+                            height: '150px',
+                            width: '141px',
+                            left: 'calc(50% - 70.5px)',
+                            top: 'calc(50% - 75px)',
+                          }}
+                        />
+                      )}
+                      <div className="relative z-10">
+                        <h3 className="text-white text-sm md:text-base font-semibold mb-2">
+                          {state.stateName}
+                        </h3>
+                        <div
+                          className={`  ${
+                            state.winningNumber === 'N/A' 
+                              ? "text-gray-500 text-xl md:text-2xl font-black" 
+                              : state.hit 
+                                ? "text-green-400 text-2xl md:text-3xl font-black" 
+                                : "text-white text-2xl md:text-3xl font-black"
                           }`}
-                      >
-                        {state.number}
+                        >
+                          {state.winningNumber=== "N/A" ? "No Hit" : state.winningNumber}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
           </div>
         </section>
 
@@ -1017,7 +994,7 @@ export default function LandingPage() {
               <Button
                 type="primary"
                 size="large"
-                onClick={() => window.location.href = isAuthenticated ? routes.home : routes.auth.register}
+                onClick={() => router.push(routes.plans)}
                 className="px-8 py-4 text-lg !w-fit h-fit rounded-lg"
               >
                 Start Winning Today

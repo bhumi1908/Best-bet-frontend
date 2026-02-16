@@ -9,99 +9,46 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { routes } from "@/utilities/routes";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@/redux/store/hooks";
+import { getLatestPredictionsThunk } from "@/redux/thunk/predictionsThunk";
+import { getDrawHistoriesThunk } from "@/redux/thunk/drawHistoryThunk";
+import { clearGame2Error, clearRecentDrawsError } from "@/redux/slice/predictionsSlice";
+import RecentDrawSkeleton from "@/components/RecentDrawSkeleton";
+import { useSession } from "next-auth/react";
 
 export default function FrontNumberGamePage() {
-  const [gameData, setGameData] = useState<Record<string, string[]>>({});
-  const [selectedFrontNumber, setSelectedFrontNumber] = useState<string | null>('0');
+  const dispatch = useAppDispatch();
+  const { data: session } = useSession();
+  const stateId = session?.user?.stateId;
+
+  // Redux state
+  const {
+    game2Predictions,
+    game2Loading,
+    game2Error,
+    recentDraws,
+    recentDrawsLoading,
+    recentDrawsError
+  } = useAppSelector((state) => state.predictions);
+
+  // Local UI state
+  const [selectedFrontNumber, setSelectedFrontNumber] = useState<string | null>(null);
   const [selectedPrediction, setSelectedPrediction] = useState<string | null>(null);
-  const [predictions, setPredictions] = useState<string[]>([]);
   const [showInstructions, setShowInstructions] = useState<boolean>(false);
-  const [comboMode, setComboMode] = useState<boolean>(true);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // Mock recent draws data - Replace with actual API call
-  const recentDraws = useMemo(() => {
-    const draws = [];
-    const today = new Date();
-    for (let i = 0; i < 20; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const num1 = Math.floor(Math.random() * 10);
-      const num2 = Math.floor(Math.random() * 10);
-      const num3 = Math.floor(Math.random() * 10);
-      draws.push({
-        id: `draw-${i}`,
-        date: date.toISOString().split("T")[0],
-        numbers: `${num1}${num2}${num3}`,
-        type: i % 2 === 0 ? "Midday" : "Evening",
-        time: i % 2 === 0 ? "12:00 PM" : "11:00 PM",
-      });
+  const transformFirstDigit = (originalPrediction: string, frontNumber: string | null): string => {
+    if (frontNumber === null || originalPrediction.length === 0) {
+      return originalPrediction;
     }
-    return draws;
-  }, []);
-
-  // Generate all 6 combinations for a 3-digit number
-  const generateCombinations = (number: string): string[] => {
-    const [a, b, c] = number.split("");
-    if (a === b && b === c) return [number];
-    if (a === b || b === c || a === c) {
-      const unique = [...new Set([a, b, c])];
-      if (unique.length === 2) {
-        const [x, y] = unique;
-        return [`${x}${x}${y}`, `${x}${y}${x}`, `${y}${x}${x}`];
-      }
-    }
-    return [
-      `${a}${b}${c}`, `${a}${c}${b}`, `${b}${a}${c}`,
-      `${b}${c}${a}`, `${c}${a}${b}`, `${c}${b}${a}`
-    ];
+    // Replace only the first digit, keep the rest as-is from Excel
+    return frontNumber + originalPrediction.slice(1);
   };
 
-
-  // Fetch game data from API
-  useEffect(() => {
-    const fetchGameData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await fetch("/api/games/front-number-game");
-        const result = await response.json();
-
-        if (result.success && result.data?.gameData) {
-          setGameData(result.data.gameData);
-        } else {
-          throw new Error(result.message || "Failed to fetch game data");
-        }
-      } catch (err: any) {
-        console.error("Error fetching game data:", err);
-        setError(err.message || "Failed to load game data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGameData();
-  }, []);
-
-  // Compute all predictions from gameData when no front number is selected
-  const allPredictions = useMemo(() => {
-    if (Object.keys(gameData).length === 0) return [];
-    const all: string[] = [];
-    Object.values(gameData).forEach(preds => {
-      all.push(...preds);
-    });
-    return [...new Set(all)];
-  }, [gameData]);
-
-  // Update predictions based on selected front number
-  useEffect(() => {
-    if (selectedFrontNumber === null) {
-      setPredictions(allPredictions);
-    } else {
-      setPredictions(gameData[selectedFrontNumber] || []);
-    }
-  }, [selectedFrontNumber, gameData, allPredictions]);
+  // Get all predictions from Excel (single source of truth)
+  // When front number is selected, we'll visually transform them in displayPredictions
+  const excelPredictions = useMemo(() => {
+    return [...new Set(game2Predictions)].sort();
+  }, [game2Predictions]);
 
   const handleNumberSelect = (number: string) => {
     setSelectedFrontNumber(number);
@@ -112,17 +59,15 @@ export default function FrontNumberGamePage() {
     setSelectedPrediction(selectedPrediction === number ? null : number);
   };
 
-  const comboPredictions = useMemo(() => {
-    if (!comboMode || predictions.length === 0) return [];
-    const allCombos: string[] = [];
-    predictions.forEach(pred => {
-      const combos = generateCombinations(pred);
-      allCombos.push(...combos);
-    });
-    return [...new Set(allCombos)];
-  }, [comboMode, predictions]);
+  // Apply visual transformation: replace first digit if front number is selected
+  const transformedPredictions = useMemo(() => {
+    return excelPredictions.map(pred =>
+      transformFirstDigit(pred, selectedFrontNumber)
+    );
+  }, [excelPredictions, selectedFrontNumber]);
 
-  const displayPredictions = comboMode ? comboPredictions : predictions;
+  // Final display predictions (with visual transformation applied)
+  const displayPredictions = transformedPredictions;
 
   const staggerContainer = {
     initial: { opacity: 0 },
@@ -139,6 +84,27 @@ export default function FrontNumberGamePage() {
     initial: { opacity: 0, scale: 0.9, y: 20 },
     animate: { opacity: 1, scale: 1, y: 0 },
   };
+
+  // Fetch predictions and recent draws on mount (only if not already loaded)
+  useEffect(() => {
+      dispatch(getLatestPredictionsThunk({ gameId: 2 }));
+  }, [dispatch, game2Predictions.length]);
+
+  useEffect(() => {
+    dispatch(getDrawHistoriesThunk({
+      sortBy: 'drawDate',
+      sortOrder: 'desc',
+      stateId: stateId,
+    }));
+  }, [dispatch, stateId, recentDraws.length]);
+
+  // Clear errors when component unmounts
+  useEffect(() => {
+    return () => {
+      dispatch(clearGame2Error());
+      dispatch(clearRecentDrawsError());
+    };
+  }, [dispatch]);
 
   return (
     <motion.div
@@ -241,8 +207,34 @@ export default function FrontNumberGamePage() {
             </motion.div>
           </motion.div>
 
+          {/* Error State */}
+          {(game2Error || recentDrawsError) && !game2Loading && !recentDrawsLoading && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="max-w-2xl mx-auto mb-8 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6"
+            >
+              <p className="text-red-400 mb-4">
+                {game2Error || recentDrawsError}
+              </p>
+              <Button
+                type="default"
+                onClick={() => {
+                  dispatch(getLatestPredictionsThunk({ gameId: 2 }));
+                  dispatch(getDrawHistoriesThunk({
+                    sortBy: 'drawDate',
+                    sortOrder: 'desc',
+                  }));
+                }}
+                className="bg-yellow-400/10 hover:bg-yellow-400/20 border-yellow-400/30"
+              >
+                Retry
+              </Button>
+            </motion.div>
+          )}
+
           {/* Loading State - Skeleton */}
-          {loading && (
+          {game2Loading && (
             <div className="space-y-8">
               {/* Number Selector Skeleton */}
               <div className="bg-black/75 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8">
@@ -343,26 +335,8 @@ export default function FrontNumberGamePage() {
             </div>
           )}
 
-          {/* Error State */}
-          {error && !loading && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="max-w-2xl mx-auto mb-8 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6"
-            >
-              <p className="text-red-400 mb-4">{error}</p>
-              <Button
-                type="default"
-                onClick={() => window.location.reload()}
-                className="bg-yellow-400/10 hover:bg-yellow-400/20 border-yellow-400/30"
-              >
-                Retry
-              </Button>
-            </motion.div>
-          )}
-
           {/* Number Selector */}
-          {!loading && !error && (
+          {!game2Loading && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -424,7 +398,7 @@ export default function FrontNumberGamePage() {
           )}
 
           {/* Predictions Display */}
-          {!loading && !error && (
+          {!game2Loading && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -474,11 +448,7 @@ export default function FrontNumberGamePage() {
                         )} onClick={() => handleNumberClick(pred)}>
                           <div className={cn(
                             "text-lg md:text-xl font-black",
-                            selectedPrediction === pred
-                              ? "text-black"
-                              : comboMode
-                                ? "text-yellow-300"
-                                : "text-yellow-400"
+                            "text-yellow-300"
                           )}>
                             {pred}
                           </div>
@@ -497,7 +467,7 @@ export default function FrontNumberGamePage() {
           )}
 
           {/* Recent Draws Section */}
-          {!loading && !error && (
+          {recentDrawsLoading ? (<RecentDrawSkeleton />) : (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -525,53 +495,61 @@ export default function FrontNumberGamePage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {recentDraws.map((draw, index) => {
-                        const numbers = draw.numbers.split("");
+                      {recentDraws.length > 0 ? (
+                        recentDraws.map((draw, index) => {
+                          const numbers = draw.winning_numbers.split("");
 
-                        return (
-                          <motion.tr
-                            key={draw.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.02 }}
-                            className="border-b border-white/5 hover:bg-white/5 transition-colors duration-200"
-                          >
-                            <td className="py-4 px-4 text-center text-sm text-gray-300 font-medium">
-                              {index + 1}
-                            </td>
-                            <td className="py-4 px-4 text-sm text-gray-300">
-                              {new Date(draw.date).toLocaleDateString('en-US', {
-                                month: '2-digit',
-                                day: '2-digit',
-                                year: 'numeric'
-                              })}
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <span className={`inline-flex items-center px-3 py-1 rounded text-xs font-semibold rounded-full border border-white/10 text-yellow-400`}>
-                                {draw.type}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <span className="w-10 h-10 rounded-full bg-white text-black font-black text-sm flex items-center justify-center border-2 border-gray-300 mx-auto">
-                                {numbers[0]}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <span className="w-10 h-10 rounded-full bg-white text-black font-black text-sm flex items-center justify-center border-2 border-gray-300 mx-auto">
-                                {numbers[1]}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <span className="w-10 h-10 rounded-full bg-white text-black font-black text-sm flex items-center justify-center border-2 border-gray-300 mx-auto">
-                                {numbers[2]}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-center text-sm font-semibold text-gray-300">
-                              {draw.numbers}
-                            </td>
-                          </motion.tr>
-                        );
-                      })}
+                          return (
+                            <motion.tr
+                              key={draw.id}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.02 }}
+                              className="border-b border-white/5 hover:bg-white/5 transition-colors duration-200"
+                            >
+                              <td className="py-4 px-4 text-center text-sm text-gray-300 font-medium">
+                                {index + 1}
+                              </td>
+                              <td className="py-4 px-4 text-sm text-gray-300">
+                                {new Date(draw.draw_date).toLocaleDateString('en-US', {
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  year: 'numeric'
+                                })}
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <span className={`inline-flex items-center px-3 py-1 rounded text-xs font-semibold rounded-full border border-white/10 text-yellow-400`}>
+                                  {draw.draw_time === 'MID' ? 'Midday' : 'Evening'}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <span className="w-10 h-10 rounded-full bg-white text-black font-black text-sm flex items-center justify-center border-2 border-gray-300 mx-auto">
+                                  {numbers[0]}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <span className="w-10 h-10 rounded-full bg-white text-black font-black text-sm flex items-center justify-center border-2 border-gray-300 mx-auto">
+                                  {numbers[1]}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <span className="w-10 h-10 rounded-full bg-white text-black font-black text-sm flex items-center justify-center border-2 border-gray-300 mx-auto">
+                                  {numbers[2]}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-center text-sm font-semibold text-gray-300">
+                                {draw.winning_numbers}
+                              </td>
+                            </motion.tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center text-gray-400">
+                            No recent draws available
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

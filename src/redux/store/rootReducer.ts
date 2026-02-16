@@ -14,6 +14,9 @@ import gameHistoryReducer from '../slice/gameHistorySlice';
 import statesReducer from '../slice/statesSlice';
 import gameTypesReducer from '../slice/gameTypesSlice';
 import drawHistoryReducer from '../slice/drawHistorySlice';
+import predictionsReducer from '../slice/predictionsSlice';
+import proofOfPerformanceReducer from '../slice/proofOfPerformanceSlice';
+import statePerformanceReducer from '../slice/statePerformanceSlice';
 
 // Combine all reducers
 export const rootReducer = combineReducers({
@@ -27,6 +30,9 @@ export const rootReducer = combineReducers({
   states: statesReducer,
   gameTypes: gameTypesReducer,
   drawHistory: drawHistoryReducer,
+  predictions: predictionsReducer,
+  proofOfPerformance: proofOfPerformanceReducer,
+  statePerformance: statePerformanceReducer,
   
   // Add other reducers here as needed
 });

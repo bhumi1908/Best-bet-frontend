@@ -10,88 +10,59 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { routes } from "@/utilities/routes";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@/redux/store/hooks";
+import { getLatestPredictionsThunk } from "@/redux/thunk/predictionsThunk";
+import { getDrawHistoriesThunk } from "@/redux/thunk/drawHistoryThunk";
+import { clearGame1Error, clearRecentDrawsError } from "@/redux/slice/predictionsSlice";
+import RecentDrawSkeleton from "@/components/RecentDrawSkeleton";
+import { Game1PredictionSkeleton } from "@/components/GamePredictionSkeleton";
+import { useSession } from "next-auth/react";
 
 export default function ThreePicGamePage() {
-  const [predictions, setPredictions] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const {data:session} = useSession();
+  const stateId = session?.user?.stateId;
+
+  // Redux state
+  const {
+    game1Predictions,
+    game1Loading,
+    game1Error,
+    recentDraws,
+    recentDrawsLoading,
+    recentDrawsError
+  } = useAppSelector((state) => state.predictions);
+
+  // Local UI state (only UI-related state, no data duplication)
   const [filterValue, setFilterValue] = useState<string>("");
-  const [filteredPredictions, setFilteredPredictions] = useState<string[]>([]);
   const [selectedPrediction, setSelectedPrediction] = useState<string | null>(null);
   const [showInstructions, setShowInstructions] = useState<boolean>(false);
 
-  // Mock recent draws data - Replace with actual API call
-  const recentDraws = useMemo(() => {
-    const draws = [];
-    const today = new Date();
-    for (let i = 0; i < 20; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const num1 = Math.floor(Math.random() * 10);
-      const num2 = Math.floor(Math.random() * 10);
-      const num3 = Math.floor(Math.random() * 10);
-      draws.push({
-        id: `draw-${i}`,
-        date: date.toISOString().split("T")[0],
-        numbers: `${num1}${num2}${num3}`,
-        type: i % 2 === 0 ? "Midday" : "Evening",
-        time: i % 2 === 0 ? "12:00 PM" : "11:00 PM",
-      });
-    }
-    return draws;
-  }, []);
-
-  // Fetch predictions from API
-  useEffect(() => {
-    const fetchPredictions = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await fetch("/api/games/three-pic-game");
-        const result = await response.json();
-
-        if (result.success && result.data?.predictions) {
-          setPredictions(result.data.predictions);
-          setFilteredPredictions(result.data.predictions);
-        } else {
-          throw new Error(result.message || "Failed to fetch predictions");
-        }
-      } catch (err: any) {
-        console.error("Error fetching predictions:", err);
-        setError(err.message || "Failed to load predictions");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPredictions();
-  }, []);
-
-  // Filter logic
-  useMemo(() => {
+  // Filter predictions based on user input (computed from Redux state)
+  const filteredPredictions = useMemo(() => {
     if (!filterValue.trim()) {
-      setFilteredPredictions(predictions);
-      return;
+      return game1Predictions;
     }
 
     const filter = filterValue.trim();
-    let filtered: string[] = [];
 
     if (filter.length === 1) {
-      filtered = predictions.filter(pred => pred.includes(filter));
+      // Find all numbers containing this digit
+      return game1Predictions.filter(pred => pred.includes(filter));
     } else if (filter.length === 2) {
+      // Find numbers containing both digits (in any order)
       const [digit1, digit2] = filter.split("");
-      filtered = predictions.filter(pred =>
+      return game1Predictions.filter(pred =>
         pred.includes(digit1) && pred.includes(digit2)
       );
-    } else {
-      filtered = predictions.filter(pred => pred === filter);
+    } else if (filter.length === 3) {
+      // Exact match
+      return game1Predictions.filter(pred => pred === filter);
     }
 
-    setFilteredPredictions(filtered);
-    setSelectedPrediction(null); // Clear selection when filter changes
-  }, [filterValue, predictions]);
- 
+    return game1Predictions;
+  }, [filterValue, game1Predictions]);
+
   const handleClearFilter = () => {
     setFilterValue("");
     setSelectedPrediction(null);
@@ -118,6 +89,27 @@ export default function ThreePicGamePage() {
     animate: { opacity: 1, scale: 1, y: 0 },
   };
 
+    // Fetch predictions and recent draws on mount (only if not already loaded)
+    useEffect(() => {
+      dispatch(getLatestPredictionsThunk({ gameId: 1 }));
+  }, [dispatch, game1Predictions.length]);
+
+  useEffect(() => {
+      dispatch(getDrawHistoriesThunk({
+        sortBy: 'drawDate',
+        sortOrder: 'desc',
+        stateId: stateId,
+      }));
+  }, [dispatch, stateId, recentDraws.length]);
+
+  // Clear errors when component unmounts
+  useEffect(() => {
+    return () => {
+      dispatch(clearGame1Error());
+      dispatch(clearRecentDrawsError());
+    };
+  }, [dispatch]);
+
   return (
     <motion.div
       className="min-h-screen bg-black text-white overflow-hidden"
@@ -127,7 +119,7 @@ export default function ThreePicGamePage() {
       {/* Background Image with Overlay */}
       <div className="fixed inset-0">
         {/* Yellow Gradient Background Image with 50% opacity */}
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: 'url(/images/yellow-gredient-Background.png)',
@@ -219,140 +211,28 @@ export default function ThreePicGamePage() {
             </motion.div>
           </motion.div>
 
-          {/* Loading State - Skeleton */}
-          {loading && (
-            <div className="space-y-8">
 
-              {/* Main Content Skeleton */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Side - Predictions */}
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="bg-black/75 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8">
-                    {/* Custom Filter Skeleton */}
-                    <div className="mb-6 pb-6 border-b border-white/10">
-                      <div className="flex items-center gap-3 mb-4">
-                        <Skeleton className="w-10 h-10 rounded-xl" />
-                        <Skeleton className="h-6 w-32" />
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <Skeleton className="h-4 w-40 mb-2" />
-                          <Skeleton className="h-10 w-full rounded-lg" />
-                          <Skeleton className="h-3 w-64 mt-2" />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Prediction Numbers Header Skeleton */}
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                        <Skeleton className="w-10 h-10 rounded-xl" />
-                        <Skeleton className="h-7 w-48" />
-                      </div>
-                      <Skeleton className="h-8 w-24 rounded-lg" />
-                    </div>
-
-                    {/* Predictions Grid Skeleton */}
-                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-                      {Array.from({ length: 24 }).map((_, index) => (
-                        <Skeleton key={index} className="h-20 rounded-xl" />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Side - Quick Tips */}
-                <div className="lg:col-span-1">
-                  <div className="bg-black/75 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8">
-                    <div className="flex items-center gap-3 mb-6">
-                      <Skeleton className="w-10 h-10 rounded-xl" />
-                      <Skeleton className="h-7 w-32" />
-                    </div>
-                    <div className="space-y-4">
-                      <Skeleton className="h-32 rounded-xl" />
-                      <Skeleton className="h-24 rounded-xl" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recent Draws Skeleton */}
-              <div className="bg-black/75 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <Skeleton className="w-10 h-10 rounded-xl" />
-                  <Skeleton className="h-8 w-48" />
-                </div>
-                <div className="overflow-x-auto custom-scrollbar">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-white/10 bg-white/5">
-                        <th className="text-center py-3 px-4">
-                          <Skeleton className="h-4 w-8 mx-auto" />
-                        </th>
-                        <th className="text-left py-3 px-4">
-                          <Skeleton className="h-4 w-20" />
-                        </th>
-                        <th className="text-center py-3 px-4">
-                          <Skeleton className="h-4 w-16 mx-auto" />
-                        </th>
-                        <th className="text-center py-3 px-4">
-                          <Skeleton className="h-4 w-8 mx-auto" />
-                        </th>
-                        <th className="text-center py-3 px-4">
-                          <Skeleton className="h-4 w-8 mx-auto" />
-                        </th>
-                        <th className="text-center py-3 px-4">
-                          <Skeleton className="h-4 w-8 mx-auto" />
-                        </th>
-                        <th className="text-center py-3 px-4">
-                          <Skeleton className="h-4 w-20 mx-auto" />
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Array.from({ length: 20 }).map((_, index) => (
-                        <tr key={index} className="border-b border-white/5">
-                          <td className="py-4 px-4 text-center">
-                            <Skeleton className="h-4 w-6 mx-auto" />
-                          </td>
-                          <td className="py-4 px-4">
-                            <Skeleton className="h-4 w-24" />
-                          </td>
-                          <td className="py-4 px-4 text-center">
-                            <Skeleton className="h-6 w-16 mx-auto rounded-full" />
-                          </td>
-                          <td className="py-4 px-4 text-center">
-                            <Skeleton className="h-10 w-10 mx-auto rounded-full" />
-                          </td>
-                          <td className="py-4 px-4 text-center">
-                            <Skeleton className="h-10 w-10 mx-auto rounded-full" />
-                          </td>
-                          <td className="py-4 px-4 text-center">
-                            <Skeleton className="h-10 w-10 mx-auto rounded-full" />
-                          </td>
-                          <td className="py-4 px-4 text-center">
-                            <Skeleton className="h-4 w-16 mx-auto" />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Error State */}
-          {error && !loading && (
+          {(game1Error || recentDrawsError) && !game1Loading && !recentDrawsLoading && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="max-w-2xl mx-auto mb-8 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6"
             >
-              <p className="text-red-400 mb-4">{error}</p>
+              <p className="text-red-400 mb-4">
+                {game1Error || recentDrawsError}
+              </p>
               <Button
                 type="default"
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  dispatch(getLatestPredictionsThunk({ gameId: 1 }));
+                  dispatch(getDrawHistoriesThunk({
+                    sortBy: 'drawDate',
+                    sortOrder: 'desc',
+                    stateId: stateId,
+                  }));
+                }}
                 className="bg-yellow-400/10 hover:bg-yellow-400/20 border-yellow-400/30"
               >
                 Retry
@@ -360,8 +240,8 @@ export default function ThreePicGamePage() {
             </motion.div>
           )}
 
-          {/* Main Content */}
-          {!loading && !error && (
+          {/* Main Content - Predictions */}
+          {game1Loading ? (<Game1PredictionSkeleton />) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Predictions List - LEFT SIDE */}
               <motion.div
@@ -427,7 +307,7 @@ export default function ThreePicGamePage() {
                     </div>
                     <div className="px-4 py-2 bg-white/5  text-sm border border-white/10 rounded-lg">
                       <span className="text-gray-300 font-semibold text-sm pr-1">
-                        {filteredPredictions.length} 
+                        {filteredPredictions.length}
                       </span>{filteredPredictions.length === 1 ? 'Number' : 'Numbers'}
                     </div>
                   </div>
@@ -455,12 +335,12 @@ export default function ThreePicGamePage() {
                             )}
                             onClick={() => handlePredictionClick(pred)}
                           >
-                            <div className={cn(
+                            <span className={cn(
                               "text-lg md:text-xl font-black",
                               selectedPrediction === pred ? "text-black" : "text-yellow-400"
                             )}>
                               {pred}
-                            </div>
+                            </span>
                           </div>
                         </motion.div>
                       ))}
@@ -527,7 +407,7 @@ export default function ThreePicGamePage() {
           )}
 
           {/* Recent Draws Section */}
-          {!loading && !error && (
+          {recentDrawsLoading ? (<RecentDrawSkeleton />) : (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -555,53 +435,61 @@ export default function ThreePicGamePage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {recentDraws.map((draw, index) => {
-                        const numbers = draw.numbers.split("");
-                        
-                        return (
-                          <motion.tr
-                            key={draw.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.02 }}
-                            className="border-b border-white/5 hover:bg-white/5 transition-colors duration-200"
-                          >
-                            <td className="py-4 px-4 text-center text-sm text-gray-300 font-medium">
-                              {index + 1}
-                            </td>
-                            <td className="py-4 px-4 text-sm text-gray-300">
-                              {new Date(draw.date).toLocaleDateString('en-US', { 
-                                month: '2-digit', 
-                                day: '2-digit', 
-                                year: 'numeric' 
-                              })}
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <span className={`inline-flex items-center px-3 py-1 rounded text-xs font-semibold rounded-full border border-white/10 text-yellow-400`}>
-                                {draw.type}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <span className="w-10 h-10 rounded-full bg-white text-black font-black text-sm flex items-center justify-center border-2 border-gray-300 mx-auto">
-                                {numbers[0]}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <span className="w-10 h-10 rounded-full bg-white text-black font-black text-sm flex items-center justify-center border-2 border-gray-300 mx-auto">
-                                {numbers[1]}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <span className="w-10 h-10 rounded-full bg-white text-black font-black text-sm flex items-center justify-center border-2 border-gray-300 mx-auto">
-                                {numbers[2]}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-center text-sm font-semibold text-gray-300">
-                              {draw.numbers}
-                            </td>
-                          </motion.tr>
-                        );
-                      })}
+                      {recentDraws.length > 0 ? (
+                        recentDraws.map((draw, index) => {
+                          const numbers = draw.winning_numbers.split("");
+
+                          return (
+                            <motion.tr
+                              key={draw.id}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.02 }}
+                              className="border-b border-white/5 hover:bg-white/5 transition-colors duration-200"
+                            >
+                              <td className="py-4 px-4 text-center text-sm text-gray-300 font-medium">
+                                {index + 1}
+                              </td>
+                              <td className="py-4 px-4 text-sm text-gray-300">
+                                {new Date(draw.draw_date).toLocaleDateString('en-US', {
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  year: 'numeric'
+                                })}
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <span className={`inline-flex items-center px-3 py-1 rounded text-xs font-semibold rounded-full border border-white/10 text-yellow-400`}>
+                                  {draw.draw_time === 'MID' ? 'Midday' : 'Evening'}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <span className="w-10 h-10 rounded-full bg-white text-black font-black text-sm flex items-center justify-center border-2 border-gray-300 mx-auto">
+                                  {numbers[0]}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <span className="w-10 h-10 rounded-full bg-white text-black font-black text-sm flex items-center justify-center border-2 border-gray-300 mx-auto">
+                                  {numbers[1]}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <span className="w-10 h-10 rounded-full bg-white text-black font-black text-sm flex items-center justify-center border-2 border-gray-300 mx-auto">
+                                  {numbers[2]}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-center text-sm font-semibold text-gray-300">
+                                {draw.winning_numbers}
+                              </td>
+                            </motion.tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center text-gray-400">
+                            No recent draws available
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -621,7 +509,7 @@ export default function ThreePicGamePage() {
         headerClassName=" border-white/10"
       >
         <div className="space-y-5">
-          <div className="flex items-start gap-4"> 
+          <div className="flex items-start gap-4">
             <div className="flex-1">
               <p className="text-gray-300 leading-relaxed mb-2">
                 Review the 3-digit predictions shown on the main panel. You can either simply play all the numbers in the list or custom pick from the list by using the "Custom Filter" tool.
@@ -687,3 +575,5 @@ export default function ThreePicGamePage() {
     </motion.div>
   );
 }
+
+

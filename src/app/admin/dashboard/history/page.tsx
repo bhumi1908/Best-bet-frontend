@@ -13,7 +13,6 @@ import {
     Plus,
     Edit,
     Trash2,
-    Users,
     Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -54,19 +53,21 @@ import {
     formatDateShort,
     formatISODate,
     getDrawTimeLabel,
-    getResultBadge,
-    getResultLabel,
+    // COMMENTED OUT: Result Status flow
+    // getResultBadge,
+    // getResultLabel,
     formatCurrency,
 } from "@/utilities/formatting";
 import { WinningNumbers } from "@/components/ui/WinningNumbers";
 import * as XLSX from "xlsx";
 
-const RESULT_LABELS: Record<string, string> = {
-    all: "All Results",
-    WIN: "Win",
-    LOSS: "Loss",
-    PENDING: "Pending",
-};
+// COMMENTED OUT: Result Status flow
+// const RESULT_LABELS: Record<string, string> = {
+//     all: "All Results",
+//     WIN: "Win",
+//     LOSS: "Loss",
+//     PENDING: "Pending",
+// };
 
 // Formik form values type (allows empty values for placeholders)
 type FormValues = {
@@ -75,7 +76,8 @@ type FormValues = {
     draw_date: string;
     draw_time: "" | "MID" | "EVE";
     winning_numbers: string;
-    result: "" | "WIN" | "LOSS" | "PENDING";
+    // COMMENTED OUT: Result Status flow
+    // result: "" | "WIN" | "LOSS" | "PENDING";
     prize_amount: number | "";
 };
 
@@ -89,13 +91,14 @@ export default function HistoryPage() {
     const { states } = useAppSelector((state) => state.states);
     const { gameTypes } = useAppSelector((state) => state.gameTypes);
 
-
     // Local state
+    const [isDeleting, setIsDeleting] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [selectedHistory, setSelectedHistory] = useState<GameHistory | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const [resultFilter, setResultFilter] = useState<string>("all");
+    // COMMENTED OUT: Result Status flow
+    // const [resultFilter, setResultFilter] = useState<string>("all");
     const [startDate, setStartDate] = useState<Date | undefined>(undefined);
     const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
@@ -107,7 +110,8 @@ export default function HistoryPage() {
             draw_date: "",
             draw_time: "",
             winning_numbers: "",
-            result: "",
+            // COMMENTED OUT: Result Status flow
+            // result: "",
             prize_amount: "",
         },
         validate: zodFormikValidate(gameHistoryFormSchema),
@@ -125,7 +129,8 @@ export default function HistoryPage() {
                     draw_date: values.draw_date,
                     draw_time: values.draw_time as "MID" | "EVE",
                     winning_numbers: values.winning_numbers,
-                    result: values.result as "WIN" | "LOSS" | "PENDING",
+                    // COMMENTED OUT: Result Status flow
+                    // result: values.result as "WIN" | "LOSS" | "PENDING",
                     prize_amount: prizeAmount,
                 };
 
@@ -177,7 +182,8 @@ export default function HistoryPage() {
                 draw_date: "",
                 draw_time: "",
                 winning_numbers: "",
-                result: "",
+                // COMMENTED OUT: Result Status flow
+                // result: "",
                 prize_amount: "",
             },
         });
@@ -193,7 +199,8 @@ export default function HistoryPage() {
             draw_date: history.draw_date,
             draw_time: history.draw_time,
             winning_numbers: history.winning_numbers,
-            result: history.result,
+            // COMMENTED OUT: Result Status flow
+            // result: history.result,
             prize_amount: history.prize_amount,
         });
         setDialogOpen(true);
@@ -201,6 +208,7 @@ export default function HistoryPage() {
 
     const handleDelete = async () => {
         if (!selectedHistory) return;
+        setIsDeleting(true);
         try {
             await dispatch(deleteGameHistoryThunk(selectedHistory.id)).unwrap();
             toast.success("Game history deleted successfully");
@@ -231,6 +239,8 @@ export default function HistoryPage() {
             );
         } catch (error: any) {
             toast.error(error?.message || "Failed to delete game history");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -248,7 +258,8 @@ export default function HistoryPage() {
             const exportFilters = {
                 ...filters,
                 search: searchTerm || undefined,
-                result: resultFilter !== "all" ? (resultFilter as "WIN" | "LOSS" | "PENDING") : undefined,
+                // COMMENTED OUT: Result Status flow
+                // result: resultFilter !== "all" ? (resultFilter as "WIN" | "LOSS" | "PENDING") : undefined,
                 fromDate: startDate,
                 toDate: endDate
             };
@@ -267,9 +278,9 @@ export default function HistoryPage() {
                 "Game Type": history.game_name,
                 "State": history.state_name,
                 "Winning Numbers": history.winning_numbers,
-                "Result": getResultLabel(history.result),
-                "Prize Amount": history.result === "WIN" ? formatCurrency(history.prize_amount) : "N/A",
-                "Total Winners": history.total_winners,
+                // COMMENTED OUT: Result Status flow
+                // "Result": getResultLabel(history.result),
+                "Prize Amount": history.prize_amount > 0 ? formatCurrency(history.prize_amount) : "N/A",
             }));
 
             // Create workbook and worksheet
@@ -286,7 +297,6 @@ export default function HistoryPage() {
                 { wch: 18 }, // Winning Numbers
                 { wch: 12 }, // Result
                 { wch: 15 }, // Prize Amount
-                { wch: 15 }, // Total Winners
             ];
             worksheet["!cols"] = columnWidths;
 
@@ -315,13 +325,14 @@ export default function HistoryPage() {
         const searchFilters = {
             ...filters,
             search: searchTerm || undefined,
-            result: resultFilter !== "all" ? (resultFilter as "WIN" | "LOSS" | "PENDING") : undefined,
+            // COMMENTED OUT: Result Status flow
+            // result: resultFilter !== "all" ? (resultFilter as "WIN" | "LOSS" | "PENDING") : undefined,
             fromDate: startDate,
             toDate: endDate
         };
 
         dispatch(setFilters(searchFilters));
-    }, [searchTerm, resultFilter, startDate, endDate, dispatch]);
+    }, [searchTerm, /* resultFilter, */ startDate, endDate, dispatch]);
 
     useEffect(() => {
         dispatch(
@@ -371,7 +382,8 @@ export default function HistoryPage() {
                 </div>
 
                 <div className="flex gap-2 w-full justify-end flex-wrap">
-                    <Select
+                    {/* COMMENTED OUT: Result Status flow */}
+                    {/* <Select
                         value={resultFilter}
                         onValueChange={setResultFilter}
                     >
@@ -387,7 +399,7 @@ export default function HistoryPage() {
                             <SelectItem value="LOSS">Loss</SelectItem>
                             <SelectItem value="PENDING">Pending</SelectItem>
                         </SelectContent>
-                    </Select>
+                    </Select> */}
                     <div className="flex gap-2">
                         <DateTimePicker
                             rangePicker={true}
@@ -436,18 +448,19 @@ export default function HistoryPage() {
                                     <TableHead className="min-w-[150px]">Game Type</TableHead>
                                     <TableHead className="min-w-[120px]">State</TableHead>
                                     <TableHead className="min-w-[140px]">Winning Numbers</TableHead>
-                                    <TableHead className="min-w-[100px]">Result</TableHead>
+                                    {/* COMMENTED OUT: Result Status flow */}
+                                    {/* <TableHead className="min-w-[100px]">Result</TableHead> */}
                                     <TableHead className="min-w-[120px]">Prize Amount</TableHead>
-                                    <TableHead className="min-w-[100px]">Winners</TableHead>
+                                    <TableHead className="min-w-[120px]">Predicted</TableHead>
                                     <TableHead className="!text-center min-w-[140px]">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {isLoading ? (
-                                    <TableSkeleton columns={9} />
+                                    <TableSkeleton columns={8} />
                                 ) : gameHistories.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={9} className="text-center py-8 text-text-tertiary">
+                                        <TableCell colSpan={8} className="text-center py-8 text-text-tertiary">
                                             No game history found
                                         </TableCell>
                                     </TableRow>
@@ -470,23 +483,28 @@ export default function HistoryPage() {
                                                         numberClassName="bg-accent-primary text-black border-accent-primary"
                                                     />
                                                 </TableCell>
-                                                <TableCell>{getResultBadge(history.result)}</TableCell>
+                                                {/* COMMENTED OUT: Result Status flow */}
+                                                {/* <TableCell>{getResultBadge(history.result)}</TableCell> */}
                                                 <TableCell className="text-accent-primary font-medium">
-                                                    {history.result === "WIN" ? (
+                                                    {history.prize_amount > 0 ? (
                                                         <>{formatCurrency(history.prize_amount)}</>
                                                     ) : (
                                                         <span className="text-text-tertiary">N/A</span>
                                                     )}
                                                 </TableCell>
-                                                <TableCell className="text-text-primary">
-                                                    <div className="flex flex-col gap-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <Users className="w-4 h-4 text-text-tertiary" />
-                                                            <span className="font-semibold text-accent-primary">{history.total_winners}</span>
-                                                        </div>
+                                                <TableCell>
+  <span
+    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider w-fit
+    ${
+      history.is_predicted
+        ? "bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-300 border border-amber-400/40 shadow-sm shadow-amber-500/20"
+        : "bg-bg-primary text-text-tertiary border border-text-tertiary"
+    }`}
+  >
+    {history.is_predicted ? "Yes" : "No"}
+  </span>
+</TableCell>
 
-                                                    </div>
-                                                </TableCell>
                                                 <TableCell className="text-center">
                                                     <div className="flex items-center justify-center gap-2">
                                                         <Button
@@ -631,7 +649,7 @@ export default function HistoryPage() {
                             value={formik.values.draw_date ? new Date(formik.values.draw_date) : undefined}
                             onChange={(date) => {
                                 if (date) {
-                                    formik.setFieldValue("draw_date", date);
+                                    formik.setFieldValue("draw_date", date.toISOString());
                                 }
                             }}
                             placeholder="Select draw date"
@@ -694,7 +712,7 @@ export default function HistoryPage() {
                         </div>
                     </div>
 
-                    {/* Draw Time and Result */}
+                    {/* Draw Time */}
                     <div className="flex flex-col md:flex-row gap-4 w-full">
                         <div className="space-y-2 w-full">
                             <label className="block text-sm font-medium text-gray-300">
@@ -717,7 +735,8 @@ export default function HistoryPage() {
                             )}
                         </div>
 
-                        <div className="space-y-2 w-full">
+                        {/* COMMENTED OUT: Result Status flow */}
+                        {/* <div className="space-y-2 w-full">
                             <label className="block text-sm font-medium text-gray-300">
                                 Result Status <span className="text-red-400">*</span>
                             </label>
@@ -745,7 +764,7 @@ export default function HistoryPage() {
                             {formik.touched.result && formik.errors.result && (
                                 <p className="text-xs text-red-400">{formik.errors.result}</p>
                             )}
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Winning Numbers */}
@@ -757,61 +776,44 @@ export default function HistoryPage() {
                             type="text"
                             value={formik.values.winning_numbers}
                             onChange={(e) => {
-                                // Only allow editing when result is WIN
-                                if (formik.values.result === "WIN") {
+                                // COMMENTED OUT: Result Status flow - now always allow editing
+                                // if (formik.values.result === "WIN") {
                                     const value = e.target.value.replace(/\D/g, ""); // Only digits
                                     formik.setFieldValue("winning_numbers", value);
-                                }
+                                // }
                             }}
-                            placeholder={formik.values.result === "WIN" ? "e.g., 123" : "000"}
-                            disabled={formik.values.result === "LOSS" || formik.values.result === "PENDING"}
-                            className={formik.values.result === "LOSS" || formik.values.result === "PENDING" ? "opacity-60 cursor-not-allowed" : ""}
+                            placeholder="e.g., 123"
+                            // COMMENTED OUT: Result Status flow
+                            // disabled={formik.values.result === "LOSS" || formik.values.result === "PENDING"}
+                            // className={formik.values.result === "LOSS" || formik.values.result === "PENDING" ? "opacity-60 cursor-not-allowed" : ""}
                         />
                         {formik.touched.winning_numbers && formik.errors.winning_numbers && (
                             <p className="text-xs text-red-400">{formik.errors.winning_numbers}</p>
                         )}
-                        {(formik.values.result === "LOSS" || formik.values.result === "PENDING") && (
+                        {/* COMMENTED OUT: Result Status flow */}
+                        {/* {(formik.values.result === "LOSS" || formik.values.result === "PENDING") && (
                             <p className="text-xs text-text-tertiary">Automatically set to "000" for {formik.values.result === "LOSS" ? "Loss" : "Pending"} results</p>
-                        )}
+                        )} */}
                     </div>
 
                     {/* Prize Amount */}
                     <div className="space-y-2 w-full">
-                        {formik.values.result === "WIN" ? (
-                            <>
-                                <label className="block text-sm font-medium text-gray-300">
-                                    Prize Amount ($) <span className="text-red-400">*</span>
-                                </label>
-                                <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={formik.values.prize_amount === "" ? "" : String(formik.values.prize_amount)}
-                                    onChange={(e) => {
-                                        const value = e.target.value;
-                                        formik.setFieldValue("prize_amount", value === "" ? "" : (parseFloat(value) || 0));
-                                    }}
-                                    placeholder="Please select a price"
-                                />
-                                {formik.touched.prize_amount && formik.errors.prize_amount && (
-                                    <p className="text-xs text-red-400">{formik.errors.prize_amount}</p>
-                                )}
-                            </>
-                        ) : (
-                            <>
-                                <label className="block text-sm font-medium text-gray-300">
-                                    Prize Amount ($)
-                                </label>
-                                <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value="0"
-                                    disabled
-                                    className="opacity-60 cursor-not-allowed"
-                                />
-                                <p className="text-xs text-text-tertiary">Automatically set to $0 for {formik.values.result === "LOSS" ? "Loss" : "Pending"} results</p>
-                            </>
+                        <label className="block text-sm font-medium text-gray-300">
+                            Prize Amount ($)
+                        </label>
+                        <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={formik.values.prize_amount === "" ? "" : String(formik.values.prize_amount)}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                formik.setFieldValue("prize_amount", value === "" ? "" : (parseFloat(value) || 0));
+                            }}
+                            placeholder="Enter prize amount (optional)"
+                        />
+                        {formik.touched.prize_amount && formik.errors.prize_amount && (
+                            <p className="text-xs text-red-400">{formik.errors.prize_amount}</p>
                         )}
                     </div>
                 </form>
@@ -839,8 +841,9 @@ export default function HistoryPage() {
                             danger
                             className="!w-full sm:!w-fit"
                             onClick={handleDelete}
+                            disabled={isDeleting}
                         >
-                            Delete History
+                            {isDeleting ? "Deleting..." : "Delete History"}
                         </Button>
                     </div>
                 }

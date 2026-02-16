@@ -7,11 +7,11 @@ export const routes = {
   // Public routes
   home: '/',
   landing: '/landing',
-  predictions: '/predictions',
   drawHistory: '/draw-history',
   plans: '/plans',
   unauthorized: '/unauthorized',
   state: '/state',
+  predictions: '/predictions',
   terms: '/terms',
   privacy: '/privacy',
   about: '/about-us',
@@ -95,6 +95,15 @@ export const routes = {
     states: {
       getAll: '/states',
     },
+    statePerformance: {
+      get: (state: string, gameId?: number) => {
+        const params = new URLSearchParams({ state });
+        if (gameId !== undefined) {
+          params.append('gameId', gameId.toString());
+        }
+        return `/state-performance?${params.toString()}`;
+      },
+    },
     gameTypes: {
       getAll: '/game-types',
     },
@@ -107,6 +116,11 @@ export const routes = {
     },
     drawHistory: {
       getAll: '/draw-history',
+    },
+    predictions: {
+      latest: '/predictions/latest',
+      getStatus: (jobId: string) => `/predictions/${jobId}/status`,
+      proofOfPerformance: '/predictions/proof-of-performance',
     },
   },
 } as const;

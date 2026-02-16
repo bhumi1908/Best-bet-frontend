@@ -12,7 +12,7 @@ export interface DrawHistory {
   draw_time: 'MID' | 'EVE'; // Enum: MID (Midday) or EVE (Evening)
   winning_numbers: string;
   prize_amount: number;
-  total_winners: number;
+  is_predicted?: boolean; // Whether this draw matches a prediction
   state_name: string;
   state_code: string;
   game_name: string;

@@ -1,8 +1,8 @@
-import { ZodSchema } from 'zod';
+import { ZodType } from 'zod';
 
 export const zodFormikValidate =
-  <T>(schema: ZodSchema<T>) =>
-    (values: T) => {
+  <TInput = any, TOutput = TInput>(schema: ZodType<TOutput, any, TInput>) =>
+    (values: TInput) => {
       const result = schema.safeParse(values);
 
       if (result.success) return {};

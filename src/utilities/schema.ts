@@ -216,40 +216,54 @@ export const gameHistoryFormSchema = z.object({
   state_id: z.number().min(1, "State is required"),
   game_id: z.number().min(1, "Game type is required"),
   draw_date: z
-  .union([
-    z.date(),
-    z.string().min(1, "Draw date is required"),
-  ])
+  .string()
+  .min(1, "Draw date is required")
   .transform((val) => {
-    const date = val instanceof Date ? val : new Date(val);
+    const date = new Date(val);
     if (isNaN(date.getTime())) {
       throw new Error("Invalid draw date");
     }
     return date.toISOString(); //ISO format
   }),
-  draw_time: z.union([z.literal("MID"), z.literal("EVE"), z.literal("")]).refine((val) => val !== "", {
+  draw_time: z.string().refine((val): val is "MID" | "EVE" => val === "MID" || val === "EVE", {
       message: "Draw time is required",
   }),
   winning_numbers: z.string()
       .min(1, "Winning numbers are required")
       .regex(/^\d+$/, "Winning numbers must contain only digits"),
-  result: z.union([z.literal("WIN"), z.literal("LOSS"), z.literal("PENDING"), z.literal("")]).refine((val) => val !== "", {
-      message: "Result status is required",
-  }),
-  prize_amount: z.union([
-      z.number().min(0, "Prize amount must be greater than or equal to 0"),
-      z.literal(""),
-  ]),
-}).superRefine((data, ctx) => {
-  // Prize amount is required only when result is WIN
-  if (data.result === "WIN") {
-    if (data.prize_amount === "" || (typeof data.prize_amount === "number" && data.prize_amount <= 0)) {
+  // COMMENTED OUT: Result Status flow
+  // result: z.string().refine((val): val is "WIN" | "LOSS" | "PENDING" => val === "WIN" || val === "LOSS" || val === "PENDING", {
+  //     message: "Result status is required",
+  // }),
+  prize_amount: z
+  .union([
+    z.number().min(0, "Prize amount must be greater than or equal to 0"),
+    z.string().length(0),
+  ])
+  .optional()
+  .transform((value) => (value === "" ? null : value)),
+
+})
+.superRefine((data, ctx) => {
+  // Prize amount validation: required if winning numbers entered (and not "000"), not allowed otherwise
+  const hasWinningNumbers = data.winning_numbers && data.winning_numbers.trim() !== "" && data.winning_numbers !== "000";
+  
+  if (hasWinningNumbers) {
+     if (typeof data.prize_amount === "number" && data.prize_amount <= 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Prize amount must be greater than 0 when result is WIN",
+        message: "Prize amount must be greater than 0 when winning numbers are entered",
+        path: ["prize_amount"],
+      });
+    }
+  } else {
+    // If no winning numbers or "000", prize amount should not be allowed
+    if (data.prize_amount !== "" && data.prize_amount !== null && data.prize_amount !== undefined && data.prize_amount !== 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Prize amount is not allowed when winning numbers are not entered or are '000'",
         path: ["prize_amount"],
       });
     }
   }
-  // For LOSS and PENDING, prize should be 0 (handled by form logic, not validation)
-});
+})
