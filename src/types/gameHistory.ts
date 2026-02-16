@@ -24,6 +24,7 @@ export interface GameHistory {
   result: 'WIN' | 'LOSS' | 'PENDING';
   total_winners: number;
   prize_amount: number;
+  is_predicted?: boolean; // Whether this draw matches a prediction
   created_at: string;
   updated_at: string;
 }
@@ -59,7 +60,8 @@ export interface CreateGameHistoryPayload {
   draw_date: string; // ISO date string (date only, no time)
   draw_time: 'MID' | 'EVE';
   winning_numbers: string;
-  result: 'WIN' | 'LOSS' | 'PENDING';
+  // COMMENTED OUT: Result Status flow
+  // result: 'WIN' | 'LOSS' | 'PENDING';
   prize_amount: number;
 }
 
@@ -72,7 +74,8 @@ export interface UpdateGameHistoryPayload {
   draw_date?: string;
   draw_time?: 'MID' | 'EVE';
   winning_numbers?: string;
-  result?: 'WIN' | 'LOSS' | 'PENDING';
+  // COMMENTED OUT: Result Status flow
+  // result?: 'WIN' | 'LOSS' | 'PENDING';
   prize_amount?: number;
 }
 
@@ -81,10 +84,11 @@ export interface UpdateGameHistoryPayload {
  */
 export interface GameHistoryFilters {
   search?: string;
-  result?: 'WIN' | 'LOSS' | 'PENDING';
+  // COMMENTED OUT: Result Status flow
+  // result?: 'WIN' | 'LOSS' | 'PENDING';
   fromDate?: Date; // ISO date string
   toDate?: Date; // ISO date string
-  sortBy?: 'drawDate' | 'resultStatus' | 'createdAt';
+  sortBy?: 'drawDate' | /* 'resultStatus' | */ 'createdAt';
   sortOrder?: 'asc' | 'desc';
 }
 
@@ -157,4 +161,62 @@ export interface GameTypesState {
   isLoading: boolean;
   error: string | null;
   lastUpdated: string | null;
+}
+
+// ============================================================================
+// State Performance Types
+// ============================================================================
+
+/**
+ * Performance Period
+ */
+export interface PerformancePeriod {
+  period: string;
+  hits: number;
+  totalPlays: number;
+  hitRate: number;
+}
+
+/**
+ * Best Period
+ */
+export interface BestPeriod {
+  period: string;
+  hits: number;
+  totalPlays: number;
+  hitRate: number;
+}
+
+/**
+ * Average Hit Rate
+ */
+export interface AverageHitRate {
+  hitRate: number;
+  totalHits: number;
+  totalPlays: number;
+}
+
+/**
+ * State Performance Data
+ */
+export interface StatePerformanceData {
+  stateName: string;
+  weekly: PerformancePeriod[];
+  monthly: PerformancePeriod[];
+  yearly: PerformancePeriod[];
+  bestWeek: BestPeriod | null;
+  bestMonth: BestPeriod | null;
+  averageHitRate: AverageHitRate;
+}
+
+/**
+ * State Performance State
+ */
+export interface StatePerformanceState {
+  data: StatePerformanceData | null;
+  isLoading: boolean;
+  error: string | null;
+  lastUpdated: string | null;
+  currentState: string | null;
+  currentGameId: number | undefined;
 }

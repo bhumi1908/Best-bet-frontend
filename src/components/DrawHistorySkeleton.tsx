@@ -27,8 +27,8 @@ export function DrawHistorySkeleton() {
 
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-3">
-                  <Skeleton className="h-6 w-16 rounded-full" />
-                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-6 w-30 rounded-full" />
+                  <Skeleton className="h-6 w-30" />
                 </div>
                 <Skeleton className="h-8 w-32" />
               </div>
@@ -44,14 +44,7 @@ export function DrawHistorySkeleton() {
                   />
                 ))}
               </div>
-              <div className="text-right">
-                <Skeleton className="h-3 w-16 mb-1" />
-                <Skeleton className="h-5 w-24" />
-              </div>
-              <div className="text-right">
-                <Skeleton className="h-3 w-16 mb-1" />
-                <Skeleton className="h-5 w-16" />
-              </div>
+             
               <div className="w-10 h-10 hidden sm:flex rounded-lg bg-yellow-400/10 border border-yellow-400/20" />
             </div>
           </div>

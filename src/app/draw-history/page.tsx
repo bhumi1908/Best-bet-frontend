@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { routes } from "@/utilities/routes";
 import { Button } from "@/components/ui/Button";
@@ -26,11 +26,10 @@ import {
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/redux/store/hooks";
 import { getDrawHistoriesThunk } from "@/redux/thunk/drawHistoryThunk";
-import { setFilters, resetFilters, DrawHistoryFilters } from "@/redux/slice/drawHistorySlice";
+import { setFilters, resetFilters, DrawHistoryFilters, DrawHistory } from "@/redux/slice/drawHistorySlice";
 import { getAllStatesThunk } from "@/redux/thunk/statesThunk";
 import { DrawHistorySkeleton } from "@/components/DrawHistorySkeleton";
 import {
-  formatISODate,
   formatDateCalendar,
   getDrawType,
   formatWinningNumbers,
@@ -38,20 +37,25 @@ import {
   formatDateRange,
 } from "@/utilities/formatting";
 import { WinningNumbers } from "@/components/ui/WinningNumbers";
+import { useSession } from "next-auth/react";
 
 
 
 export default function DrawHistoryPage() {
   const dispatch = useAppDispatch();
-
+  const { data: session, status: sessionStatus } = useSession();
+  const userStateName = session?.user?.state?.name ?? "";
   // Redux state
   const { drawHistories, filters, isLoading, error } = useAppSelector(
     (state) => state.drawHistory
   );
-  const { states } = useAppSelector((state) => state.states);
+  const { states } = useAppSelector(
+    (state) => state.states
+  );
 
   // Local UI state
-  const [selectedStateName, setSelectedStateName] = useState<string>("Florida");
+  const [selectedStateName, setSelectedStateName] =
+    useState<string>(userStateName);
   const [selectedDrawType, setSelectedDrawType] = useState<string>("All");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
@@ -59,8 +63,12 @@ export default function DrawHistoryPage() {
   const [showFilters, setShowFilters] = useState<boolean>(true);
   const [sortBy, setSortBy] = useState<"drawDate" | "winningNumbers">("drawDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const northCarolinaState = states.find((s) => s.state_name === "North Carolina");
 
   const drawTypes = ["All", "Midday", "Evening"];
+
+  // Track if initial state sync has been done
+  const hasInitializedState = useRef(false);
 
   // Use draws directly from Redux (backend handles all filtering/sorting)
   const filteredDraws = useMemo(() => {
@@ -68,31 +76,10 @@ export default function DrawHistoryPage() {
     return drawHistories;
   }, [drawHistories]);
 
-
-  // Calculate statistics
-  const stats = useMemo(() => {
-    return {
-      totalDraws: filteredDraws.length,
-      middayDraws: filteredDraws.filter((d) => d.draw_time === "MID").length,
-      eveningDraws: filteredDraws.filter((d) => d.draw_time === "EVE").length,
-      totalJackpot: filteredDraws.reduce((sum, d) => sum + (d.prize_amount || 0), 0),
-      totalWinners: filteredDraws.reduce((sum, d) => sum + (d.total_winners || 0), 0),
-    };
-  }, [filteredDraws]);
-
   // Handle date range change
   const handleDateRangeChange = (range: { start?: Date; end?: Date }) => {
     setStartDate(range.start);
     setEndDate(range.end);
-  };
-
-
-
-  // Animation variants
-  const fadeInUp = {
-    initial: { opacity: 0, y: 60 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6, ease: "easeOut" },
   };
 
   const staggerContainer = {
@@ -121,21 +108,46 @@ export default function DrawHistoryPage() {
   // Find selected state ID
   const selectedState = useMemo(() => {
     if (states.length === 0) return null;
-    return states.find((s) => s.state_name === selectedStateName) || states[0];
+    return states.find((s) => s.state_name === selectedStateName);
   }, [states, selectedStateName]);
 
-  // Update selected state name when states load - default to Florida
+  // Sync selected state name only on initial load or when states/userStateName change
+  // This prevents resetting the state when user manually changes it
   useEffect(() => {
-    if (states.length > 0) {
-      const floridaState = states.find((s) => s.state_name === "Florida");
-      if (floridaState && selectedStateName !== "Florida") {
-        setSelectedStateName("Florida");
-      } else if (!states.find((s) => s.state_name === selectedStateName)) {
-        // If selected state is not in the list, default to first state
-        setSelectedStateName(states[0].state_name);
+    if (states.length === 0) return;
+
+    // Only do initial sync once, or when states/userStateName changes
+    // Don't reset if user has manually selected a different state
+    if (!hasInitializedState.current) {
+      hasInitializedState.current = true;
+
+      // Prefer user state from session if available and valid
+      if (userStateName) {
+        const userStateExists = states.some(
+          (s) => s.state_name === userStateName
+        );
+        if (userStateExists) {
+          setSelectedStateName(userStateName);
+          return;
+        }
+      }
+     
+      // If no user state, fall back to first available state
+      if (northCarolinaState) {
+        setSelectedStateName(northCarolinaState.state_name);
+      }
+    } else {
+      // After initial sync, only validate that selected state still exists
+      // If it doesn't exist in states, fall back to first available
+      const hasValidSelected =
+        !!selectedStateName &&
+        states.some((s) => s.state_name === selectedStateName);
+
+      if (!hasValidSelected && northCarolinaState) {
+        setSelectedStateName(northCarolinaState.state_name);
       }
     }
-  }, []);
+  }, [states, userStateName]); // Removed selectedStateName from dependencies
 
   // Fetch draw histories when filters change
   useEffect(() => {
@@ -378,7 +390,7 @@ export default function DrawHistoryPage() {
                         showDate={true}
                         showTime={false}
                         placeholder="Select date range"
-                        className="w-full min-w-[220px] bg-black/50 border-white/20 text-white"
+                        className="w-full min-w-[220px] bg-black/50 border-white/20 text-white hover:bg-black/70 focus:ring-yellow-400 !h-fit !py-2.5"
                       />
                     </div>
 
@@ -465,11 +477,19 @@ export default function DrawHistoryPage() {
                       {selectedStateName} Draw Results
                     </h2>
                     <p className="text-gray-400 text-sm">
-                      Showing {filteredDraws.length} result{filteredDraws.length !== 1 ? "s" : ""}
-                      {startDate && endDate && (
-                        <> for {formatDateRange(startDate, endDate)}</>
+                      {isLoading ? (
+                        "Loading results…"
+                      ) : (
+                        <>
+                          Showing {filteredDraws.length} result
+                          {filteredDraws.length !== 1 ? "s" : ""}
+                          {startDate && endDate && (
+                            <> for {formatDateRange(startDate, endDate)}</>
+                          )}
+                        </>
                       )}
                     </p>
+
                   </div>
                 </motion.div>
 
@@ -483,9 +503,8 @@ export default function DrawHistoryPage() {
                     initial="initial"
                     animate="animate"
                   >
-                    {filteredDraws.map((draw, index) => {
+                    {filteredDraws.map((draw) => {
                       const drawType = getDrawType(draw.draw_time);
-                      const drawDate = new Date(draw.draw_date);
                       const dateCalendar = formatDateCalendar(draw.draw_date);
 
                       return (
@@ -513,47 +532,45 @@ export default function DrawHistoryPage() {
                               <div className="h-16 w-px bg-white/10"></div>
 
                               <div className="flex flex-col">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <span
+                                <div className="flex items-center gap-3 mb-3">
+                                  <h3
                                     className={cn(
-                                      "px-3 py-1 rounded-full text-xs font-semibold",
+                                      "text-lg md:text-xl font-bold tracking-wide",
                                       drawType === "Midday"
-                                        ? "bg-yellow-400/20 text-yellow-400 border border-yellow-400/30"
-                                        : "bg-blue-400/20 text-blue-400 border border-blue-400/30"
+                                        ? "text-yellow-400"
+                                        : "text-blue-400"
                                     )}
                                   >
                                     {drawType}
-                                  </span>
+                                  </h3>
+                                  {draw.is_predicted && (
+                                    <span className="relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-300 border border-amber-400/40 shadow-sm shadow-amber-500/20">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                                      Predicted
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="text-2xl md:text-3xl font-black text-white tracking-wider">
-                                  {formatWinningNumbers(draw.winning_numbers).join("")}
+                                  {formatWinningNumbers(
+                                    draw.winning_numbers
+                                  ).join("")}
                                 </div>
                               </div>
                             </div>
 
                             {/* Right Section - Stats */}
                             <div className="flex items-center gap-6 md:gap-8">
-                              <WinningNumbers numbers={draw.winning_numbers} />
                               {draw.prize_amount > 0 && (
                                 <div className="text-right">
                                   <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">
                                     Jackpot
                                   </div>
-                                  <div className="text-base sm:text-lg font-bold text-yellow-400">
+                                  <div className="text-base sm:text-lg font-bold text-green-400">
                                     {formatCurrency(draw.prize_amount)}
                                   </div>
                                 </div>
                               )}
-                              {draw.total_winners !== undefined && (
-                                <div className="text-right">
-                                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">
-                                    Winners
-                                  </div>
-                                  <div className="text-lg font-bold text-emerald-400">
-                                    {draw.total_winners}
-                                  </div>
-                                </div>
-                              )}
+                              <WinningNumbers numbers={draw.winning_numbers} />
                               <div className="w-10 h-10 hidden sm:flex rounded-lg bg-yellow-400/10 border border-yellow-400/20 items-center justify-center group-hover:bg-yellow-400/20 transition-colors">
                                 <CheckCircle2 className="w-5 h-5 text-yellow-400" />
                               </div>
@@ -571,19 +588,20 @@ export default function DrawHistoryPage() {
                     transition={{ duration: 0.6 }}
                   >
                     <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-white mb-2">No Data Found</h3>
+                    <h3 className="text-xl font-bold text-white mb-2">
+                      No Data Found
+                    </h3>
                     <p className="text-gray-400 mb-6">
-                      No draw history found for the selected state or filters. Try adjusting your filters to see more results.
+                      No draw history found for the selected state or filters.
+                      Try adjusting your filters to see more results.
                     </p>
                     <Button
                       type="primary"
                       className="!w-fit py-3 h-fit rounded-lg"
                       onClick={() => {
                         setSearchQuery("");
-                        setSelectedStateName("Florida");
+                        setSelectedStateName(userStateName || selectedStateName);
                         setSelectedDrawType("All");
-                        const weekAgo = new Date();
-                        weekAgo.setDate(weekAgo.getDate() - 7);
                         setStartDate(undefined);
                         setEndDate(undefined);
                         dispatch(resetFilters());
@@ -603,13 +621,20 @@ export default function DrawHistoryPage() {
               >
                 <MapPin className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                 <h3 className="text-2xl font-bold text-white mb-2">
-                  Draw history for {selectedStateName} is coming soon!
+                  Draw history for {selectedStateName || userStateName} is
+                  coming soon!
                 </h3>
                 <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                  Currently, we're servicing North Carolina. More states will be added soon.
+                  Currently, we're servicing North Carolina. More states will be
+                  added soon.
                 </p>
                 <Link href={routes.plans}>
-                  <Button type="primary" className="!w-fit py-3 h-fit rounded-lg">View Subscription Plans</Button>
+                  <Button
+                    type="primary"
+                    className="!w-fit py-3 h-fit rounded-lg"
+                  >
+                    View Subscription Plans
+                  </Button>
                 </Link>
               </motion.div>
             )}
@@ -617,7 +642,7 @@ export default function DrawHistoryPage() {
         </section>
 
         {/* ==================== CTA SECTION ==================== */}
-        <section className="relative px-4 py-16">
+        {/* <section className="relative px-4 py-16">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div
               className="bg-black/75 backdrop-blur-md rounded-2xl p-8 border border-white/10"
@@ -646,7 +671,7 @@ export default function DrawHistoryPage() {
               </div>
             </motion.div>
           </div>
-        </section>
+        </section> */}
       </div>
     </motion.div>
   );

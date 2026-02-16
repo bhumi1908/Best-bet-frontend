@@ -44,9 +44,10 @@ export const getAllGameHistoriesThunk = createAsyncThunk<
         params.search = filters.search;
       }
 
-      if (filters.result) {
-        params.result = filters.result;
-      }
+      // COMMENTED OUT: Result Status flow
+      // if (filters.result) {
+      //   params.result = filters.result;
+      // }
 
       if (filters.fromDate) {
         params.fromDate = filters.fromDate;
