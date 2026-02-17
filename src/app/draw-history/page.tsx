@@ -65,7 +65,7 @@ export default function DrawHistoryPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const northCarolinaState = states.find((s) => s.state_name === "North Carolina");
 
-  const drawTypes = ["All", "Midday", "Evening"];
+  const drawTypes = ["All", "MID", "EVE"];
 
   // Track if initial state sync has been done
   const hasInitializedState = useRef(false);
@@ -164,9 +164,9 @@ export default function DrawHistoryPage() {
 
       // Add draw time filter (enum: MID or EVE)
       if (selectedDrawType !== "All") {
-        if (selectedDrawType === "Midday") {
+        if (selectedDrawType === "MID") {
           filterParams.drawTime = "MID";
-        } else if (selectedDrawType === "Evening") {
+        } else if (selectedDrawType === "EVE") {
           filterParams.drawTime = "EVE";
         }
       }
@@ -536,7 +536,7 @@ export default function DrawHistoryPage() {
                                   <h3
                                     className={cn(
                                       "text-lg md:text-xl font-bold tracking-wide",
-                                      drawType === "Midday"
+                                      drawType === "MID"
                                         ? "text-yellow-400"
                                         : "text-blue-400"
                                     )}

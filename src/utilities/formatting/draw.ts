@@ -1,13 +1,13 @@
 /**
  * Gets the draw type label from draw time enum (MID or EVE)
  * @param drawTime - Draw time enum: 'MID' or 'EVE'
- * @returns Draw type label: 'Midday' or 'Evening'
+ * @returns Draw type label: 'MID' or 'EVE'
  */
-export const getDrawType = (drawTime: string): "Midday" | "Evening" => {
+export const getDrawType = (drawTime: string): "MID" | "EVE" => {
   if (drawTime === "MID") {
-    return "Midday";
+    return "MID";
   }
-  return "Evening";
+  return "EVE";
 };
 
 /**
@@ -23,12 +23,12 @@ export const formatDrawTime = (drawTime: string): string => {
 };
 
 /**
- * Gets draw time label with enum (e.g., "Midday (MID)" or "Evening (EVE)")
+ * Gets draw time label (e.g., "MID" or "EVE")
  * @param drawTime - Draw time enum: 'MID' or 'EVE'
  * @returns Formatted label string
  */
 export const getDrawTimeLabel = (drawTime: string): string => {
-  return drawTime === "MID" ? "Midday (MID)" : "Evening (EVE)";
+  return drawTime === "MID" ? "MID" : "EVE";
 };
 
 /**

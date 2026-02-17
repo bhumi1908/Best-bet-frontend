@@ -9,7 +9,7 @@ import { getDrawHistoriesThunk } from '../thunk/drawHistoryThunk';
 export interface DrawHistory {
   id: number;
   draw_date: string; // YYYY-MM-DD format
-  draw_time: 'MID' | 'EVE'; // Enum: MID (Midday) or EVE (Evening)
+  draw_time: 'MID' | 'EVE'; // Enum: MID or EVE
   winning_numbers: string;
   prize_amount: number;
   is_predicted?: boolean; // Whether this draw matches a prediction

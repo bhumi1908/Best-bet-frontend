@@ -459,7 +459,7 @@ export default function ThreePicGamePage() {
                               </td>
                               <td className="py-4 px-4 text-center">
                                 <span className={`inline-flex items-center px-3 py-1 rounded text-xs font-semibold rounded-full border border-white/10 text-yellow-400`}>
-                                  {draw.draw_time === 'MID' ? 'Midday' : 'Evening'}
+                                  {draw.draw_time === 'MID' ? 'MID' : 'EVE'}
                                 </span>
                               </td>
                               <td className="py-4 px-4 text-center">
