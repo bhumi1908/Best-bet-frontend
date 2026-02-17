@@ -470,7 +470,7 @@ export default function AboutUsPage() {
                   icon: <Clock className="w-7 h-7" />,
                   title: "Daily Predictions",
                   description:
-                    "Get fresh predictions every day for both Midday and Evening draws. Our predictions are updated in real-time, ensuring you always have the latest insights.",
+                    "Get fresh predictions every day for both MID and EVE draws. Our predictions are updated in real-time, ensuring you always have the latest insights.",
                 },
                 {
                   icon: <Globe className="w-7 h-7" />,

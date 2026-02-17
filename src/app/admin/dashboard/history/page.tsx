@@ -6,14 +6,13 @@ import { z } from "zod";
 import { zodFormikValidate } from "@/utilities/zodFormikValidate";
 import {
     Search,
-    ChevronUp,
-    ChevronDown,
     ChevronLeft,
     ChevronRight,
     Plus,
     Edit,
     Trash2,
     Download,
+    Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -59,6 +58,12 @@ import {
     formatCurrency,
 } from "@/utilities/formatting";
 import { WinningNumbers } from "@/components/ui/WinningNumbers";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/Tooltip";
 import * as XLSX from "xlsx";
 
 // COMMENTED OUT: Result Status flow
@@ -417,7 +422,7 @@ export default function HistoryPage() {
                             showTime={false}
                         />
                     </div>
-                  
+
                     <Button
                         type="primary"
                         className="!w-fit "
@@ -437,8 +442,8 @@ export default function HistoryPage() {
             </div>
 
             {/* Table */}
-            <div className="rounded-lg overflow-hidden">
-                <div className="overflow-x-auto -mx-1 sm:mx-0">
+            <div className="rounded-lg overflow-x-hidden overflow-y-visible">
+                <div className="overflow-x-auto -mx-1 sm:mx-0 overflow-y-visible">
                     <div className="min-w-[1200px]">
                         <Table>
                             <TableHeader>
@@ -451,7 +456,27 @@ export default function HistoryPage() {
                                     {/* COMMENTED OUT: Result Status flow */}
                                     {/* <TableHead className="min-w-[100px]">Result</TableHead> */}
                                     <TableHead className="min-w-[120px]">Prize Amount</TableHead>
-                                    <TableHead className="min-w-[120px]">Predicted</TableHead>
+                                    <TableHead className="min-w-[120px]">
+                                        <div className="flex items-center gap-1.5">
+                                            Predicted
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Info className="w-3.5 h-3.5 text-text-tertiary cursor-help hover:text-text-primary transition-colors" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="bottom" className="max-w-[280px] text-xs leading-relaxed">
+                                                        Indicates whether your prediction was correct.
+                                                        <br />
+                                                        <span className="font-semibold text-accent-primary">Yes</span> = Correct prediction
+                                                        <br />
+                                                        <span className="font-semibold text-text-tertiary">No</span> = Incorrect prediction
+                                                    </TooltipContent>
+
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                    </TableHead>
+
                                     <TableHead className="!text-center min-w-[140px]">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -472,7 +497,7 @@ export default function HistoryPage() {
                                                     {formatDateShort(history.draw_date)}
                                                 </TableCell>
                                                 <TableCell className="text-text-primary">
-                                                    {getDrawTimeLabel(history.draw_time)}
+                                                    {history.draw_time}
                                                 </TableCell>
                                                 <TableCell className="text-text-primary">{history.game_name}</TableCell>
                                                 <TableCell className="text-text-primary">{history.state_name}</TableCell>
@@ -493,17 +518,16 @@ export default function HistoryPage() {
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
-  <span
-    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider w-fit
-    ${
-      history.is_predicted
-        ? "bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-300 border border-amber-400/40 shadow-sm shadow-amber-500/20"
-        : "bg-bg-primary text-text-tertiary border border-text-tertiary"
-    }`}
-  >
-    {history.is_predicted ? "Yes" : "No"}
-  </span>
-</TableCell>
+                                                    <span
+                                                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider w-fit
+    ${history.is_predicted
+                                                                ? "bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-300 border border-amber-400/40 shadow-sm shadow-amber-500/20"
+                                                                : "bg-bg-primary text-text-tertiary border border-text-tertiary"
+                                                            }`}
+                                                    >
+                                                        {history.is_predicted ? "Yes" : "No"}
+                                                    </span>
+                                                </TableCell>
 
                                                 <TableCell className="text-center">
                                                     <div className="flex items-center justify-center gap-2">
@@ -726,8 +750,8 @@ export default function HistoryPage() {
                                     {formik.values.draw_time ? getDrawTimeLabel(formik.values.draw_time) : "Select draw time"}
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="MID">Midday (MID)</SelectItem>
-                                    <SelectItem value="EVE">Evening (EVE)</SelectItem>
+                                    <SelectItem value="MID">MID</SelectItem>
+                                    <SelectItem value="EVE">EVE</SelectItem>
                                 </SelectContent>
                             </Select>
                             {formik.touched.draw_time && formik.errors.draw_time && (
@@ -778,14 +802,14 @@ export default function HistoryPage() {
                             onChange={(e) => {
                                 // COMMENTED OUT: Result Status flow - now always allow editing
                                 // if (formik.values.result === "WIN") {
-                                    const value = e.target.value.replace(/\D/g, ""); // Only digits
-                                    formik.setFieldValue("winning_numbers", value);
+                                const value = e.target.value.replace(/\D/g, ""); // Only digits
+                                formik.setFieldValue("winning_numbers", value);
                                 // }
                             }}
                             placeholder="e.g., 123"
-                            // COMMENTED OUT: Result Status flow
-                            // disabled={formik.values.result === "LOSS" || formik.values.result === "PENDING"}
-                            // className={formik.values.result === "LOSS" || formik.values.result === "PENDING" ? "opacity-60 cursor-not-allowed" : ""}
+                        // COMMENTED OUT: Result Status flow
+                        // disabled={formik.values.result === "LOSS" || formik.values.result === "PENDING"}
+                        // className={formik.values.result === "LOSS" || formik.values.result === "PENDING" ? "opacity-60 cursor-not-allowed" : ""}
                         />
                         {formik.touched.winning_numbers && formik.errors.winning_numbers && (
                             <p className="text-xs text-red-400">{formik.errors.winning_numbers}</p>
