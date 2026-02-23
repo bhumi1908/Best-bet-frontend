@@ -68,14 +68,15 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex bg-black overflow-hidden relative bg-gradient-to-br from-purple-900/20 via-black to-orange-900/20">
       {/* Left Side - Logo Image (50% width) */}
       <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center">
-        <div className="relative z-10 w-full h-full flex items-center justify-center">
-          <div className="relative w-full aspect-square">
+         {/* Logo Container */}
+         <div className="relative z-10 w-full h-full flex items-center justify-center">
+          <div className="relative w-full h-screen">
             <Image
               src="/images/Best Bet Logo v1 - 10-28-2025.png"
               alt="Best Bet Logo"
-              width={1000}
-              height={1000}
-              className="h-screen w-screen"
+              width={`${window.innerWidth}`}
+              height={`${window.innerHeight}`}
+              className="!h-screen object-cover"
               priority
             />
           </div>
@@ -83,7 +84,7 @@ export default function ForgotPasswordPage() {
       </div>
 
       {/* Right Side - Forgot Password Form (50% width) */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-6 lg:p-12 relative">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-6 lg:p-12 pt-20 sm:pt-20 lg:pt-20 relative">
         {/* Animated background effects */}
         <div className="absolute inset-0">
           <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
